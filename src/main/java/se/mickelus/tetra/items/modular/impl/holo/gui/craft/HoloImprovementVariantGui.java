@@ -9,81 +9,80 @@ import se.mickelus.tetra.module.schematic.OutcomePreview;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
 import java.util.function.Consumer;
+
 @ParametersAreNonnullByDefault
 public class HoloImprovementVariantGui extends GuiClickable {
 
-    private final GuiTexture backdrop;
-    private final GuiString label;
+	private final GuiTexture backdrop;
+	private final GuiString label;
+	private final OutcomePreview preview;
+	private final Consumer<OutcomePreview> onVariantHover;
+	private final Consumer<OutcomePreview> onVariantBlur;
+	private final List<String> tooltip;
+	private boolean isMuted;
 
-    private List<String> tooltip;
-    private boolean isMuted;
+	public HoloImprovementVariantGui(int x, int y, String name, int labelStart, OutcomePreview preview, boolean isConnected,
+									 Consumer<OutcomePreview> onVariantHover, Consumer<OutcomePreview> onVariantBlur, Consumer<OutcomePreview> onVariantSelect) {
+		super(x, y, 19, 11, () -> onVariantSelect.accept(preview));
 
-    private final OutcomePreview preview;
-    private final Consumer<OutcomePreview> onVariantHover;
-    private final Consumer<OutcomePreview> onVariantBlur;
+		this.preview = preview;
+		this.onVariantHover = onVariantHover;
+		this.onVariantBlur = onVariantBlur;
 
-    public HoloImprovementVariantGui(int x, int y, String name, int labelStart, OutcomePreview preview, boolean isConnected,
-            Consumer<OutcomePreview> onVariantHover, Consumer<OutcomePreview> onVariantBlur, Consumer<OutcomePreview> onVariantSelect) {
-        super(x, y, 19, 11, () -> onVariantSelect.accept(preview));
+		String truncatedName = name;
 
-        this.preview = preview;
-        this.onVariantHover = onVariantHover;
-        this.onVariantBlur = onVariantBlur;
+		if (truncatedName.length() > labelStart) {
+			truncatedName = truncatedName.substring(labelStart);
+		}
 
-        String truncatedName = name;
+		if (truncatedName.length() > 4) {
+			truncatedName = truncatedName.substring(0, 4);
+		}
 
-        if (truncatedName.length() > labelStart) {
-            truncatedName = truncatedName.substring(labelStart);
-        }
+		truncatedName = truncatedName.trim().toLowerCase();
 
-        if (truncatedName.length() > 4) {
-            truncatedName = truncatedName.substring(0, 4);
-        }
+		if (isConnected) {
+			addChild(new GuiTexture(-2, 0, 11, 11, 193, 31, GuiTextures.workbench).setAttachmentAnchor(GuiAttachment.topRight));
+		}
 
-        truncatedName = truncatedName.trim().toLowerCase();
+		backdrop = new GuiTexture(0, 0, 17, 11, 176, 31, GuiTextures.workbench);
+		addChild(backdrop);
 
-        if (isConnected) {
-            addChild(new GuiTexture(-2, 0, 11, 11, 193, 31, GuiTextures.workbench).setAttachmentAnchor(GuiAttachment.topRight));
-        }
+		label = new GuiStringOutline(9, 1, truncatedName);
+		label.setAttachmentPoint(GuiAttachment.topCenter);
+		addChild(label);
 
-        backdrop = new GuiTexture(0, 0, 17, 11, 176, 31, GuiTextures.workbench);
-        addChild(backdrop);
+		tooltip = ImmutableList.of(name);
+	}
 
-        label = new GuiStringOutline(9, 1, truncatedName);
-        label.setAttachmentPoint(GuiAttachment.topCenter);
-        addChild(label);
+	@Override
+	protected void onFocus() {
+		super.onFocus();
+		onVariantHover.accept(preview);
 
-        tooltip = ImmutableList.of(name);
-    }
+		backdrop.setColor(GuiColors.hover);
+		label.setColor(GuiColors.hover);
+	}
 
-    @Override
-    protected void onFocus() {
-        super.onFocus();
-        onVariantHover.accept(preview);
+	@Override
+	protected void onBlur() {
+		super.onBlur();
 
-        backdrop.setColor(GuiColors.hover);
-        label.setColor(GuiColors.hover);
-    }
+		onVariantBlur.accept(preview);
 
-    @Override
-    protected void onBlur() {
-        super.onBlur();
+		backdrop.setColor(isMuted ? GuiColors.muted : GuiColors.normal);
+		label.setColor(isMuted ? GuiColors.muted : GuiColors.normal);
+	}
 
-        onVariantBlur.accept(preview);
+	@Override
+	public List<String> getTooltipLines() {
+		return hasFocus() ? tooltip : null;
+	}
 
-        backdrop.setColor(isMuted ? GuiColors.muted : GuiColors.normal);
-        label.setColor(isMuted ? GuiColors.muted : GuiColors.normal);
-    }
+	public void setMuted(boolean muted) {
+		isMuted = muted;
 
-    @Override
-    public List<String> getTooltipLines() {
-        return hasFocus() ? tooltip : null;
-    }
-
-    public void setMuted(boolean muted) {
-        isMuted = muted;
-
-        backdrop.setColor(muted ? GuiColors.muted : GuiColors.normal);
-        label.setColor(muted ? GuiColors.muted : GuiColors.normal);
-    }
+		backdrop.setColor(muted ? GuiColors.muted : GuiColors.normal);
+		label.setColor(muted ? GuiColors.muted : GuiColors.normal);
+	}
 }

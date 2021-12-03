@@ -13,32 +13,34 @@ import net.minecraftforge.client.model.BakedItemModel;
 import net.minecraftforge.client.model.PerspectiveMapWrapper;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class BakedPerspectiveModel extends BakedItemModel {
-    private ItemTransforms cameraTransforms;
-    public BakedPerspectiveModel(ImmutableList<BakedQuad> quads, TextureAtlasSprite particle,
-            ImmutableMap<ItemTransforms.TransformType, Transformation> transforms, ItemOverrides overrides,
-            boolean untransformed, boolean isSideLit, ItemTransforms cameraTransforms) {
-        super(quads, particle, transforms, overrides, untransformed, isSideLit);
+	private final ItemTransforms cameraTransforms;
 
-        this.cameraTransforms = cameraTransforms;
-    }
+	public BakedPerspectiveModel(ImmutableList<BakedQuad> quads, TextureAtlasSprite particle,
+								 ImmutableMap<ItemTransforms.TransformType, Transformation> transforms, ItemOverrides overrides,
+								 boolean untransformed, boolean isSideLit, ItemTransforms cameraTransforms) {
+		super(quads, particle, transforms, overrides, untransformed, isSideLit);
 
-    @Override
-    public BakedModel handlePerspective(ItemTransforms.TransformType type, PoseStack mat) {
-        if (cameraTransforms != null) {
-            return net.minecraftforge.client.ForgeHooksClient.handlePerspective(this, type, mat);
-        }
-        return PerspectiveMapWrapper.handlePerspective(this, transforms, type, mat);
-    }
+		this.cameraTransforms = cameraTransforms;
+	}
 
-    @Override
-    public boolean doesHandlePerspectives() {
-        return true;
-    }
+	@Override
+	public BakedModel handlePerspective(ItemTransforms.TransformType type, PoseStack mat) {
+		if (cameraTransforms != null) {
+			return net.minecraftforge.client.ForgeHooksClient.handlePerspective(this, type, mat);
+		}
+		return PerspectiveMapWrapper.handlePerspective(this, transforms, type, mat);
+	}
 
-    @Override
-    public ItemTransforms getTransforms() {
-        return cameraTransforms;
-    }
+	@Override
+	public boolean doesHandlePerspectives() {
+		return true;
+	}
+
+	@Override
+	public ItemTransforms getTransforms() {
+		return cameraTransforms;
+	}
 }

@@ -6,35 +6,36 @@ import se.mickelus.tetra.module.data.GlyphData;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.lang.reflect.Type;
+
 @ParametersAreNonnullByDefault
 public class GlyphDeserializer implements JsonDeserializer<GlyphData> {
 
-    @Override
-    public GlyphData deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-        JsonObject jsonObject = json.getAsJsonObject();
-        GlyphData data = new GlyphData();
+	@Override
+	public GlyphData deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+		JsonObject jsonObject = json.getAsJsonObject();
+		GlyphData data = new GlyphData();
 
-        if (jsonObject.has("textureLocation")) {
-            data.textureLocation = ResourceLocationDeserializer.deserialize(jsonObject.get("textureLocation"));
-        }
+		if (jsonObject.has("textureLocation")) {
+			data.textureLocation = ResourceLocationDeserializer.deserialize(jsonObject.get("textureLocation"));
+		}
 
-        if (jsonObject.has("textureX")) {
-            data.textureX = jsonObject.get("textureX").getAsInt();
-        }
+		if (jsonObject.has("textureX")) {
+			data.textureX = jsonObject.get("textureX").getAsInt();
+		}
 
-        if (jsonObject.has("textureY")) {
-            data.textureY = jsonObject.get("textureY").getAsInt();
-        }
+		if (jsonObject.has("textureY")) {
+			data.textureY = jsonObject.get("textureY").getAsInt();
+		}
 
-        if (jsonObject.has("tint")) {
-            String tint = jsonObject.get("tint").getAsString();
-            if (ItemColors.exists(tint)) {
-                data.tint = ItemColors.get(tint);
-            } else {
-                data.tint = (int) Long.parseLong(tint, 16);
-            }
-        }
+		if (jsonObject.has("tint")) {
+			String tint = jsonObject.get("tint").getAsString();
+			if (ItemColors.exists(tint)) {
+				data.tint = ItemColors.get(tint);
+			} else {
+				data.tint = (int) Long.parseLong(tint, 16);
+			}
+		}
 
-        return data;
-    }
+		return data;
+	}
 }

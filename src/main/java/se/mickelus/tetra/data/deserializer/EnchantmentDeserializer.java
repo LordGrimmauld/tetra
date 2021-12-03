@@ -10,18 +10,19 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.lang.reflect.Type;
+
 @ParametersAreNonnullByDefault
 public class EnchantmentDeserializer implements JsonDeserializer<Enchantment> {
-    @Override
-    public Enchantment deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-        String string = json.getAsString();
-        if (string != null) {
-            ResourceLocation resourceLocation = new ResourceLocation(string);
-            if (ForgeRegistries.ENCHANTMENTS.containsKey(resourceLocation)) {
-                return ForgeRegistries.ENCHANTMENTS.getValue(resourceLocation);
-            }
-        }
+	@Override
+	public Enchantment deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+		String string = json.getAsString();
+		if (string != null) {
+			ResourceLocation resourceLocation = new ResourceLocation(string);
+			if (ForgeRegistries.ENCHANTMENTS.containsKey(resourceLocation)) {
+				return ForgeRegistries.ENCHANTMENTS.getValue(resourceLocation);
+			}
+		}
 
-        return null;
-    }
+		return null;
+	}
 }

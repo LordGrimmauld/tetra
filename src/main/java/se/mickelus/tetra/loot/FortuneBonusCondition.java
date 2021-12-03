@@ -18,54 +18,55 @@ import se.mickelus.tetra.data.DataManager;
 import se.mickelus.tetra.properties.IToolProvider;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class FortuneBonusCondition implements LootItemCondition {
 
-    public static final ResourceLocation identifier = new ResourceLocation(TetraMod.MOD_ID, "random_chance_with_fortune");
-    public static final LootItemConditionType type = new LootItemConditionType(new ConditionSerializer());
+	public static final ResourceLocation identifier = new ResourceLocation(TetraMod.MOD_ID, "random_chance_with_fortune");
+	public static final LootItemConditionType type = new LootItemConditionType(new ConditionSerializer());
 
-    private float chance;
-    private float fortuneMultiplier;
+	private float chance;
+	private float fortuneMultiplier;
 
-    private ToolAction requiredTool;
-    private int requiredToolLevel = -1;
+	private ToolAction requiredTool;
+	private final int requiredToolLevel = -1;
 
-    @Override
-    public boolean test(LootContext context) {
-        int fortuneLevel = 0;
+	@Override
+	public boolean test(LootContext context) {
+		int fortuneLevel = 0;
 
-        if (requiredTool != null) {
-            ItemStack toolStack = context.getParamOrNull(LootContextParams.TOOL);
+		if (requiredTool != null) {
+			ItemStack toolStack = context.getParamOrNull(LootContextParams.TOOL);
 
-            if (toolStack != null && toolStack.getItem() instanceof IToolProvider) {
-                if (((IToolProvider) toolStack.getItem()).getToolLevel(toolStack, requiredTool) > requiredToolLevel) {
-                    fortuneLevel = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.BLOCK_FORTUNE, toolStack);
-                }
-            }
-        } else {
-            ItemStack tool = context.getParamOrNull(LootContextParams.TOOL);
-            if (tool != null) {
-                fortuneLevel = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.BLOCK_FORTUNE, context.getParamOrNull(LootContextParams.TOOL));
-            }
-        }
+			if (toolStack != null && toolStack.getItem() instanceof IToolProvider) {
+				if (((IToolProvider) toolStack.getItem()).getToolLevel(toolStack, requiredTool) > requiredToolLevel) {
+					fortuneLevel = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.BLOCK_FORTUNE, toolStack);
+				}
+			}
+		} else {
+			ItemStack tool = context.getParamOrNull(LootContextParams.TOOL);
+			if (tool != null) {
+				fortuneLevel = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.BLOCK_FORTUNE, context.getParamOrNull(LootContextParams.TOOL));
+			}
+		}
 
-        return context.getRandom().nextFloat() < this.chance + fortuneLevel * this.fortuneMultiplier;
-    }
+		return context.getRandom().nextFloat() < this.chance + fortuneLevel * this.fortuneMultiplier;
+	}
 
-    @Override
-    public LootItemConditionType getType() {
-        return type;
-    }
+	@Override
+	public LootItemConditionType getType() {
+		return type;
+	}
 
-    public static class ConditionSerializer implements Serializer<FortuneBonusCondition> {
-        @Override
-        public void serialize(JsonObject json, FortuneBonusCondition value, JsonSerializationContext context) {
-            DataManager.gson.toJsonTree(value).getAsJsonObject().entrySet().forEach(entry -> json.add(entry.getKey(), entry.getValue()));
-        }
+	public static class ConditionSerializer implements Serializer<FortuneBonusCondition> {
+		@Override
+		public void serialize(JsonObject json, FortuneBonusCondition value, JsonSerializationContext context) {
+			DataManager.gson.toJsonTree(value).getAsJsonObject().entrySet().forEach(entry -> json.add(entry.getKey(), entry.getValue()));
+		}
 
-        @Override
-        public FortuneBonusCondition deserialize(JsonObject json, JsonDeserializationContext context) {
-            return DataManager.gson.fromJson(json, FortuneBonusCondition.class);
-        }
-    }
+		@Override
+		public FortuneBonusCondition deserialize(JsonObject json, JsonDeserializationContext context) {
+			return DataManager.gson.fromJson(json, FortuneBonusCondition.class);
+		}
+	}
 }

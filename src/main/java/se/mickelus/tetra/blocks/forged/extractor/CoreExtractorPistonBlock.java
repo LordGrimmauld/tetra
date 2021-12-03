@@ -26,76 +26,74 @@ import se.mickelus.tetra.util.TileEntityOptional;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Random;
+
 @ParametersAreNonnullByDefault
 public class CoreExtractorPistonBlock extends TetraWaterloggedBlock implements EntityBlock {
-    public static final String unlocalizedName = "extractor_piston";
+	public static final String unlocalizedName = "extractor_piston";
+	public static final net.minecraft.world.level.block.state.properties.BooleanProperty hackProp = BooleanProperty.create("hack");
+	public static final VoxelShape boundingBox = box(5, 0, 5, 11, 16, 11);
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static CoreExtractorPistonBlock instance;
 
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static CoreExtractorPistonBlock instance;
+	public CoreExtractorPistonBlock() {
+		super(ForgedBlockCommon.propertiesNotSolid);
 
-    public static final net.minecraft.world.level.block.state.properties.BooleanProperty hackProp = BooleanProperty.create("hack");
+		setRegistryName(unlocalizedName);
+	}
 
-    public static final VoxelShape boundingBox = box(5, 0, 5, 11, 16, 11);
+	@Override
+	public void init(PacketHandler packetHandler) {
+		super.init(packetHandler);
 
-    public CoreExtractorPistonBlock() {
-        super(ForgedBlockCommon.propertiesNotSolid);
+		packetHandler.registerPacket(CoreExtractorPistonUpdatePacket.class, CoreExtractorPistonUpdatePacket::new);
+	}
 
-        setRegistryName(unlocalizedName);
-    }
+	@Override
+	public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, Random rand) {
+		TileEntityOptional.from(worldIn, pos, CoreExtractorPistonTile.class)
+			.ifPresent(te -> {
+				if (te.isActive()) {
+					float random = rand.nextFloat();
 
-    @Override
-    public void init(PacketHandler packetHandler) {
-        super.init(packetHandler);
+					if (random < 0.6f) {
+						worldIn.addParticle(ParticleTypes.SMOKE,
+							pos.getX() + 0.4 + rand.nextGaussian() * 0.2,
+							pos.getY() + rand.nextGaussian(),
+							pos.getZ() + 0.4 + rand.nextGaussian() * 0.2,
+							0.0D, 0.0D, 0.0D);
+					}
+				}
+			});
+	}
 
-        packetHandler.registerPacket(CoreExtractorPistonUpdatePacket.class, CoreExtractorPistonUpdatePacket::new);
-    }
+	@Override
+	public BlockState updateShape(BlockState state, Direction facing, BlockState facingState, LevelAccessor world, BlockPos currentPos, BlockPos facingPos) {
+		if (Direction.DOWN.equals(facing) && !CoreExtractorBaseBlock.instance.equals(facingState.getBlock())) {
+			return state.getValue(BlockStateProperties.WATERLOGGED) ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState();
+		}
 
-    @Override
-    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, Random rand) {
-        TileEntityOptional.from(worldIn, pos, CoreExtractorPistonTile.class)
-                .ifPresent(te -> {
-                    if (te.isActive()) {
-                        float random = rand.nextFloat();
+		return super.updateShape(state, facing, facingState, world, currentPos, facingPos);
+	}
 
-                        if (random < 0.6f) {
-                            worldIn.addParticle(ParticleTypes.SMOKE,
-                                    pos.getX() + 0.4 + rand.nextGaussian() * 0.2,
-                                    pos.getY() + rand.nextGaussian(),
-                                    pos.getZ() + 0.4 + rand.nextGaussian() * 0.2,
-                                    0.0D, 0.0D, 0.0D);
-                        }
-                    }
-                });
-    }
+	@Override
+	public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
+		return boundingBox;
+	}
 
-    @Override
-    public BlockState updateShape(BlockState state, Direction facing, BlockState facingState, LevelAccessor world, BlockPos currentPos, BlockPos facingPos) {
-        if (Direction.DOWN.equals(facing) && !CoreExtractorBaseBlock.instance.equals(facingState.getBlock())) {
-            return state.getValue(BlockStateProperties.WATERLOGGED) ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState();
-        }
+	@Override
+	public RenderShape getRenderShape(BlockState state) {
+		return RenderShape.ENTITYBLOCK_ANIMATED;
+	}
 
-        return super.updateShape(state, facing, facingState, world, currentPos, facingPos);
-    }
+	@Override
+	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+		super.createBlockStateDefinition(builder);
+		builder.add(hackProp);
+	}
 
-    @Override
-    public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
-        return boundingBox;
-    }
-
-    @Override
-    public RenderShape getRenderShape(BlockState state) {
-        return RenderShape.ENTITYBLOCK_ANIMATED;
-    }
-
-    @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        super.createBlockStateDefinition(builder);
-        builder.add(hackProp);
-    }
-
-    @org.jetbrains.annotations.Nullable
-    @Override
-    public BlockEntity newBlockEntity(BlockPos p_153215_, BlockState p_153216_) {
-        return new CoreExtractorPistonTile(p_153215_, p_153216_);
-    }
+	@org.jetbrains.annotations.Nullable
+	@Override
+	public BlockEntity newBlockEntity(BlockPos p_153215_, BlockState p_153216_) {
+		return new CoreExtractorPistonTile(p_153215_, p_153216_);
+	}
 }

@@ -14,28 +14,28 @@ import java.util.function.Consumer;
 
 @ParametersAreNonnullByDefault
 public class MiningSpeedPotionEffect extends MobEffect {
-    public static MiningSpeedPotionEffect instance;
-    public MiningSpeedPotionEffect() {
-        super(MobEffectCategory.BENEFICIAL, 0xeeeeee);
+	public static MiningSpeedPotionEffect instance;
 
-        setRegistryName("mining_speed");
+	public MiningSpeedPotionEffect() {
+		super(MobEffectCategory.BENEFICIAL, 0xeeeeee);
 
-        instance = this;
-    }
+		setRegistryName("mining_speed");
+
+		instance = this;
+	}
 
 
+	@SubscribeEvent
+	public static void onBreakSpeed(PlayerEvent.BreakSpeed event) {
+		if (event.getPlayer().hasEffect(instance)) {
+			event.setNewSpeed(event.getNewSpeed() * event.getPlayer().getEffect(instance).getAmplifier() / 10f);
+		}
+	}
 
-    @SubscribeEvent
-    public static void onBreakSpeed(PlayerEvent.BreakSpeed event) {
-        if (event.getPlayer().hasEffect(instance)) {
-            event.setNewSpeed(event.getNewSpeed() * event.getPlayer().getEffect(instance).getAmplifier() / 10f);
-        }
-    }
-
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public void initializeClient(Consumer<EffectRenderer> consumer) {
-        super.initializeClient(consumer);
-        consumer.accept(EffectUnRenderer.INSTANCE);
-    }
+	@Override
+	@OnlyIn(Dist.CLIENT)
+	public void initializeClient(Consumer<EffectRenderer> consumer) {
+		super.initializeClient(consumer);
+		consumer.accept(EffectUnRenderer.INSTANCE);
+	}
 }

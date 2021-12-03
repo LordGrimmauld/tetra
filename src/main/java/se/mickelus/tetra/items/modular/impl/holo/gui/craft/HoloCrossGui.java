@@ -9,55 +9,56 @@ import se.mickelus.mutil.gui.animation.KeyframeAnimation;
 import se.mickelus.tetra.gui.GuiColors;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class HoloCrossGui extends GuiElement {
 
-    protected AnimationChain openAnimation;
-    protected AnimationChain reopenAnimation;
+	protected AnimationChain openAnimation;
+	protected AnimationChain reopenAnimation;
 
-    public HoloCrossGui(int x, int y, int delay) {
-        this(x, y, delay, 0.2f);
-    }
+	public HoloCrossGui(int x, int y, int delay) {
+		this(x, y, delay, 0.2f);
+	}
 
-    public HoloCrossGui(int x, int y, int delay, float targetOpacity) {
-        super(x, y, 5, 5);
+	public HoloCrossGui(int x, int y, int delay, float targetOpacity) {
+		super(x, y, 5, 5);
 
-        setAttachment(GuiAttachment.middleCenter);
+		setAttachment(GuiAttachment.middleCenter);
 
-        addChild(new GuiRect(0, 0, 2, 1, GuiColors.normal).setAttachment(GuiAttachment.middleLeft));
-        addChild(new GuiRect(0, 0, 3, 1, GuiColors.normal).setAttachment(GuiAttachment.middleRight));
+		addChild(new GuiRect(0, 0, 2, 1, GuiColors.normal).setAttachment(GuiAttachment.middleLeft));
+		addChild(new GuiRect(0, 0, 3, 1, GuiColors.normal).setAttachment(GuiAttachment.middleRight));
 
-        addChild(new GuiRect(0, 0, 1, 2, GuiColors.normal).setAttachment(GuiAttachment.topCenter));
-        addChild(new GuiRect(0, 0, 1, 2, GuiColors.normal).setAttachment(GuiAttachment.bottomCenter));
+		addChild(new GuiRect(0, 0, 1, 2, GuiColors.normal).setAttachment(GuiAttachment.topCenter));
+		addChild(new GuiRect(0, 0, 1, 2, GuiColors.normal).setAttachment(GuiAttachment.bottomCenter));
 
-        setOpacity(0);
-        openAnimation = new AnimationChain(
-                new KeyframeAnimation(300, this).withDelay(delay).applyTo(new Applier.Opacity(targetOpacity + 0.3f)),
-                new KeyframeAnimation(200, this).applyTo(new Applier.Opacity(targetOpacity)));
+		setOpacity(0);
+		openAnimation = new AnimationChain(
+			new KeyframeAnimation(300, this).withDelay(delay).applyTo(new Applier.Opacity(targetOpacity + 0.3f)),
+			new KeyframeAnimation(200, this).applyTo(new Applier.Opacity(targetOpacity)));
 
-        reopenAnimation = new AnimationChain(
-                new KeyframeAnimation(300, this).withDelay(delay / 10).applyTo(new Applier.Opacity(targetOpacity + 0.6f)),
-                new KeyframeAnimation(200, this).applyTo(new Applier.Opacity(targetOpacity)));
+		reopenAnimation = new AnimationChain(
+			new KeyframeAnimation(300, this).withDelay(delay / 10).applyTo(new Applier.Opacity(targetOpacity + 0.6f)),
+			new KeyframeAnimation(200, this).applyTo(new Applier.Opacity(targetOpacity)));
 
-    }
+	}
 
-    public void animateOpen() {
-        openAnimation.stop();
-        reopenAnimation.stop();
-        setOpacity(0);
-        openAnimation.start();
-    }
+	public void animateOpen() {
+		openAnimation.stop();
+		reopenAnimation.stop();
+		setOpacity(0);
+		openAnimation.start();
+	}
 
-    public void animateReopen() {
-        openAnimation.stop();
-        reopenAnimation.stop();
-        setOpacity(0);
-        reopenAnimation.start();
-    }
+	public void animateReopen() {
+		openAnimation.stop();
+		reopenAnimation.stop();
+		setOpacity(0);
+		reopenAnimation.start();
+	}
 
-    public void stopAnimations() {
-        openAnimation.stop();
-        reopenAnimation.stop();
-        setOpacity(0);
-    }
+	public void stopAnimations() {
+		openAnimation.stop();
+		reopenAnimation.stop();
+		setOpacity(0);
+	}
 }

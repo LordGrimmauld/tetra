@@ -24,79 +24,80 @@ import se.mickelus.tetra.blocks.forged.ForgedBlockCommon;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class CoreExtractorPipeBlock extends TetraBlock {
-    public static final DirectionProperty facingProp = BlockStateProperties.FACING;
-    public static final BooleanProperty poweredProp = BooleanProperty.create("powered");
+	public static final DirectionProperty facingProp = BlockStateProperties.FACING;
+	public static final BooleanProperty poweredProp = BooleanProperty.create("powered");
 
-    public static final String unlocalizedName = "extractor_pipe";
+	public static final String unlocalizedName = "extractor_pipe";
 
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static CoreExtractorPipeBlock instance;
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static CoreExtractorPipeBlock instance;
 
-    public CoreExtractorPipeBlock() {
-        super(ForgedBlockCommon.propertiesSolid);
-        setRegistryName(unlocalizedName);
+	public CoreExtractorPipeBlock() {
+		super(ForgedBlockCommon.propertiesSolid);
+		setRegistryName(unlocalizedName);
 
-        hasItem = true;
-    }
+		hasItem = true;
+	}
 
-    @Override
-    public void appendHoverText(ItemStack stack, @Nullable BlockGetter worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-        tooltip.add(ForgedBlockCommon.locationTooltip);
-    }
+	public static boolean isPowered(Level world, BlockPos pos) {
+		BlockState pipeState = world.getBlockState(pos);
+		return instance.equals(pipeState.getBlock()) && pipeState.getValue(poweredProp);
+	}
 
-    public static boolean isPowered(Level world, BlockPos pos) {
-        BlockState pipeState = world.getBlockState(pos);
-        return instance.equals(pipeState.getBlock()) && pipeState.getValue(poweredProp);
-    }
+	@Override
+	public void appendHoverText(ItemStack stack, @Nullable BlockGetter worldIn, List<Component> tooltip, TooltipFlag flagIn) {
+		tooltip.add(ForgedBlockCommon.locationTooltip);
+	}
 
-    private boolean shouldGetPower(Level world, BlockPos pos, Direction blockFacing) {
-        // iterate nearby blocks and look for a pipe that feeds power into this one, rather than having this automatically drain from the
-        // pipe opposite of this pipes facing
-        for (Direction facing : Direction.values()) {
-            if (!facing.equals(blockFacing)) {
-                BlockState adjacent = world.getBlockState(pos.relative(facing));
-                if (adjacent.getBlock().equals(this)
-                        && facing.equals(adjacent.getValue(facingProp).getOpposite())
-                        && adjacent.getValue(poweredProp)) {
-                    return true;
-                }
-            }
-        }
+	private boolean shouldGetPower(Level world, BlockPos pos, Direction blockFacing) {
+		// iterate nearby blocks and look for a pipe that feeds power into this one, rather than having this automatically drain from the
+		// pipe opposite of this pipes facing
+		for (Direction facing : Direction.values()) {
+			if (!facing.equals(blockFacing)) {
+				BlockState adjacent = world.getBlockState(pos.relative(facing));
+				if (adjacent.getBlock().equals(this)
+					&& facing.equals(adjacent.getValue(facingProp).getOpposite())
+					&& adjacent.getValue(poweredProp)) {
+					return true;
+				}
+			}
+		}
 
-        return SeepingBedrockBlock.isActive(world, pos.relative(blockFacing.getOpposite()));
-    }
+		return SeepingBedrockBlock.isActive(world, pos.relative(blockFacing.getOpposite()));
+	}
 
-    @Override
-    public void neighborChanged(BlockState state, Level world, BlockPos pos, Block fromBlock, BlockPos fromPos, boolean isMoving) {
-        boolean getsPowered = shouldGetPower(world, pos, state.getValue(facingProp));
+	@Override
+	public void neighborChanged(BlockState state, Level world, BlockPos pos, Block fromBlock, BlockPos fromPos, boolean isMoving) {
+		boolean getsPowered = shouldGetPower(world, pos, state.getValue(facingProp));
 
-        if (state.getValue(poweredProp) != getsPowered) {
-            world.setBlockAndUpdate(pos, state.setValue(poweredProp, getsPowered));
-        }
-    }
+		if (state.getValue(poweredProp) != getsPowered) {
+			world.setBlockAndUpdate(pos, state.setValue(poweredProp, getsPowered));
+		}
+	}
 
-    @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(facingProp, poweredProp);
-    }
+	@Override
+	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+		builder.add(facingProp, poweredProp);
+	}
 
-    @Nullable
-    @Override
-    public BlockState getStateForPlacement(BlockPlaceContext context) {
-        return super.getStateForPlacement(context)
-                .setValue(facingProp, context.getClickedFace())
-                .setValue(poweredProp, shouldGetPower(context.getLevel(), context.getClickedPos(), context.getClickedFace()));
-    }
+	@Nullable
+	@Override
+	public BlockState getStateForPlacement(BlockPlaceContext context) {
+		return super.getStateForPlacement(context)
+			.setValue(facingProp, context.getClickedFace())
+			.setValue(poweredProp, shouldGetPower(context.getLevel(), context.getClickedPos(), context.getClickedFace()));
+	}
 
-    @Override
-    public BlockState rotate(BlockState state, Rotation direction) {
-        return state.setValue(facingProp, direction.rotate(state.getValue(facingProp)));
-    }
+	@Override
+	public BlockState rotate(BlockState state, Rotation direction) {
+		return state.setValue(facingProp, direction.rotate(state.getValue(facingProp)));
+	}
 
-    @Override
-    public BlockState mirror(BlockState state, Mirror mirror) {
-        return state.rotate(mirror.getRotation(state.getValue(facingProp)));
-    }
+	@Override
+	public BlockState mirror(BlockState state, Mirror mirror) {
+		return state.rotate(mirror.getRotation(state.getValue(facingProp)));
+	}
 }

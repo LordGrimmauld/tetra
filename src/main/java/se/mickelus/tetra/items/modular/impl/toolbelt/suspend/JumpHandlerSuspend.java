@@ -9,33 +9,34 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import se.mickelus.tetra.TetraMod;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class JumpHandlerSuspend {
-    private final Minecraft mc;
+	private final Minecraft mc;
 
-    private KeyMapping jumpKey;
-    private boolean wasJumpKeyDown = false;
+	private final KeyMapping jumpKey;
+	private boolean wasJumpKeyDown = false;
 
-    public JumpHandlerSuspend(Minecraft mc) {
-        this.mc = mc;
-        jumpKey = mc.options.keyJump;
-    }
+	public JumpHandlerSuspend(Minecraft mc) {
+		this.mc = mc;
+		jumpKey = mc.options.keyJump;
+	}
 
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public void onKeyInput(InputEvent.KeyInputEvent event) {
-        if (mc.isWindowActive()) {
-            Player player = mc.player;
-            if (jumpKey.isDown() && !wasJumpKeyDown
-                    && !player.isOnGround() && !player.isCreative() && !player.isSpectator()) {
-                boolean isSuspended = player.hasEffect(SuspendPotionEffect.instance);
-                if (!isSuspended || player.isShiftKeyDown()) {
-                    SuspendEffect.toggleSuspend(player, !isSuspended);
-                    TetraMod.packetHandler.sendToServer(new ToggleSuspendPacket(!isSuspended));
-                }
-            }
-            wasJumpKeyDown = jumpKey.isDown();
-        }
-    }
+	@SubscribeEvent(priority = EventPriority.LOWEST)
+	public void onKeyInput(InputEvent.KeyInputEvent event) {
+		if (mc.isWindowActive()) {
+			Player player = mc.player;
+			if (jumpKey.isDown() && !wasJumpKeyDown
+				&& !player.isOnGround() && !player.isCreative() && !player.isSpectator()) {
+				boolean isSuspended = player.hasEffect(SuspendPotionEffect.instance);
+				if (!isSuspended || player.isShiftKeyDown()) {
+					SuspendEffect.toggleSuspend(player, !isSuspended);
+					TetraMod.packetHandler.sendToServer(new ToggleSuspendPacket(!isSuspended));
+				}
+			}
+			wasJumpKeyDown = jumpKey.isDown();
+		}
+	}
 
 
 }

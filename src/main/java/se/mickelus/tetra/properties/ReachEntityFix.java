@@ -18,6 +18,7 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class ReachEntityFix {
 //    @OnlyIn(Dist.CLIENT)
@@ -49,52 +50,52 @@ public class ReachEntityFix {
 //        }
 //    }
 
-    private static void raytraceTarget() {
-        Minecraft mc = Minecraft.getInstance();
-        double reach = mc.gameMode.getPickRange() - 1.5f; // subtract as default entity reach is 3
-        if (mc.hitResult != null
-                && mc.hitResult.getType() != HitResult.Type.ENTITY
-                && reach > (ForgeMod.REACH_DISTANCE.get().getDefaultValue() - 2f)) {
+	private static void raytraceTarget() {
+		Minecraft mc = Minecraft.getInstance();
+		double reach = mc.gameMode.getPickRange() - 1.5f; // subtract as default entity reach is 3
+		if (mc.hitResult != null
+			&& mc.hitResult.getType() != HitResult.Type.ENTITY
+			&& reach > (ForgeMod.REACH_DISTANCE.get().getDefaultValue() - 2f)) {
 
-            Entity entity = mc.getCameraEntity();
-            Vec3 eyePos = entity.getEyePosition(1);
-            Vec3 lookVec = entity.getViewVector(1);
-            Vec3 targetVec = eyePos.add(lookVec.x * reach, lookVec.y * reach, lookVec.z * reach);
+			Entity entity = mc.getCameraEntity();
+			Vec3 eyePos = entity.getEyePosition(1);
+			Vec3 lookVec = entity.getViewVector(1);
+			Vec3 targetVec = eyePos.add(lookVec.x * reach, lookVec.y * reach, lookVec.z * reach);
 
-            AABB traceBox = entity.getBoundingBox().expandTowards(lookVec.scale(reach)).inflate(1.0D, 1.0D, 1.0D);
+			AABB traceBox = entity.getBoundingBox().expandTowards(lookVec.scale(reach)).inflate(1.0D, 1.0D, 1.0D);
 
-            if (mc.hitResult.getType() != HitResult.Type.MISS) {
-                reach = mc.hitResult.getLocation().distanceToSqr(eyePos);
-            } else {
-                reach = reach * reach;
-            }
+			if (mc.hitResult.getType() != HitResult.Type.MISS) {
+				reach = mc.hitResult.getLocation().distanceToSqr(eyePos);
+			} else {
+				reach = reach * reach;
+			}
 
-            EntityHitResult rayTraceResult = ProjectileUtil.getEntityHitResult(entity, eyePos, targetVec, traceBox,
-                    hit -> !hit.isSpectator() && hit.isPickable(), reach);
+			EntityHitResult rayTraceResult = ProjectileUtil.getEntityHitResult(entity, eyePos, targetVec, traceBox,
+				hit -> !hit.isSpectator() && hit.isPickable(), reach);
 
-            if (rayTraceResult != null) {
-                mc.hitResult = rayTraceResult;
-                Entity hitEntity = rayTraceResult.getEntity();
-                if (hitEntity instanceof LivingEntity || hitEntity instanceof ItemFrame) {
-                    mc.crosshairPickEntity = hitEntity;
-                }
-            }
-        }
-    }
+			if (rayTraceResult != null) {
+				mc.hitResult = rayTraceResult;
+				Entity hitEntity = rayTraceResult.getEntity();
+				if (hitEntity instanceof LivingEntity || hitEntity instanceof ItemFrame) {
+					mc.crosshairPickEntity = hitEntity;
+				}
+			}
+		}
+	}
 
-    @OnlyIn(Dist.CLIENT)
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onRenderGameOverlay(RenderGameOverlayEvent.Pre event) {
-        if (event.getType() == RenderGameOverlayEvent.ElementType.CROSSHAIRS) {
-            raytraceTarget();
-        }
-    }
+	@OnlyIn(Dist.CLIENT)
+	@SubscribeEvent(priority = EventPriority.LOWEST)
+	public static void onRenderGameOverlay(RenderGameOverlayEvent.Pre event) {
+		if (event.getType() == RenderGameOverlayEvent.ElementType.CROSSHAIRS) {
+			raytraceTarget();
+		}
+	}
 
-    @OnlyIn(Dist.CLIENT)
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onClickInput(InputEvent.ClickInputEvent event) {
-        if (event.isAttack()) {
-            raytraceTarget();
-        }
-    }
+	@OnlyIn(Dist.CLIENT)
+	@SubscribeEvent(priority = EventPriority.LOWEST)
+	public static void onClickInput(InputEvent.ClickInputEvent event) {
+		if (event.isAttack()) {
+			raytraceTarget();
+		}
+	}
 }

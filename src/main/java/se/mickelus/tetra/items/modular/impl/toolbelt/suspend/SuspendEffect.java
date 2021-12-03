@@ -16,33 +16,34 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 @ParametersAreNonnullByDefault
 public class SuspendEffect {
-    private static final Set<MobEffect> enablingEffects = Stream.concat(
-            Arrays.stream(BeaconBlockEntity.BEACON_EFFECTS).flatMap(Arrays::stream),
-            Stream.of(MobEffects.CONDUIT_POWER)
-    ).collect(Collectors.toSet());
+	private static final Set<MobEffect> enablingEffects = Stream.concat(
+		Arrays.stream(BeaconBlockEntity.BEACON_EFFECTS).flatMap(Arrays::stream),
+		Stream.of(MobEffects.CONDUIT_POWER)
+	).collect(Collectors.toSet());
 
-    public static void toggleSuspend(Player entity, boolean toggleOn) {
-        if (toggleOn) {
-            if (canSuspend(entity)) {
-                Vec3 motion = entity.getDeltaMovement();
-                entity.setDeltaMovement(motion.x, 0, motion.z);
-                entity.hurtMarked = true;
-                entity.addEffect(new MobEffectInstance(SuspendPotionEffect.instance, 100, 0, false, false));
-            }
-        } else {
-            entity.removeEffect(SuspendPotionEffect.instance);
-        }
-    }
+	public static void toggleSuspend(Player entity, boolean toggleOn) {
+		if (toggleOn) {
+			if (canSuspend(entity)) {
+				Vec3 motion = entity.getDeltaMovement();
+				entity.setDeltaMovement(motion.x, 0, motion.z);
+				entity.hurtMarked = true;
+				entity.addEffect(new MobEffectInstance(SuspendPotionEffect.instance, 100, 0, false, false));
+			}
+		} else {
+			entity.removeEffect(SuspendPotionEffect.instance);
+		}
+	}
 
-    public static boolean canSuspend(Player entity) {
-        ItemStack itemStack = ToolbeltHelper.findToolbelt(entity);
-        boolean hasEffect = !itemStack.isEmpty() && ((IModularItem) itemStack.getItem()).getEffectLevel(itemStack, ItemEffect.suspendSelf) > 0;
+	public static boolean canSuspend(Player entity) {
+		ItemStack itemStack = ToolbeltHelper.findToolbelt(entity);
+		boolean hasEffect = !itemStack.isEmpty() && ((IModularItem) itemStack.getItem()).getEffectLevel(itemStack, ItemEffect.suspendSelf) > 0;
 
-        return hasEffect && entity.getActiveEffects().stream()
-                .filter(MobEffectInstance::isAmbient)
-                .map(MobEffectInstance::getEffect)
-                .anyMatch(enablingEffects::contains);
-    }
+		return hasEffect && entity.getActiveEffects().stream()
+			.filter(MobEffectInstance::isAmbient)
+			.map(MobEffectInstance::getEffect)
+			.anyMatch(enablingEffects::contains);
+	}
 }

@@ -5,23 +5,24 @@ import se.mickelus.tetra.module.data.MaterialData;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class HoloMaterialIntegrityStatGui extends HoloMaterialStatGui {
 
-    public HoloMaterialIntegrityStatGui(int x, int y) {
-        super(x, y, "integrity", LabelGetterBasic.integerLabel, data -> data.integrityGain);
+	public HoloMaterialIntegrityStatGui(int x, int y) {
+		super(x, y, "integrity", LabelGetterBasic.integerLabel, data -> data.integrityGain);
 
-    }
+	}
 
-    public void update(MaterialData current, MaterialData preview) {
-        String gain = valueFormatter.getLabelMerged(current.integrityGain, preview.integrityGain);
-        String cost = valueFormatter.getLabelMerged(current.integrityCost, preview.integrityCost);
+	public void update(MaterialData current, MaterialData preview) {
+		String gain = valueFormatter.getLabelMerged(current.integrityGain, preview.integrityGain);
+		String cost = valueFormatter.getLabelMerged(current.integrityCost, preview.integrityCost);
 
-        value.setString(gain + " " + cost);
-    }
+		value.setString(gain + " " + cost);
+	}
 
-    @Override
-    public List<String> getTooltipLines() {
-        return hasFocus() ? tooltip : null;
-    }
+	@Override
+	public List<String> getTooltipLines() {
+		return hasFocus() ? tooltip : null;
+	}
 }

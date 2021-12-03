@@ -34,7 +34,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.common.ToolAction;
 import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.ObjectHolder;
@@ -56,172 +55,165 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+
 @ParametersAreNonnullByDefault
 public class ChthonicExtractorBlock extends TetraBlock implements IInteractiveBlock, EntityBlock {
-    public static final String unlocalizedName = "chthonic_extractor";
+	public static final String unlocalizedName = "chthonic_extractor";
+	public static final String description = "block.tetra.chthonic_extractor.description";
+	public static final String extendedDescription = "block.tetra.chthonic_extractor.description_extended";
+	public static final int maxDamage = 1024;
+	protected static final VoxelShape shape = Shapes.or(
+		Block.box(7.0D, 0.0D, 7.0D, 9.0D, 16.0D, 9.0D),
+		Block.box(6.0D, 15.0D, 6.0D, 10.0D, 16.0D, 10.0D));
+	static final BlockInteraction[] interactions = new BlockInteraction[]{
+		new BlockInteraction(TetraToolActions.hammer, 4, Direction.UP, 0, 4, 0, 4,
+			PropertyMatcher.any, (world, pos, blockState, player, hand, hitFace) -> hit(world, pos, player, hand)),
+		new BlockInteraction(TetraToolActions.hammer, 5, Direction.UP, 0, 4, 0, 4,
+			PropertyMatcher.any, (world, pos, blockState, player, hand, hitFace) -> hit(world, pos, player, hand)),
+		new BlockInteraction(TetraToolActions.hammer, 6, Direction.UP, 0, 4, 0, 4,
+			PropertyMatcher.any, (world, pos, blockState, player, hand, hitFace) -> hit(world, pos, player, hand)),
+		new BlockInteraction(TetraToolActions.hammer, 7, Direction.UP, 0, 4, 0, 4,
+			PropertyMatcher.any, (world, pos, blockState, player, hand, hitFace) -> hit(world, pos, player, hand))
+	};
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static ChthonicExtractorBlock instance;
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static Item item;
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName + "_used")
+	public static Item usedItem;
 
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static ChthonicExtractorBlock instance;
+	public ChthonicExtractorBlock() {
+		super(Block.Properties.of(ForgedBlockCommon.forgedMaterialNotSolid, MaterialColor.COLOR_GRAY)
+			.sound(SoundType.NETHERITE_BLOCK)
+			.strength(4F, 2400.0F));
 
-    public static final String description = "block.tetra.chthonic_extractor.description";
-    public static final String extendedDescription = "block.tetra.chthonic_extractor.description_extended";
+		setRegistryName(unlocalizedName);
 
-    static final BlockInteraction[] interactions = new BlockInteraction[] {
-            new BlockInteraction(TetraToolActions.hammer, 4, Direction.UP, 0, 4, 0, 4,
-                    PropertyMatcher.any, (world, pos, blockState, player, hand, hitFace) -> hit(world, pos, player, hand)),
-            new BlockInteraction(TetraToolActions.hammer, 5, Direction.UP, 0, 4, 0, 4,
-                    PropertyMatcher.any, (world, pos, blockState, player, hand, hitFace) -> hit(world, pos, player, hand)),
-            new BlockInteraction(TetraToolActions.hammer, 6, Direction.UP, 0, 4, 0, 4,
-                    PropertyMatcher.any, (world, pos, blockState, player, hand, hitFace) -> hit(world, pos, player, hand)),
-            new BlockInteraction(TetraToolActions.hammer, 7, Direction.UP, 0, 4, 0, 4,
-                    PropertyMatcher.any, (world, pos, blockState, player, hand, hitFace) -> hit(world, pos, player, hand))
-    };
+		hasItem = true;
+	}
 
-    protected static final VoxelShape shape = Shapes.or(
-            Block.box(7.0D, 0.0D, 7.0D, 9.0D, 16.0D, 9.0D),
-            Block.box(6.0D, 15.0D, 6.0D, 10.0D, 16.0D, 10.0D));
+	private static boolean hit(Level world, BlockPos pos, @Nullable Player playerEntity, InteractionHand hand) {
+		if (ConfigHandler.enableExtractor.get()) {
+			int amount = Optional.ofNullable(playerEntity)
+				.map(player -> player.getItemInHand(hand))
+				.filter(itemStack -> itemStack.getItem() instanceof IToolProvider)
+				.map(itemStack -> ((IToolProvider) itemStack.getItem()).getToolEfficiency(itemStack, TetraToolActions.hammer))
+				.map(Math::round)
+				.orElse(4);
 
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static Item item;
+			TileEntityOptional.from(world, pos, ChthonicExtractorTile.class).ifPresent(tile -> tile.damage(amount));
+			FracturedBedrockBlock.pierce(world, pos.below(), amount);
+			world.playSound(playerEntity, pos, SoundEvents.NETHERITE_BLOCK_HIT, SoundSource.PLAYERS, 0.8f, 0.5f);
+			return true;
+		}
+		return false;
+	}
 
+	private static int getTier(Level world, BlockPos pos) {
+		return TileEntityOptional.from(world, pos.below(), FracturedBedrockTile.class)
+			.map(FracturedBedrockTile::getProjectedTier)
+			.orElseGet(() -> FracturedBedrockBlock.canPierce(world, pos.below()) ? 0 : -1);
+	}
 
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName + "_used")
-    public static Item usedItem;
+	@Override
+	public void clientInit() {
+		EntityRenderers.register(ExtractorProjectileEntity.type, ExtractorProjectileRenderer::new);
+	}
 
-    public static final int maxDamage = 1024;
+	@Override
+	public void registerItem(IForgeRegistry<Item> registry) {
+		Item usedItem = new BlockItem(this, new Item.Properties()
+			.durability(maxDamage))
+			.setRegistryName(getRegistryName() + "_used");
+		registry.register(usedItem);
 
-    public ChthonicExtractorBlock() {
-        super(Block.Properties.of(ForgedBlockCommon.forgedMaterialNotSolid, MaterialColor.COLOR_GRAY)
-                .sound(SoundType.NETHERITE_BLOCK)
-                .strength(4F, 2400.0F));
+		Item item = new BlockItem(this, new Item.Properties()
+			.tab(TetraItemGroup.instance)
+			.stacksTo(64))
+			.setRegistryName(getRegistryName());
+		registry.register(item);
+	}
 
-        setRegistryName(unlocalizedName);
+	@Override
+	public void appendHoverText(final ItemStack stack, @Nullable final BlockGetter world, final List<Component> tooltip, final TooltipFlag advanced) {
+		tooltip.add(new TranslatableComponent(description).withStyle(ChatFormatting.GRAY));
+		tooltip.add(new TextComponent(" "));
 
-        hasItem = true;
-    }
+		if (Screen.hasShiftDown()) {
+			tooltip.add(Tooltips.expanded);
+			tooltip.add(new TextComponent(" "));
+			tooltip.add(ForgedBlockCommon.locationTooltip);
+			tooltip.add(new TextComponent(" "));
+			tooltip.add(new TranslatableComponent(extendedDescription).withStyle(ChatFormatting.GRAY));
+		} else {
+			tooltip.add(Tooltips.expand);
+		}
+	}
 
-    @Override
-    public void clientInit() {
-        EntityRenderers.register(ExtractorProjectileEntity.type, ExtractorProjectileRenderer::new);
-    }
+	@Override
+	public void setPlacedBy(Level world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
+		TileEntityOptional.from(world, pos, ChthonicExtractorTile.class)
+			.ifPresent(tile -> tile.setDamage(stack.getDamageValue()));
+	}
 
-    @Override
-    public void registerItem(IForgeRegistry<Item> registry) {
-        Item usedItem = new BlockItem(this, new Item.Properties()
-                .durability(maxDamage))
-                .setRegistryName(getRegistryName() + "_used");
-        registry.register(usedItem);
+	public void playerWillDestroy(Level world, BlockPos pos, BlockState state, Player player) {
+		TileEntityOptional.from(world, pos, ChthonicExtractorTile.class)
+			.ifPresent(tile -> {
+				ItemStack itemStack = getItemStack(tile);
 
-        Item item = new BlockItem(this, new Item.Properties()
-                .tab(TetraItemGroup.instance)
-                .stacksTo(64))
-                .setRegistryName(getRegistryName());
-        registry.register(item);
-    }
+				ItemEntity itemEntity = new ItemEntity(world, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, itemStack);
+				itemEntity.setDefaultPickUpDelay();
+				world.addFreshEntity(itemEntity);
+			});
 
-    @Override
-    public void appendHoverText(final ItemStack stack, @Nullable final BlockGetter world, final List<Component> tooltip, final TooltipFlag advanced) {
-        tooltip.add(new TranslatableComponent(description).withStyle(ChatFormatting.GRAY));
-        tooltip.add(new TextComponent(" "));
+		super.playerWillDestroy(world, pos, state, player);
+	}
 
-        if (Screen.hasShiftDown()) {
-            tooltip.add(Tooltips.expanded);
-            tooltip.add(new TextComponent(" "));
-            tooltip.add(ForgedBlockCommon.locationTooltip);
-            tooltip.add(new TextComponent(" "));
-            tooltip.add(new TranslatableComponent(extendedDescription).withStyle(ChatFormatting.GRAY));
-        } else {
-            tooltip.add(Tooltips.expand);
-        }
-    }
+	public List<ItemStack> getDrops(BlockState state, LootContext.Builder builder) {
+		BlockEntity tile = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
+		if (tile instanceof ChthonicExtractorTile) {
+			builder = builder.withDynamicDrop(new ResourceLocation("tetra:cthtonic_drop"),
+				(context, stackConsumer) -> stackConsumer.accept(getItemStack((ChthonicExtractorTile) tile)));
+		}
 
-    private static boolean hit(Level world, BlockPos pos, @Nullable Player playerEntity, InteractionHand hand) {
-        if (ConfigHandler.enableExtractor.get()) {
-            int amount = Optional.ofNullable(playerEntity)
-                    .map(player -> player.getItemInHand(hand))
-                    .filter(itemStack -> itemStack.getItem() instanceof IToolProvider)
-                    .map(itemStack -> ((IToolProvider) itemStack.getItem()).getToolEfficiency(itemStack, TetraToolActions.hammer))
-                    .map(Math::round)
-                    .orElse(4);
+		return super.getDrops(state, builder);
+	}
 
-            TileEntityOptional.from(world, pos, ChthonicExtractorTile.class).ifPresent(tile -> tile.damage(amount));
-            FracturedBedrockBlock.pierce(world, pos.below(), amount);
-            world.playSound(playerEntity, pos, SoundEvents.NETHERITE_BLOCK_HIT, SoundSource.PLAYERS, 0.8f, 0.5f);
-            return true;
-        }
-        return false;
-    }
+	private ItemStack getItemStack(ChthonicExtractorTile tile) {
+		if (tile.getDamage() > 0) {
+			ItemStack itemStack = new ItemStack(usedItem);
+			itemStack.setDamageValue(tile.getDamage());
+			return itemStack;
+		}
 
-    private static int getTier(Level world, BlockPos pos) {
-        return TileEntityOptional.from(world, pos.below(), FracturedBedrockTile.class)
-                .map(FracturedBedrockTile::getProjectedTier)
-                .orElseGet(() -> FracturedBedrockBlock.canPierce(world, pos.below()) ? 0 : -1);
-    }
+		return new ItemStack(item);
+	}
 
-    @Override
-    public void setPlacedBy(Level world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
-        TileEntityOptional.from(world, pos, ChthonicExtractorTile.class)
-                .ifPresent(tile -> tile.setDamage(stack.getDamageValue()));
-    }
+	@Override
+	public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
+		return shape;
+	}
 
-    public void playerWillDestroy(Level world, BlockPos pos, BlockState state, Player player) {
-        TileEntityOptional.from(world, pos, ChthonicExtractorTile.class)
-                .ifPresent(tile -> {
-                    ItemStack itemStack = getItemStack(tile);
+	@Override
+	public BlockInteraction[] getPotentialInteractions(Level world, BlockPos pos, BlockState blockState, Direction face, Collection<ToolAction> tools) {
+		int tier = getTier(world, pos);
 
-                    ItemEntity itemEntity = new ItemEntity(world, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, itemStack);
-                    itemEntity.setDefaultPickUpDelay();
-                    world.addFreshEntity(itemEntity);
-                });
+		// todo: this could be less hacky
+		if (ConfigHandler.enableExtractor.get() && tier >= 0 && face == Direction.UP) {
+			return new BlockInteraction[]{interactions[Math.min(tier, interactions.length - 1)]};
+		}
 
-        super.playerWillDestroy(world, pos, state, player);
-    }
+		return new BlockInteraction[0];
+	}
 
-    public List<ItemStack> getDrops(BlockState state, LootContext.Builder builder) {
-        BlockEntity tile = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
-        if (tile instanceof ChthonicExtractorTile) {
-            builder = builder.withDynamicDrop(new ResourceLocation("tetra:cthtonic_drop"),
-                    (context, stackConsumer) -> stackConsumer.accept(getItemStack((ChthonicExtractorTile) tile)));
-        }
+	@Override
+	public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+		return BlockInteraction.attemptInteraction(world, state, pos, player, hand, hit);
+	}
 
-        return super.getDrops(state, builder);
-    }
-
-    private ItemStack getItemStack(ChthonicExtractorTile tile) {
-        if (tile.getDamage() > 0) {
-            ItemStack itemStack = new ItemStack(usedItem);
-            itemStack.setDamageValue(tile.getDamage());
-            return itemStack;
-        }
-
-        return new ItemStack(item);
-    }
-
-    @Override
-    public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
-        return shape;
-    }
-
-    @Override
-    public BlockInteraction[] getPotentialInteractions(Level world, BlockPos pos, BlockState blockState, Direction face, Collection<ToolAction> tools) {
-        int tier = getTier(world, pos);
-
-        // todo: this could be less hacky
-        if (ConfigHandler.enableExtractor.get() && tier >= 0 && face == Direction.UP) {
-            return new BlockInteraction[] { interactions[Math.min(tier, interactions.length - 1)] };
-        }
-
-        return new BlockInteraction[0];
-    }
-
-    @Override
-    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-        return BlockInteraction.attemptInteraction(world, state, pos, player, hand, hit);
-    }
-
-    @org.jetbrains.annotations.Nullable
-    @Override
-    public BlockEntity newBlockEntity(BlockPos p_153215_, BlockState p_153216_) {
-        return new ChthonicExtractorTile(p_153215_, p_153216_);
-    }
+	@org.jetbrains.annotations.Nullable
+	@Override
+	public BlockEntity newBlockEntity(BlockPos p_153215_, BlockState p_153216_) {
+		return new ChthonicExtractorTile(p_153215_, p_153216_);
+	}
 }

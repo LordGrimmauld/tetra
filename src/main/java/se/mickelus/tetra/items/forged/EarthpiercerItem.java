@@ -20,30 +20,31 @@ import se.mickelus.tetra.items.TetraItemGroup;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class EarthpiercerItem extends TetraItem {
-    private static final String unlocalizedName = "earthpiercer";
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static EarthpiercerItem instance;
+	private static final String unlocalizedName = "earthpiercer";
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static EarthpiercerItem instance;
 
-    public EarthpiercerItem() {
-        super(new Properties().tab(TetraItemGroup.instance));
-        setRegistryName(unlocalizedName);
-    }
+	public EarthpiercerItem() {
+		super(new Properties().tab(TetraItemGroup.instance));
+		setRegistryName(unlocalizedName);
+	}
 
-    @OnlyIn(Dist.CLIENT)
-    @Override
-    public void appendHoverText(ItemStack itemStack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(ForgedBlockCommon.unsettlingTooltip);
-        tooltip.add(new TextComponent(" "));
+	@OnlyIn(Dist.CLIENT)
+	@Override
+	public void appendHoverText(ItemStack itemStack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
+		tooltip.add(ForgedBlockCommon.unsettlingTooltip);
+		tooltip.add(new TextComponent(" "));
 
-        if (Screen.hasShiftDown()) {
-            tooltip.add(Tooltips.expanded);
-            tooltip.add(new TranslatableComponent("item.tetra.earthpiercer.description").withStyle(ChatFormatting.GRAY));
-            tooltip.add(new TextComponent(" "));
-            tooltip.add(ForgedBlockCommon.locationTooltip);
-        } else {
-            tooltip.add(Tooltips.expand);
-        }
-    }
+		if (Screen.hasShiftDown()) {
+			tooltip.add(Tooltips.expanded);
+			tooltip.add(new TranslatableComponent("item.tetra.earthpiercer.description").withStyle(ChatFormatting.GRAY));
+			tooltip.add(new TextComponent(" "));
+			tooltip.add(ForgedBlockCommon.locationTooltip);
+		} else {
+			tooltip.add(Tooltips.expand);
+		}
+	}
 }

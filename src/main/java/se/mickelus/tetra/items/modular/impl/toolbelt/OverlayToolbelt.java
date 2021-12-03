@@ -22,150 +22,149 @@ import se.mickelus.tetra.items.modular.impl.toolbelt.gui.OverlayGuiToolbelt;
 import se.mickelus.tetra.items.modular.impl.toolbelt.inventory.ToolbeltSlotType;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class OverlayToolbelt {
 
-    public static OverlayToolbelt instance;
+	public static final String bindingGroup = "tetra.toolbelt.binding.group";
+	public static OverlayToolbelt instance;
+	private final Minecraft mc;
+	public KeyMapping accessBinding;
+	public KeyMapping restockBinding;
+	public KeyMapping openBinding;
 
-    private final Minecraft mc;
+	private long openTime = -1;
 
-    public static final String bindingGroup = "tetra.toolbelt.binding.group";
+	// due to gui visibility tricks, let's use this to keep track of when we should show or hide the gui
+	private boolean isActive = false;
 
-    public KeyMapping accessBinding;
-    public KeyMapping restockBinding;
-    public KeyMapping openBinding;
+	private final OverlayGuiToolbelt gui;
 
-    private long openTime = -1;
+	public OverlayToolbelt(Minecraft mc) {
+		this.mc = mc;
 
-    // due to gui visibility tricks, let's use this to keep track of when we should show or hide the gui
-    private boolean isActive = false;
+		gui = new OverlayGuiToolbelt(mc);
 
-    private OverlayGuiToolbelt gui;
+		accessBinding = new KeyMapping("tetra.toolbelt.binding.access", KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM,
+			GLFW.GLFW_KEY_B, bindingGroup);
+		restockBinding = new KeyMapping("tetra.toolbelt.binding.restock", KeyConflictContext.IN_GAME, KeyModifier.SHIFT,
+			InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_B, bindingGroup);
+		openBinding = new KeyMapping("tetra.toolbelt.binding.open", KeyConflictContext.IN_GAME, KeyModifier.ALT,
+			InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_B, bindingGroup);
 
-    public OverlayToolbelt(Minecraft mc) {
-        this.mc = mc;
+		ClientRegistry.registerKeyBinding(accessBinding);
+		ClientRegistry.registerKeyBinding(restockBinding);
+		ClientRegistry.registerKeyBinding(openBinding);
 
-        gui = new OverlayGuiToolbelt(mc);
+		instance = this;
+	}
 
-        accessBinding = new KeyMapping("tetra.toolbelt.binding.access", KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM,
-                GLFW.GLFW_KEY_B, bindingGroup);
-        restockBinding = new KeyMapping("tetra.toolbelt.binding.restock", KeyConflictContext.IN_GAME, KeyModifier.SHIFT,
-                InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_B, bindingGroup);
-        openBinding = new KeyMapping("tetra.toolbelt.binding.open", KeyConflictContext.IN_GAME, KeyModifier.ALT,
-                InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_B, bindingGroup);
+	@SubscribeEvent
+	public void onKeyInput(InputEvent.KeyInputEvent event) {
+		if (restockBinding.isDown()) {
+			equipToolbeltItem(ToolbeltSlotType.quickslot, -1, InteractionHand.OFF_HAND);
+		} else if (openBinding.isDown()) {
+			openToolbelt();
+		} else if (accessBinding.isDown() && mc.isWindowActive() && !isActive) {
+			showView();
+		}
+	}
 
-        ClientRegistry.registerKeyBinding(accessBinding);
-        ClientRegistry.registerKeyBinding(restockBinding);
-        ClientRegistry.registerKeyBinding(openBinding);
+	@SubscribeEvent(priority = EventPriority.NORMAL)
+	public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
 
-        instance = this;
-    }
+		if (event.getType() != RenderGameOverlayEvent.ElementType.HOTBAR) {
+			return;
+		}
 
-    @SubscribeEvent
-    public void onKeyInput(InputEvent.KeyInputEvent event) {
-        if (restockBinding.isDown()) {
-            equipToolbeltItem(ToolbeltSlotType.quickslot, -1, InteractionHand.OFF_HAND);
-        } else if (openBinding.isDown()) {
-            openToolbelt();
-        } else if (accessBinding.isDown() && mc.isWindowActive() && !isActive) {
-            showView();
-        }
-    }
+		if (!accessBinding.isDown() && isActive) {
+			hideView();
+		}
 
-    @SubscribeEvent(priority = EventPriority.NORMAL)
-    public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
+		gui.draw();
+	}
 
-        if (event.getType() != RenderGameOverlayEvent.ElementType.HOTBAR) {
-            return;
-        }
+	private void showView() {
+		boolean canOpen = updateGuiData();
+		if (canOpen) {
+			mc.mouseHandler.releaseMouse();
+			isActive = true;
+			openTime = System.currentTimeMillis();
+		}
+	}
 
-        if (!accessBinding.isDown() && isActive) {
-            hideView();
-        }
+	private void hideView() {
+		gui.setVisible(false);
+		mc.mouseHandler.grabMouse();
+		isActive = false;
 
-        gui.draw();
-    }
+		int focusIndex = findIndex();
+		if (focusIndex != -1) {
+			equipToolbeltItem(findSlotType(), focusIndex, getHand());
+		} else if (System.currentTimeMillis() - openTime < 500) {
+			quickEquip();
+		}
+	}
 
-    private void showView() {
-        boolean canOpen = updateGuiData();
-        if (canOpen) {
-            mc.mouseHandler.releaseMouse();
-            isActive = true;
-            openTime = System.currentTimeMillis();
-        }
-    }
+	private void equipToolbeltItem(ToolbeltSlotType slotType, int toolbeltItemIndex, InteractionHand hand) {
+		EquipToolbeltItemPacket packet = new EquipToolbeltItemPacket(slotType, toolbeltItemIndex, hand);
+		TetraMod.packetHandler.sendToServer(packet);
+		if (toolbeltItemIndex > -1) {
+			ToolbeltHelper.equipItemFromToolbelt(mc.player, slotType, toolbeltItemIndex, hand);
+		} else {
+			boolean storeItemSuccess = ToolbeltHelper.storeItemInToolbelt(mc.player);
+			if (!storeItemSuccess) {
+				mc.player.displayClientMessage(new TranslatableComponent("tetra.toolbelt.full"), true);
+			}
+		}
+	}
 
-    private void hideView() {
-        gui.setVisible(false);
-        mc.mouseHandler.grabMouse();
-        isActive = false;
+	private void quickEquip() {
+		if (mc.hitResult.getType() == HitResult.Type.BLOCK) {
+			BlockHitResult raytrace = (BlockHitResult) mc.hitResult;
+			BlockState blockState = mc.level.getBlockState(raytrace.getBlockPos());
+			int index = ToolbeltHelper.getQuickAccessSlotIndex(mc.player, mc.hitResult, blockState);
 
-        int focusIndex = findIndex();
-        if (focusIndex != -1) {
-            equipToolbeltItem(findSlotType(), focusIndex, getHand());
-        } else if (System.currentTimeMillis() - openTime < 500) {
-            quickEquip();
-        }
-    }
+			if (index > -1) {
+				equipToolbeltItem(ToolbeltSlotType.quickslot, index, InteractionHand.MAIN_HAND);
+			}
+		}
+	}
 
-    private void equipToolbeltItem(ToolbeltSlotType slotType, int toolbeltItemIndex, InteractionHand hand) {
-        EquipToolbeltItemPacket packet = new EquipToolbeltItemPacket(slotType, toolbeltItemIndex, hand);
-        TetraMod.packetHandler.sendToServer(packet);
-        if (toolbeltItemIndex > -1) {
-            ToolbeltHelper.equipItemFromToolbelt(mc.player, slotType, toolbeltItemIndex, hand);
-        } else {
-            boolean storeItemSuccess = ToolbeltHelper.storeItemInToolbelt(mc.player);
-            if (!storeItemSuccess) {
-                mc.player.displayClientMessage(new TranslatableComponent("tetra.toolbelt.full"), true);
-            }
-        }
-    }
+	/**
+	 * Requests the server to open the toolbelt container UI
+	 *
+	 * @return true if the player has a toolbelt
+	 */
+	private boolean openToolbelt() {
+		ItemStack itemStack = ToolbeltHelper.findToolbelt(mc.player);
+		if (!itemStack.isEmpty()) {
+			TetraMod.packetHandler.sendToServer(new OpenToolbeltItemPacket());
+		}
 
-    private void quickEquip() {
-        if (mc.hitResult.getType() == HitResult.Type.BLOCK) {
-            BlockHitResult raytrace = (BlockHitResult) mc.hitResult;
-            BlockState blockState = mc.level.getBlockState(raytrace.getBlockPos());
-            int index = ToolbeltHelper.getQuickAccessSlotIndex(mc.player, mc.hitResult, blockState);
+		return !itemStack.isEmpty();
+	}
 
-            if (index > -1) {
-                equipToolbeltItem(ToolbeltSlotType.quickslot, index, InteractionHand.MAIN_HAND);
-            }
-        }
-    }
+	private boolean updateGuiData() {
+		ItemStack itemStack = ToolbeltHelper.findToolbelt(mc.player);
+		if (!itemStack.isEmpty()) {
+			gui.setInventories(itemStack);
+			gui.setVisible(true);
+			return true;
+		}
 
-    /**
-     * Requests the server to open the toolbelt container UI
-     * @return true if the player has a toolbelt
-     */
-    private boolean openToolbelt() {
-        ItemStack itemStack = ToolbeltHelper.findToolbelt(mc.player);
-        if (!itemStack.isEmpty()) {
-            TetraMod.packetHandler.sendToServer(new OpenToolbeltItemPacket());
-        }
+		return false;
+	}
 
-        return !itemStack.isEmpty();
-    }
+	private int findIndex() {
+		return gui.getFocusIndex();
+	}
 
-    private boolean updateGuiData() {
-        ItemStack itemStack = ToolbeltHelper.findToolbelt(mc.player);
-        if (!itemStack.isEmpty()) {
-            gui.setInventories(itemStack);
-            gui.setVisible(true);
-            return true;
-        }
+	private InteractionHand getHand() {
+		return gui.getFocusHand();
+	}
 
-        return false;
-    }
-
-    private int findIndex() {
-        return gui.getFocusIndex();
-    }
-
-    private InteractionHand getHand() {
-        return gui.getFocusHand();
-    }
-
-    private ToolbeltSlotType findSlotType() {
-        return gui.getFocusType();
-    }
+	private ToolbeltSlotType findSlotType() {
+		return gui.getFocusType();
+	}
 }

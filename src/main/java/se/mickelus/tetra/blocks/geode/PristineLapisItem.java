@@ -16,25 +16,26 @@ import se.mickelus.tetra.items.TetraItemGroup;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class PristineLapisItem extends TetraItem {
-    private static final String unlocalizedName = "pristine_lapis";
+	private static final String unlocalizedName = "pristine_lapis";
 
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static PristineLapisItem instance;
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static PristineLapisItem instance;
 
-    public PristineLapisItem() {
-        super(new Properties().tab(TetraItemGroup.instance));
-        setRegistryName(unlocalizedName);
-    }
+	public PristineLapisItem() {
+		super(new Properties().tab(TetraItemGroup.instance));
+		setRegistryName(unlocalizedName);
+	}
 
-    @Override
-    public void appendHoverText(ItemStack itemStack, @Nullable Level world, List<Component> tooltip, TooltipFlag advanced) {
-        if (Screen.hasShiftDown()) {
-            tooltip.add(Tooltips.expanded);
-            tooltip.add(new TranslatableComponent("item.tetra.pristine_gem.description").withStyle(ChatFormatting.GRAY));
-        } else {
-            tooltip.add(Tooltips.expand);
-        }
-    }
+	@Override
+	public void appendHoverText(ItemStack itemStack, @Nullable Level world, List<Component> tooltip, TooltipFlag advanced) {
+		if (Screen.hasShiftDown()) {
+			tooltip.add(Tooltips.expanded);
+			tooltip.add(new TranslatableComponent("item.tetra.pristine_gem.description").withStyle(ChatFormatting.GRAY));
+		} else {
+			tooltip.add(Tooltips.expand);
+		}
+	}
 }

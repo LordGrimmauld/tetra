@@ -19,158 +19,160 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Stream;
+
 @ParametersAreNonnullByDefault
 public class CleanseSchematic implements UpgradeSchematic {
-    private static final String localizationPrefix = TetraMod.MOD_ID + "/schematic/";
-    private static final String key = "cleanse";
+	private static final String localizationPrefix = TetraMod.MOD_ID + "/schematic/";
+	private static final String key = "cleanse";
 
-    private static final String nameSuffix = ".name";
-    private static final String descriptionSuffix = ".description";
-    private static final String slotLabel = "item.minecraft.lapis_lazuli";
+	private static final String nameSuffix = ".name";
+	private static final String descriptionSuffix = ".description";
+	private static final String slotLabel = "item.minecraft.lapis_lazuli";
 
-    private GlyphData glyph = new GlyphData("textures/gui/workbench.png", 80, 32);
+	private final GlyphData glyph = new GlyphData("textures/gui/workbench.png", 80, 32);
 
-    public CleanseSchematic() { }
+	public CleanseSchematic() {
+	}
 
-    @Override
-    public String getKey() {
-        return key;
-    }
+	@Override
+	public String getKey() {
+		return key;
+	}
 
-    @Override
-    public String getName() {
-        return I18n.get(localizationPrefix + key + nameSuffix);
-    }
+	@Override
+	public String getName() {
+		return I18n.get(localizationPrefix + key + nameSuffix);
+	}
 
-    @Override
-    public String getDescription(ItemStack itemStack) {
-        return I18n.get(localizationPrefix + key + descriptionSuffix);
-    }
+	@Override
+	public String getDescription(ItemStack itemStack) {
+		return I18n.get(localizationPrefix + key + descriptionSuffix);
+	}
 
-    @Override
-    public int getNumMaterialSlots() {
-        return 1;
-    }
+	@Override
+	public int getNumMaterialSlots() {
+		return 1;
+	}
 
-    @Override
-    public String getSlotName(final ItemStack itemStack, final int index) {
-        return I18n.get(slotLabel);
-    }
+	@Override
+	public String getSlotName(final ItemStack itemStack, final int index) {
+		return I18n.get(slotLabel);
+	}
 
-    @Override
-    public ItemStack[] getSlotPlaceholders(ItemStack itemStack, int index) {
-        return new ItemStack[] {Items.LAPIS_LAZULI.getDefaultInstance()};
-    }
+	@Override
+	public ItemStack[] getSlotPlaceholders(ItemStack itemStack, int index) {
+		return new ItemStack[]{Items.LAPIS_LAZULI.getDefaultInstance()};
+	}
 
-    @Override
-    public int getRequiredQuantity(ItemStack itemStack, int index, ItemStack materialStack) {
-        return 1;
-    }
+	@Override
+	public int getRequiredQuantity(ItemStack itemStack, int index, ItemStack materialStack) {
+		return 1;
+	}
 
-    @Override
-    public boolean acceptsMaterial(ItemStack itemStack, String itemSlot, int index, ItemStack materialStack) {
-        return materialStack.is(Tags.Items.GEMS_LAPIS);
-    }
+	@Override
+	public boolean acceptsMaterial(ItemStack itemStack, String itemSlot, int index, ItemStack materialStack) {
+		return materialStack.is(Tags.Items.GEMS_LAPIS);
+	}
 
-    @Override
-    public boolean isMaterialsValid(ItemStack itemStack, String itemSlot, ItemStack[] materials) {
-        return acceptsMaterial(itemStack, itemSlot, 0, materials[0]);
-    }
+	@Override
+	public boolean isMaterialsValid(ItemStack itemStack, String itemSlot, ItemStack[] materials) {
+		return acceptsMaterial(itemStack, itemSlot, 0, materials[0]);
+	}
 
-    @Override
-    public boolean isApplicableForItem(ItemStack itemStack) {
-        return true;
-    }
+	@Override
+	public boolean isApplicableForItem(ItemStack itemStack) {
+		return true;
+	}
 
-    @Override
-    public boolean isApplicableForSlot(String slot, ItemStack targetStack) {
-        String[] destabilizationKeys = DestabilizationEffect.getKeys();
+	@Override
+	public boolean isApplicableForSlot(String slot, ItemStack targetStack) {
+		String[] destabilizationKeys = DestabilizationEffect.getKeys();
 
-        return CastOptional.cast(targetStack.getItem(), IModularItem.class)
-                .map(item -> item.getModuleFromSlot(targetStack, slot))
-                .filter(module -> module instanceof ItemModuleMajor)
-                .map(module -> (ItemModuleMajor) module)
-                .map(module -> Arrays.stream(module.getImprovements(targetStack)))
-                .orElse(Stream.empty())
-                .anyMatch(improvement -> ArrayUtils.contains(destabilizationKeys, improvement.key));
-    }
+		return CastOptional.cast(targetStack.getItem(), IModularItem.class)
+			.map(item -> item.getModuleFromSlot(targetStack, slot))
+			.filter(module -> module instanceof ItemModuleMajor)
+			.map(module -> (ItemModuleMajor) module)
+			.map(module -> Arrays.stream(module.getImprovements(targetStack)))
+			.orElse(Stream.empty())
+			.anyMatch(improvement -> ArrayUtils.contains(destabilizationKeys, improvement.key));
+	}
 
-    @Override
-    public boolean canApplyUpgrade(Player player, ItemStack itemStack, ItemStack[] materials, String slot, Map<ToolAction, Integer> availableTools) {
-        return isMaterialsValid(itemStack, slot, materials)
-                && (player.isCreative() || player.experienceLevel >= getExperienceCost(itemStack, materials, slot));
-    }
+	@Override
+	public boolean canApplyUpgrade(Player player, ItemStack itemStack, ItemStack[] materials, String slot, Map<ToolAction, Integer> availableTools) {
+		return isMaterialsValid(itemStack, slot, materials)
+			&& (player.isCreative() || player.experienceLevel >= getExperienceCost(itemStack, materials, slot));
+	}
 
-    @Override
-    public boolean isIntegrityViolation(Player player, ItemStack itemStack, ItemStack[] materials, String slot) {
-        return false;
-    }
+	@Override
+	public boolean isIntegrityViolation(Player player, ItemStack itemStack, ItemStack[] materials, String slot) {
+		return false;
+	}
 
-    @Override
-    public ItemStack applyUpgrade(ItemStack itemStack, ItemStack[] materials, boolean consumeMaterials, String slot, Player player) {
-        ItemStack upgradedStack = itemStack.copy();
+	@Override
+	public ItemStack applyUpgrade(ItemStack itemStack, ItemStack[] materials, boolean consumeMaterials, String slot, Player player) {
+		ItemStack upgradedStack = itemStack.copy();
 
-        String[] destabilizationKeys = DestabilizationEffect.getKeys();
+		String[] destabilizationKeys = DestabilizationEffect.getKeys();
 
-        CastOptional.cast(itemStack.getItem(), IModularItem.class)
-                .map(item -> item.getModuleFromSlot(itemStack, slot))
-                .filter(module -> module instanceof ItemModuleMajor)
-                .map(module -> (ItemModuleMajor) module)
-                .ifPresent(module -> Arrays.stream(destabilizationKeys).forEach(key -> module.removeImprovement(upgradedStack, key)));
+		CastOptional.cast(itemStack.getItem(), IModularItem.class)
+			.map(item -> item.getModuleFromSlot(itemStack, slot))
+			.filter(module -> module instanceof ItemModuleMajor)
+			.map(module -> (ItemModuleMajor) module)
+			.ifPresent(module -> Arrays.stream(destabilizationKeys).forEach(key -> module.removeImprovement(upgradedStack, key)));
 
-        if (consumeMaterials) {
-            materials[0].shrink(1);
-        }
+		if (consumeMaterials) {
+			materials[0].shrink(1);
+		}
 
-        return upgradedStack;
-    }
+		return upgradedStack;
+	}
 
-    @Override
-    public boolean checkTools(ItemStack targetStack, ItemStack[] materials, Map<ToolAction, Integer> availableTools) {
-        return true;
-    }
+	@Override
+	public boolean checkTools(ItemStack targetStack, ItemStack[] materials, Map<ToolAction, Integer> availableTools) {
+		return true;
+	}
 
-    @Override
-    public Map<ToolAction, Integer> getRequiredToolLevels(ItemStack targetStack, ItemStack[] materials) {
-        return Collections.emptyMap();
-    }
+	@Override
+	public Map<ToolAction, Integer> getRequiredToolLevels(ItemStack targetStack, ItemStack[] materials) {
+		return Collections.emptyMap();
+	}
 
-    @Override
-    public int getExperienceCost(ItemStack targetStack, ItemStack[] materials, String slot) {
-        String[] destabilizationKeys = DestabilizationEffect.getKeys();
+	@Override
+	public int getExperienceCost(ItemStack targetStack, ItemStack[] materials, String slot) {
+		String[] destabilizationKeys = DestabilizationEffect.getKeys();
 
-        int cost = CastOptional.cast(targetStack.getItem(), IModularItem.class)
-                .map(item -> item.getModuleFromSlot(targetStack, slot))
-                .filter(module -> module instanceof ItemModuleMajor)
-                .map(module -> (ItemModuleMajor) module)
-                .map(module -> Arrays.stream(module.getImprovements(targetStack)))
-                .orElse(Stream.empty())
-                .filter(improvement -> ArrayUtils.contains(destabilizationKeys, improvement.key))
-                .mapToInt(improvement -> improvement.level + 1)
-                .sum();
+		int cost = CastOptional.cast(targetStack.getItem(), IModularItem.class)
+			.map(item -> item.getModuleFromSlot(targetStack, slot))
+			.filter(module -> module instanceof ItemModuleMajor)
+			.map(module -> (ItemModuleMajor) module)
+			.map(module -> Arrays.stream(module.getImprovements(targetStack)))
+			.orElse(Stream.empty())
+			.filter(improvement -> ArrayUtils.contains(destabilizationKeys, improvement.key))
+			.mapToInt(improvement -> improvement.level + 1)
+			.sum();
 
-        cost += 3;
+		cost += 3;
 
-        return cost;
-    }
+		return cost;
+	}
 
-    @Override
-    public SchematicType getType() {
-        return SchematicType.other;
-    }
+	@Override
+	public SchematicType getType() {
+		return SchematicType.other;
+	}
 
-    @Override
-    public GlyphData getGlyph() {
-        return glyph;
-    }
+	@Override
+	public GlyphData getGlyph() {
+		return glyph;
+	}
 
-    @Override
-    public OutcomePreview[] getPreviews(ItemStack targetStack, String slot) {
-        return new OutcomePreview[0];
-    }
+	@Override
+	public OutcomePreview[] getPreviews(ItemStack targetStack, String slot) {
+		return new OutcomePreview[0];
+	}
 
-    @Override
-    public float getSeverity(ItemStack itemStack, ItemStack[] materials, String slot) {
-        return 0;
-    }
+	@Override
+	public float getSeverity(ItemStack itemStack, ItemStack[] materials, String slot) {
+		return 0;
+	}
 }

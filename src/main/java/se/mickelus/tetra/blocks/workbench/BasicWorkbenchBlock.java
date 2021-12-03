@@ -25,45 +25,46 @@ import se.mickelus.tetra.advancements.BlockUseCriterion;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class BasicWorkbenchBlock extends AbstractWorkbenchBlock {
-    public static final String unlocalizedName = "basic_workbench";
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static AbstractWorkbenchBlock instance;
+	public static final String unlocalizedName = "basic_workbench";
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static AbstractWorkbenchBlock instance;
 
-    public BasicWorkbenchBlock() {
-        super(Properties.of(Material.WOOD)
-                .strength(2.5f)
-                .sound(SoundType.WOOD));
+	public BasicWorkbenchBlock() {
+		super(Properties.of(Material.WOOD)
+			.strength(2.5f)
+			.sound(SoundType.WOOD));
 
-        setRegistryName(unlocalizedName);
+		setRegistryName(unlocalizedName);
 
-        hasItem = true;
-    }
+		hasItem = true;
+	}
 
-    @Override
-    public void appendHoverText(ItemStack itemStack, @Nullable BlockGetter world, List<Component> tooltip, TooltipFlag advanced) {
-        tooltip.add(new TranslatableComponent("block.tetra.basic_workbench.description").withStyle(ChatFormatting.GRAY));
-    }
+	public static InteractionResult upgradeWorkbench(Player player, Level world, BlockPos pos, InteractionHand hand, Direction facing) {
+		ItemStack itemStack = player.getItemInHand(hand);
+		if (!player.mayUseItemAt(pos.relative(facing), facing, itemStack)) {
+			return InteractionResult.FAIL;
+		}
 
-    public static InteractionResult upgradeWorkbench(Player player, Level world, BlockPos pos, InteractionHand hand, Direction facing) {
-        ItemStack itemStack = player.getItemInHand(hand);
-        if (!player.mayUseItemAt(pos.relative(facing), facing, itemStack)) {
-            return InteractionResult.FAIL;
-        }
+		if (world.getBlockState(pos).getBlock().equals(Blocks.CRAFTING_TABLE)) {
 
-        if (world.getBlockState(pos).getBlock().equals(Blocks.CRAFTING_TABLE)) {
+			world.playSound(player, pos, SoundEvents.WOOD_PLACE, SoundSource.BLOCKS, 1.0F, 0.5F);
 
-            world.playSound(player, pos, SoundEvents.WOOD_PLACE, SoundSource.BLOCKS, 1.0F, 0.5F);
+			if (!world.isClientSide) {
+				world.setBlockAndUpdate(pos, instance.defaultBlockState());
 
-            if (!world.isClientSide) {
-                world.setBlockAndUpdate(pos, instance.defaultBlockState());
+				BlockUseCriterion.trigger((ServerPlayer) player, instance.defaultBlockState(), ItemStack.EMPTY);
+			}
+			return InteractionResult.sidedSuccess(world.isClientSide);
+		}
 
-                BlockUseCriterion.trigger((ServerPlayer) player, instance.defaultBlockState(), ItemStack.EMPTY);
-            }
-            return InteractionResult.sidedSuccess(world.isClientSide);
-        }
+		return InteractionResult.PASS;
+	}
 
-        return InteractionResult.PASS;
-    }
+	@Override
+	public void appendHoverText(ItemStack itemStack, @Nullable BlockGetter world, List<Component> tooltip, TooltipFlag advanced) {
+		tooltip.add(new TranslatableComponent("block.tetra.basic_workbench.description").withStyle(ChatFormatting.GRAY));
+	}
 }

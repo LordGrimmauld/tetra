@@ -11,23 +11,24 @@ import se.mickelus.tetra.blocks.TetraBlock;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class BlockForgedPlatform extends TetraBlock {
-    static final String unlocalizedName = "forged_platform";
+	static final String unlocalizedName = "forged_platform";
 
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static BlockForgedPlatform instance;
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static BlockForgedPlatform instance;
 
-    public BlockForgedPlatform() {
-        super(ForgedBlockCommon.propertiesSolid);
+	public BlockForgedPlatform() {
+		super(ForgedBlockCommon.propertiesSolid);
 
-        hasItem = true;
+		hasItem = true;
 
-    setRegistryName(unlocalizedName);
-}
+		setRegistryName(unlocalizedName);
+	}
 
-    @Override
-    public void appendHoverText(ItemStack itemStack, @Nullable BlockGetter world, List<Component> tooltip, TooltipFlag advanced) {
-        tooltip.add(ForgedBlockCommon.locationTooltip);
-    }
+	@Override
+	public void appendHoverText(ItemStack itemStack, @Nullable BlockGetter world, List<Component> tooltip, TooltipFlag advanced) {
+		tooltip.add(ForgedBlockCommon.locationTooltip);
+	}
 }

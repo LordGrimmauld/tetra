@@ -6,18 +6,20 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantments;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class TooltipGetterArthropod implements ITooltipGetter {
 
-    private static final IStatGetter levelGetter = new StatGetterEnchantmentLevel(Enchantments.BANE_OF_ARTHROPODS, 1);
+	private static final IStatGetter levelGetter = new StatGetterEnchantmentLevel(Enchantments.BANE_OF_ARTHROPODS, 1);
 
-    public TooltipGetterArthropod() { }
+	public TooltipGetterArthropod() {
+	}
 
 
-    @Override
-    public String getTooltipBase(Player player, ItemStack itemStack) {
-        return I18n.get("tetra.stats.arthropod.tooltip",
-                String.format("%.2f", levelGetter.getValue(player, itemStack) * 2.5),
-                String.format("%.2f", levelGetter.getValue(player, itemStack) * 0.5));
-    }
+	@Override
+	public String getTooltipBase(Player player, ItemStack itemStack) {
+		return I18n.get("tetra.stats.arthropod.tooltip",
+			String.format("%.2f", levelGetter.getValue(player, itemStack) * 2.5),
+			String.format("%.2f", levelGetter.getValue(player, itemStack) * 0.5));
+	}
 }

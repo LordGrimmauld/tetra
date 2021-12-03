@@ -8,31 +8,28 @@ import se.mickelus.tetra.module.data.MaterialData;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Comparator;
+
 @ParametersAreNonnullByDefault
 public class MaterialItemPredicate extends ItemPredicate {
 
-    private String category;
+	private final String category;
 
-    public MaterialItemPredicate(JsonObject jsonObject) {
-        category = jsonObject.get("category").getAsString();
-    }
+	public MaterialItemPredicate(JsonObject jsonObject) {
+		category = jsonObject.get("category").getAsString();
+	}
 
-    @Override
-    public boolean matches(ItemStack itemStack) {
-        MaterialData materialData = DataManager.materialData.getData().values().stream()
-                .sorted(Comparator.comparing(data -> data.material.isTagged()))
-                .filter(data -> data.material.isValid())
-                .filter(data -> data.material.getPredicate().matches(itemStack))
-                .findFirst()
-                .orElse(null);
-        if (materialData != null) {
-            if (category != null && !category.equals(materialData.category)) {
-                return false;
-            }
+	@Override
+	public boolean matches(ItemStack itemStack) {
+		MaterialData materialData = DataManager.materialData.getData().values().stream()
+			.sorted(Comparator.comparing(data -> data.material.isTagged()))
+			.filter(data -> data.material.isValid())
+			.filter(data -> data.material.getPredicate().matches(itemStack))
+			.findFirst()
+			.orElse(null);
+		if (materialData != null) {
+			return category == null || category.equals(materialData.category);
+		}
 
-            return true;
-        }
-
-        return false;
-    }
+		return false;
+	}
 }

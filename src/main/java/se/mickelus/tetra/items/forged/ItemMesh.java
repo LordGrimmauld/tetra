@@ -15,20 +15,21 @@ import se.mickelus.tetra.items.TetraItemGroup;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class ItemMesh extends TetraItem {
-    private static final String unlocalizedName = "forged_mesh";
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static ItemMesh instance;
+	private static final String unlocalizedName = "forged_mesh";
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static ItemMesh instance;
 
-    public ItemMesh() {
-        super(new Properties().tab(TetraItemGroup.instance));
-        setRegistryName(unlocalizedName);
-    }
+	public ItemMesh() {
+		super(new Properties().tab(TetraItemGroup.instance));
+		setRegistryName(unlocalizedName);
+	}
 
-    @OnlyIn(Dist.CLIENT)
-    @Override
-    public void appendHoverText(ItemStack itemStack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(ForgedBlockCommon.locationTooltip);
-    }
+	@OnlyIn(Dist.CLIENT)
+	@Override
+	public void appendHoverText(ItemStack itemStack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
+		tooltip.add(ForgedBlockCommon.locationTooltip);
+	}
 }

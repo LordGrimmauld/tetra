@@ -10,55 +10,56 @@ import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Comparator;
 import java.util.function.Function;
+
 @ParametersAreNonnullByDefault
 public class BasicStatSorter implements IStatSorter {
-    private IStatGetter getter;
-    private String name;
-    private String suffix;
-    private StatFormat statFormat;
-    private boolean inverted;
+	private final IStatGetter getter;
+	private final String name;
+	private String suffix;
+	private final StatFormat statFormat;
+	private boolean inverted;
 
-    public BasicStatSorter(IStatGetter getter, String name, StatFormat statFormat) {
-        this.getter = getter;
-        this.name = name;
-        this.statFormat = statFormat;
-    }
+	public BasicStatSorter(IStatGetter getter, String name, StatFormat statFormat) {
+		this.getter = getter;
+		this.name = name;
+		this.statFormat = statFormat;
+	}
 
-    public BasicStatSorter setInverted() {
-        inverted = true;
-        return this;
-    }
+	public BasicStatSorter setInverted() {
+		inverted = true;
+		return this;
+	}
 
 
-    public BasicStatSorter setSuffix(String suffix) {
-        this.suffix = suffix;
-        return this;
-    }
+	public BasicStatSorter setSuffix(String suffix) {
+		this.suffix = suffix;
+		return this;
+	}
 
-    @Override
-    public String getName() {
-        if (suffix != null) {
-            return I18n.get(name) + " " + I18n.get(suffix);
-        }
-        return I18n.get(name);
-    }
+	@Override
+	public String getName() {
+		if (suffix != null) {
+			return I18n.get(name) + " " + I18n.get(suffix);
+		}
+		return I18n.get(name);
+	}
 
-    @Override
-    public <T> Comparator<T> compare(Player player, Function<? super T, ItemStack> keyExtractor) {
-        if (inverted) {
-            return Comparator.comparing(a -> getter.getValue(player, keyExtractor.apply(a)));
-        }
-        return Comparator.comparing(a -> -getter.getValue(player, keyExtractor.apply(a)));
-    }
+	@Override
+	public <T> Comparator<T> compare(Player player, Function<? super T, ItemStack> keyExtractor) {
+		if (inverted) {
+			return Comparator.comparing(a -> getter.getValue(player, keyExtractor.apply(a)));
+		}
+		return Comparator.comparing(a -> -getter.getValue(player, keyExtractor.apply(a)));
+	}
 
-    @Override
-    @Nullable
-    public String getValue(Player player, ItemStack itemStack) {
-        return statFormat.get(getter.getValue(player, itemStack));
-    }
+	@Override
+	@Nullable
+	public String getValue(Player player, ItemStack itemStack) {
+		return statFormat.get(getter.getValue(player, itemStack));
+	}
 
-    @Override
-    public int getWeight(Player player, ItemStack itemStack) {
-        return getter.shouldShow(player, itemStack, itemStack) ? 1 : 0;
-    }
+	@Override
+	public int getWeight(Player player, ItemStack itemStack) {
+		return getter.shouldShow(player, itemStack, itemStack) ? 1 : 0;
+	}
 }

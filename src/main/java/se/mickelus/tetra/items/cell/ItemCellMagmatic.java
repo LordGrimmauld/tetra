@@ -21,93 +21,91 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
 
 import static se.mickelus.tetra.blocks.forged.ForgedBlockCommon.locationTooltip;
+
 @ParametersAreNonnullByDefault
 public class ItemCellMagmatic extends TetraItem {
-    private static final String unlocalizedName = "magmatic_cell";
+	public static final int maxCharge = 128;
+	private static final String unlocalizedName = "magmatic_cell";
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static ItemCellMagmatic instance;
+	private final String chargedPropKey = "tetra:charged";
 
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static ItemCellMagmatic instance;
+	public ItemCellMagmatic() {
+		super(new Properties()
+			.stacksTo(1)
+			.durability(maxCharge)
+			.tab(TetraItemGroup.instance));
 
-    private final String chargedPropKey = "tetra:charged";
+		setRegistryName(unlocalizedName);
+	}
 
-    public static final int maxCharge = 128;
+	@Override
+	public void clientInit() {
+		ItemProperties.register(this, new ResourceLocation(chargedPropKey), (itemStack, world, livingEntity, i) -> getCharge(itemStack) > 0 ? 1 : 0);
+	}
 
-    public ItemCellMagmatic() {
-        super(new Properties()
-                .stacksTo(1)
-                .durability(maxCharge)
-                .tab(TetraItemGroup.instance));
+	@Override
+	public void appendHoverText(final ItemStack stack, @Nullable final Level world, final List<Component> tooltip, final TooltipFlag advanced) {
+		int charge = getCharge(stack);
 
-        setRegistryName(unlocalizedName);
-    }
+		BaseComponent chargeLine = new TranslatableComponent("item.tetra.magmatic_cell.charge");
 
-    @Override
-    public void clientInit() {
-        ItemProperties.register(this, new ResourceLocation(chargedPropKey), (itemStack, world, livingEntity, i) -> getCharge(itemStack) > 0 ? 1 : 0);
-    }
+		if (charge == maxCharge) {
+			chargeLine.append(new TranslatableComponent("item.tetra.magmatic_cell.charge_full"));
+		} else if (charge > maxCharge * 0.4) {
+			chargeLine.append(new TranslatableComponent("item.tetra.magmatic_cell.charge_good"));
+		} else if (charge > 0) {
+			chargeLine.append(new TranslatableComponent("item.tetra.magmatic_cell.charge_low"));
+		} else {
+			chargeLine.append(new TranslatableComponent("item.tetra.magmatic_cell.charge_empty"));
+		}
 
-    @Override
-    public void appendHoverText(final ItemStack stack, @Nullable final Level world, final List<Component> tooltip, final TooltipFlag advanced) {
-        int charge = getCharge(stack);
+		tooltip.add(chargeLine);
+		tooltip.add(new TextComponent(" "));
+		tooltip.add(locationTooltip);
+	}
 
-        BaseComponent chargeLine = new TranslatableComponent("item.tetra.magmatic_cell.charge");
+	@Override
+	public void fillItemCategory(final CreativeModeTab itemGroup, final NonNullList<ItemStack> itemList) {
+		if (allowdedIn(itemGroup)) {
+			itemList.add(new ItemStack(this));
 
-        if (charge == maxCharge) {
-            chargeLine.append(new TranslatableComponent("item.tetra.magmatic_cell.charge_full"));
-        } else if (charge > maxCharge * 0.4) {
-            chargeLine.append(new TranslatableComponent("item.tetra.magmatic_cell.charge_good"));
-        } else if (charge > 0) {
-            chargeLine.append(new TranslatableComponent("item.tetra.magmatic_cell.charge_low"));
-        } else {
-            chargeLine.append(new TranslatableComponent("item.tetra.magmatic_cell.charge_empty"));
-        }
+			ItemStack emptyStack = new ItemStack(this);
+			emptyStack.setDamageValue(maxCharge);
+			itemList.add(emptyStack);
+		}
+	}
 
-        tooltip.add(chargeLine);
-        tooltip.add(new TextComponent(" "));
-        tooltip.add(locationTooltip);
-    }
+	public int getCharge(ItemStack itemStack) {
+		return itemStack.getMaxDamage() - itemStack.getDamageValue();
+	}
 
-    @Override
-    public void fillItemCategory(final CreativeModeTab itemGroup, final NonNullList<ItemStack> itemList) {
-        if (allowdedIn(itemGroup)) {
-            itemList.add(new ItemStack(this));
+	public int drainCharge(ItemStack itemStack, int amount) {
+		if (itemStack.getDamageValue() + amount < itemStack.getMaxDamage()) {
+			setDamage(itemStack, itemStack.getDamageValue() + amount);
+			return amount;
+		}
 
-            ItemStack emptyStack = new ItemStack(this);
-            emptyStack.setDamageValue(maxCharge);
-            itemList.add(emptyStack);
-        }
-    }
+		int actualAmount = itemStack.getMaxDamage() - itemStack.getDamageValue();
+		setDamage(itemStack, itemStack.getMaxDamage());
+		return actualAmount;
+	}
 
-    public int getCharge(ItemStack itemStack) {
-        return itemStack.getMaxDamage() - itemStack.getDamageValue();
-    }
+	public int recharge(ItemStack itemStack, int amount) {
+		if (getDamage(itemStack) - amount >= 0) {
+			setDamage(itemStack, getDamage(itemStack) - amount);
+			return 0;
+		}
 
-    public int drainCharge(ItemStack itemStack, int amount) {
-        if (itemStack.getDamageValue() + amount < itemStack.getMaxDamage()) {
-            setDamage(itemStack, itemStack.getDamageValue() + amount);
-            return amount;
-        }
+		int overfill = amount - getDamage(itemStack);
+		setDamage(itemStack, 0);
+		return overfill;
+	}
 
-        int actualAmount = itemStack.getMaxDamage() - itemStack.getDamageValue();
-        setDamage(itemStack, itemStack.getMaxDamage());
-        return actualAmount;
-    }
-
-    public int recharge(ItemStack itemStack, int amount) {
-        if (getDamage(itemStack) - amount >= 0) {
-            setDamage(itemStack, getDamage(itemStack) - amount);
-            return 0;
-        }
-
-        int overfill = amount - getDamage(itemStack);
-        setDamage(itemStack, 0);
-        return overfill;
-    }
-
-    // todo: change these for metered upgrade
-    public boolean showDurabilityBar(ItemStack stack) {
-        return false;
-    }
+	// todo: change these for metered upgrade
+	public boolean showDurabilityBar(ItemStack stack) {
+		return false;
+	}
 
     /*
     public double getDurabilityForDisplay(ItemStack itemStack) {

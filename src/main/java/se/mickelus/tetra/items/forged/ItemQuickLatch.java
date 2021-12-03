@@ -25,42 +25,43 @@ import se.mickelus.tetra.items.TetraItemGroup;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class ItemQuickLatch extends TetraItem {
-    private static final String unlocalizedName = "quick_latch";
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static ItemQuickLatch instance;
+	private static final String unlocalizedName = "quick_latch";
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static ItemQuickLatch instance;
 
-    public ItemQuickLatch() {
-        super(new Properties().tab(TetraItemGroup.instance));
-        setRegistryName(unlocalizedName);
-    }
+	public ItemQuickLatch() {
+		super(new Properties().tab(TetraItemGroup.instance));
+		setRegistryName(unlocalizedName);
+	}
 
-    @OnlyIn(Dist.CLIENT)
-    @Override
-    public void appendHoverText(ItemStack itemStack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Tooltips.reveal);
-        tooltip.add(new TextComponent(" "));
-        tooltip.add(ForgedBlockCommon.locationTooltip);
-    }
+	@OnlyIn(Dist.CLIENT)
+	@Override
+	public void appendHoverText(ItemStack itemStack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
+		tooltip.add(Tooltips.reveal);
+		tooltip.add(new TextComponent(" "));
+		tooltip.add(ForgedBlockCommon.locationTooltip);
+	}
 
-    @Override
-    public InteractionResult useOn(UseOnContext context) {
-        playClick(context.getLevel(), context.getPlayer());
-        return InteractionResult.PASS;
-    }
+	@Override
+	public InteractionResult useOn(UseOnContext context) {
+		playClick(context.getLevel(), context.getPlayer());
+		return InteractionResult.PASS;
+	}
 
-    @Override
-    public InteractionResultHolder<ItemStack> use(Level world, Player player, InteractionHand hand) {
-        playClick(world, player);
-        return super.use(world, player, hand);
-    }
+	@Override
+	public InteractionResultHolder<ItemStack> use(Level world, Player player, InteractionHand hand) {
+		playClick(world, player);
+		return super.use(world, player, hand);
+	}
 
-    private void playClick(Level world, Player player) {
-        SoundEvent event = SoundEvents.TRIPWIRE_CLICK_OFF;
-        if (Math.random() > 0.5f) {
-            event = SoundEvents.TRIPWIRE_CLICK_ON;
-        }
-        world.playSound(player, player.blockPosition(), event, SoundSource.PLAYERS, 0.3f,  1f + 0.5f * (float) Math.random());
-    }
+	private void playClick(Level world, Player player) {
+		SoundEvent event = SoundEvents.TRIPWIRE_CLICK_OFF;
+		if (Math.random() > 0.5f) {
+			event = SoundEvents.TRIPWIRE_CLICK_ON;
+		}
+		world.playSound(player, player.blockPosition(), event, SoundSource.PLAYERS, 0.3f, 1f + 0.5f * (float) Math.random());
+	}
 }

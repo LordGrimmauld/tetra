@@ -34,105 +34,103 @@ import java.util.List;
 
 import static net.minecraft.world.level.block.state.properties.BlockStateProperties.WATERLOGGED;
 import static net.minecraft.world.level.material.Fluids.WATER;
+
 @ParametersAreNonnullByDefault
 public class CoreExtractorBaseBlock extends TetraWaterloggedBlock implements EntityBlock {
-    public static final DirectionProperty facingProp = HorizontalDirectionalBlock.FACING;
+	public static final DirectionProperty facingProp = HorizontalDirectionalBlock.FACING;
+	public static final String unlocalizedName = "core_extractor";
+	private static final VoxelShape capShape = box(3, 14, 3, 13, 16, 13);
+	private static final VoxelShape shaftShape = box(4, 13, 4, 12, 14, 12);
+	private static final VoxelShape smallCoverShapeZ = box(1, 0, 0, 15, 12, 16);
+	private static final VoxelShape largeCoverShapeZ = box(0, 0, 1, 16, 13, 15);
+	private static final VoxelShape smallCoverShapeX = box(0, 0, 1, 16, 12, 15);
+	private static final VoxelShape largeCoverShapeX = box(1, 0, 0, 15, 13, 16);
+	private static final VoxelShape combinedShapeZ
+		= Shapes.or(Shapes.joinUnoptimized(smallCoverShapeZ, largeCoverShapeZ, BooleanOp.OR), capShape, shaftShape);
+	private static final VoxelShape combinedShapeX
+		= Shapes.or(Shapes.joinUnoptimized(smallCoverShapeX, largeCoverShapeX, BooleanOp.OR), capShape, shaftShape);
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static CoreExtractorBaseBlock instance;
 
-    private static final VoxelShape capShape = box(3, 14, 3, 13, 16, 13);
-    private static final VoxelShape shaftShape = box(4, 13, 4, 12, 14, 12);
-    private static final VoxelShape smallCoverShapeZ = box(1, 0, 0, 15, 12, 16);
-    private static final VoxelShape largeCoverShapeZ = box(0, 0, 1, 16, 13, 15);
-    private static final VoxelShape smallCoverShapeX = box(0, 0, 1, 16, 12, 15);
-    private static final VoxelShape largeCoverShapeX = box(1, 0, 0, 15, 13, 16);
+	public CoreExtractorBaseBlock() {
+		super(ForgedBlockCommon.propertiesNotSolid);
+		setRegistryName(unlocalizedName);
 
-    private static final VoxelShape combinedShapeZ
-            = Shapes.or(Shapes.joinUnoptimized(smallCoverShapeZ, largeCoverShapeZ, BooleanOp.OR), capShape, shaftShape);
-    private static final VoxelShape combinedShapeX
-            = Shapes.or(Shapes.joinUnoptimized(smallCoverShapeX, largeCoverShapeX, BooleanOp.OR), capShape, shaftShape);
+		hasItem = true;
+	}
 
-    public static final String unlocalizedName = "core_extractor";
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static CoreExtractorBaseBlock instance;
+	@Override
+	public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
+		if (Direction.Axis.X.equals(state.getValue(facingProp).getAxis())) {
+			return combinedShapeX;
+		}
 
-    public CoreExtractorBaseBlock() {
-        super(ForgedBlockCommon.propertiesNotSolid);
-        setRegistryName(unlocalizedName);
+		return combinedShapeZ;
+	}
 
-        hasItem = true;
-    }
+	@Override
+	public void appendHoverText(ItemStack stack, @Nullable BlockGetter worldIn, List<Component> tooltip, TooltipFlag flagIn) {
+		tooltip.add(ForgedBlockCommon.locationTooltip);
+		tooltip.add(new TextComponent(" "));
+		tooltip.add(new TranslatableComponent("block.multiblock_hint.1x2x1")
+			.withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
+	}
 
-    @Override
-    public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
-        if (Direction.Axis.X.equals(state.getValue(facingProp).getAxis())) {
-            return combinedShapeX;
-        }
+	@Override
+	public void neighborChanged(BlockState state, Level world, BlockPos pos, Block fromBlock, BlockPos fromPos, boolean isMoving) {
+		if (!pos.relative(world.getBlockState(pos).getValue(facingProp)).equals(fromPos)) {
+			TileEntityOptional.from(world, pos, CoreExtractorBaseTile.class)
+				.ifPresent(CoreExtractorBaseTile::updateTransferState);
+		}
+	}
 
-        return combinedShapeZ;
-    }
+	@Override
+	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+		super.createBlockStateDefinition(builder);
+		builder.add(facingProp);
+	}
 
-    @Override
-    public void appendHoverText(ItemStack stack, @Nullable BlockGetter worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-        tooltip.add(ForgedBlockCommon.locationTooltip);
-        tooltip.add(new TextComponent(" "));
-        tooltip.add(new TranslatableComponent("block.multiblock_hint.1x2x1")
-                .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
-    }
+	@Override
+	public BlockState updateShape(BlockState state, Direction facing, BlockState facingState, LevelAccessor world, BlockPos currentPos, BlockPos facingPos) {
+		if (Direction.UP.equals(facing) && !CoreExtractorPistonBlock.instance.equals(facingState.getBlock())) {
+			return state.getValue(WATERLOGGED) ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState();
+		}
 
-    @Override
-    public void neighborChanged(BlockState state, Level world, BlockPos pos, Block fromBlock, BlockPos fromPos, boolean isMoving) {
-        if (!pos.relative(world.getBlockState(pos).getValue(facingProp)).equals(fromPos)) {
-            TileEntityOptional.from(world, pos, CoreExtractorBaseTile.class)
-                    .ifPresent(CoreExtractorBaseTile::updateTransferState);
-        }
-    }
+		return super.updateShape(state, facing, facingState, world, currentPos, facingPos);
+	}
 
-    @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        super.createBlockStateDefinition(builder);
-        builder.add(facingProp);
-    }
+	// based on same method implementation in BedBlock
+	public void setPlacedBy(Level world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+		BlockState pistonState = CoreExtractorPistonBlock.instance.defaultBlockState()
+			.setValue(WATERLOGGED, world.getFluidState(pos.above()).getType() == WATER);
+		world.setBlock(pos.above(), pistonState, 3);
+	}
 
-    @Override
-    public BlockState updateShape(BlockState state, Direction facing, BlockState facingState, LevelAccessor world, BlockPos currentPos, BlockPos facingPos) {
-        if (Direction.UP.equals(facing) && !CoreExtractorPistonBlock.instance.equals(facingState.getBlock())) {
-            return state.getValue(WATERLOGGED) ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState();
-        }
+	@Nullable
+	@Override
+	public BlockState getStateForPlacement(final BlockPlaceContext context) {
+		if (context.getLevel().getBlockState(context.getClickedPos().above()).canBeReplaced(context)) {
+			return super.getStateForPlacement(context)
+				.setValue(facingProp, context.getHorizontalDirection().getOpposite());
+		}
 
-        return super.updateShape(state, facing, facingState, world, currentPos, facingPos);
-    }
+		// returning null here stops the block from being placed
+		return null;
+	}
 
-    // based on same method implementation in BedBlock
-    public void setPlacedBy(Level world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
-        BlockState pistonState = CoreExtractorPistonBlock.instance.defaultBlockState()
-                .setValue(WATERLOGGED, world.getFluidState(pos.above()).getType() == WATER);
-        world.setBlock(pos.above(), pistonState, 3);
-    }
+	@Override
+	public BlockState rotate(BlockState state, Rotation direction) {
+		return state.setValue(facingProp, direction.rotate(state.getValue(facingProp)));
+	}
 
-    @Nullable
-    @Override
-    public BlockState getStateForPlacement(final BlockPlaceContext context) {
-        if (context.getLevel().getBlockState(context.getClickedPos().above()).canBeReplaced(context)) {
-            return super.getStateForPlacement(context)
-                    .setValue(facingProp, context.getHorizontalDirection().getOpposite());
-        }
+	@Override
+	public BlockState mirror(BlockState state, Mirror mirror) {
+		return state.rotate(mirror.getRotation(state.getValue(facingProp)));
+	}
 
-        // returning null here stops the block from being placed
-        return null;
-    }
-
-    @Override
-    public BlockState rotate(BlockState state, Rotation direction) {
-        return state.setValue(facingProp, direction.rotate(state.getValue(facingProp)));
-    }
-
-    @Override
-    public BlockState mirror(BlockState state, Mirror mirror) {
-        return state.rotate(mirror.getRotation(state.getValue(facingProp)));
-    }
-
-    @org.jetbrains.annotations.Nullable
-    @Override
-    public BlockEntity newBlockEntity(BlockPos p_153215_, BlockState p_153216_) {
-        return new CoreExtractorBaseTile(p_153215_, p_153216_);
-    }
+	@org.jetbrains.annotations.Nullable
+	@Override
+	public BlockEntity newBlockEntity(BlockPos p_153215_, BlockState p_153216_) {
+		return new CoreExtractorBaseTile(p_153215_, p_153216_);
+	}
 }

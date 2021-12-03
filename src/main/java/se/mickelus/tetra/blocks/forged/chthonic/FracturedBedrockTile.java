@@ -48,362 +48,357 @@ import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Optional;
 import java.util.Set;
+
 @ParametersAreNonnullByDefault
 public class FracturedBedrockTile extends BlockEntity implements BlockEntityTicker<FracturedBedrockTile> {
-    @ObjectHolder(TetraMod.MOD_ID + ":" + FracturedBedrockBlock.unlocalizedName)
-    public static BlockEntityType<FracturedBedrockTile> type;
+	public static final Set<Material> breakMaterials = Sets.newHashSet(Material.STONE, Material.CLAY, Material.DIRT);
+	private static final Logger logger = LogManager.getLogger();
 
-    private static final Logger logger = LogManager.getLogger();
+	private static final String activityKey = "actv";
+	private static final String stepKey = "step";
+	private static final String luckKey = "luck";
+	private static final ResourceLocation[] lootTables = new ResourceLocation[]{
+		new ResourceLocation(TetraMod.MOD_ID, "extractor/tier1"),
+		new ResourceLocation(TetraMod.MOD_ID, "extractor/tier2"),
+		new ResourceLocation(TetraMod.MOD_ID, "extractor/tier3"),
+		new ResourceLocation(TetraMod.MOD_ID, "extractor/tier4")
+	};
+	@ObjectHolder(TetraMod.MOD_ID + ":" + FracturedBedrockBlock.unlocalizedName)
+	public static BlockEntityType<FracturedBedrockTile> type;
+	private int activity = 0;
+	private int step = 0;
+	private final float spawnRatio = 0.5f;
+	private final int spawnYLimit = 4;
+	private int luck = 0;
+	private MobSpawnSettings spawnInfo;
 
-    private static final String activityKey = "actv";
-    private int activity = 0;
+	public FracturedBedrockTile(BlockPos p_155268_, BlockState p_155269_) {
+		super(type, p_155268_, p_155269_);
+	}
 
-    private static final String stepKey = "step";
-    private int step = 0;
+	public static boolean breakBlock(Level world, BlockPos pos, BlockState blockState) {
+		if (world instanceof ServerLevel serverLevel
+			&& !blockState.isAir()
+			&& breakMaterials.contains(blockState.getMaterial())
+			&& blockState.getDestroySpeed(world, pos) > -1) {
+			BlockEntity tile = blockState.getBlock() instanceof EntityBlock ? world.getBlockEntity(pos) : null;
+			LootContext.Builder lootBuilder = new LootContext.Builder(serverLevel)
+				.withRandom(world.random)
+				.withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(pos))
+				.withParameter(LootContextParams.TOOL, ItemStack.EMPTY)
+				.withOptionalParameter(LootContextParams.BLOCK_ENTITY, tile)
+				.withOptionalParameter(LootContextParams.THIS_ENTITY, null);
 
-    private float spawnRatio = 0.5f;
-    private int spawnYLimit = 4;
+			blockState.getDrops(lootBuilder).forEach(itemStack -> Block.popResource(world, pos, itemStack));
 
-    public static final Set<Material> breakMaterials = Sets.newHashSet(Material.STONE, Material.CLAY, Material.DIRT);
+			world.levelEvent(null, 2001, pos, Block.getId(world.getBlockState(pos)));
+			world.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
 
-    private static final String luckKey = "luck";
-    private int luck = 0;
+			return true;
+		}
 
-    private static final ResourceLocation[] lootTables = new ResourceLocation[] {
-            new ResourceLocation(TetraMod.MOD_ID, "extractor/tier1"),
-            new ResourceLocation(TetraMod.MOD_ID, "extractor/tier2"),
-            new ResourceLocation(TetraMod.MOD_ID, "extractor/tier3"),
-            new ResourceLocation(TetraMod.MOD_ID, "extractor/tier4")
-    };
+		return false;
+	}
 
-    private MobSpawnSettings spawnInfo;
+	public void updateLuck(boolean wasSeeping) {
+		if (spawnInfo == null) {
+			spawnInfo = level.getBiome(worldPosition).getMobSettings();
+		}
 
-    public FracturedBedrockTile(BlockPos p_155268_, BlockState p_155269_) {
-        super(type, p_155268_, p_155269_);
-    }
+		boolean spawnBonus = spawnInfo.getMobs(MobCategory.MONSTER).unwrap().stream()
+			.map(spawner -> spawner.type)
+			.anyMatch(type -> EntityType.HUSK.equals(type) || EntityType.STRAY.equals(type) || EntityType.WITCH.equals(type));
+		if (spawnBonus) {
+			luck += 1;
+		}
 
-    public void updateLuck(boolean wasSeeping) {
-        if (spawnInfo == null) {
-            spawnInfo = level.getBiome(worldPosition).getMobSettings();
-        }
+		if (wasSeeping) {
+			luck += 2;
+		}
+	}
 
-        boolean spawnBonus = spawnInfo.getMobs(MobCategory.MONSTER).unwrap().stream()
-                .map(spawner -> spawner.type)
-                .anyMatch(type -> EntityType.HUSK.equals(type) || EntityType.STRAY.equals(type) || EntityType.WITCH.equals(type));
-        if (spawnBonus) {
-            luck += 1;
-        }
+	public void activate(int amount) {
+		if (!level.isClientSide && activity <= 0) {
+			playSound();
+		}
 
-        if (wasSeeping) {
-            luck += 2;
-        }
-    }
+		int preTier = getProjectedTier();
 
-    public void activate(int amount) {
-        if (!level.isClientSide && activity <= 0) {
-            playSound();
-        }
+		activity += amount;
+		setChanged();
 
-        int preTier = getProjectedTier();
+		if (!level.isClientSide && getProjectedTier() != preTier) {
+			level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+		}
+	}
 
-        activity += amount;
-        setChanged();
+	private int getRate() {
+		return 20 - Mth.clamp(activity / 64 * 5, 0, 15);
+	}
 
-        if (!level.isClientSide && getProjectedTier() != preTier) {
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
-        }
-    }
+	private int getIntensity() {
+		return Math.min(1 + activity / 16, 4);
+	}
 
-    private int getRate() {
-        return 20 - Mth.clamp(activity / 64 * 5, 0, 15);
-    }
+	public int getProjectedTier() {
+		return getTier(step + activity);
+	}
 
-    private int getIntensity() {
-        return Math.min(1 + activity / 16, 4);
-    }
+	private int getTier() {
+		return getTier(step);
+	}
 
-    public int getProjectedTier() {
-        return getTier(step + activity);
-    }
+	private int getTier(int ref) {
+		if (ref > ChthonicExtractorBlock.maxDamage * 10) {
+			return 3;
+		} else if (ref > ChthonicExtractorBlock.maxDamage * 4) {
+			return 2;
+		} else if (ref > ChthonicExtractorBlock.maxDamage) {
+			return 1;
+		}
+		return 0;
+	}
 
-    private int getTier() {
-        return getTier(step);
-    }
+	private int getMaxDistance() {
+		switch (getTier()) {
+			case 0:
+				return 12;
+			case 1:
+				return 16;
+			case 2:
+				return 20;
+			case 3:
+				return 25;
+		}
 
-    private int getTier(int ref) {
-        if (ref > ChthonicExtractorBlock.maxDamage * 10) {
-            return 3;
-        } else if (ref > ChthonicExtractorBlock.maxDamage * 4) {
-            return 2;
-        } else if (ref > ChthonicExtractorBlock.maxDamage) {
-            return 1;
-        }
-        return 0;
-    }
+		return 25;
+	}
 
-    private int getMaxDistance() {
-        switch (getTier()) {
-            case 0:
-                return 12;
-            case 1:
-                return 16;
-            case 2:
-                return 20;
-            case 3:
-                return 25;
-        }
+	private boolean shouldDeplete() {
+		return step >= ChthonicExtractorBlock.maxDamage * 12;
+	}
 
-        return 25;
-    }
+	private Vec3 getTarget(int i) {
+		int maxDistance = getMaxDistance();
+		int steps = 32;
+		double directionRotation = 90d * (i % 4);
+		double offsetRotation = 360d / steps * (i / 4) + i / 8f;
+		float pitch = -(i % (steps * 16)) / steps * 5f;
 
-    private boolean shouldDeplete() {
-        return step >= ChthonicExtractorBlock.maxDamage * 12;
-    }
+		return Vec3.directionFromRotation(pitch, (float) (directionRotation + offsetRotation)).multiply(maxDistance, 4 + maxDistance / 2f, maxDistance);
+	}
 
-    private Vec3 getTarget(int i) {
-        int maxDistance = getMaxDistance();
-        int steps = 32;
-        double directionRotation = 90d * (i % 4);
-        double offsetRotation = 360d / steps * (i / 4) + i / 8f;
-        float pitch = -(i % (steps * 16)) / steps * 5f;
+	private boolean isBedrock(Block block) {
+		return Blocks.BEDROCK.equals(block)
+			|| FracturedBedrockBlock.instance.equals(block)
+			|| SeepingBedrockBlock.instance.equals(block)
+			|| ChthonicExtractorBlock.instance.equals(block);
+	}
 
-        return Vec3.directionFromRotation(pitch, (float) (directionRotation + offsetRotation)).multiply(maxDistance, 4 + maxDistance / 2f, maxDistance);
-    }
+	private boolean canReplace(BlockState blockState) {
+		return blockState.getMaterial().isReplaceable();
+	}
 
-    private boolean isBedrock(Block block) {
-        return Blocks.BEDROCK.equals(block)
-                || FracturedBedrockBlock.instance.equals(block)
-                || SeepingBedrockBlock.instance.equals(block)
-                || ChthonicExtractorBlock.instance.equals(block);
-    }
+	private BlockPos raytrace(Vec3 origin, Vec3 target) {
+		return BlockGetter.<ClipContext, BlockPos>traverseBlocks(new ClipContext(origin, target, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, null), (ctx, blockPos) -> {
+			BlockState blockState = level.getBlockState(blockPos);
+			Block block = blockState.getBlock();
 
-    private boolean canReplace(BlockState blockState) {
-        return blockState.getMaterial().isReplaceable();
-    }
+			if (isBedrock(block) || canReplace(blockState)) {
+				return null;
+			}
+			return blockPos.immutable();
+		}, ctx -> null);
+	}
 
-    private BlockPos raytrace(Vec3 origin, Vec3 target) {
-        return BlockGetter.< ClipContext, BlockPos >traverseBlocks(new ClipContext(origin, target, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, null), (ctx, blockPos) -> {
-            BlockState blockState = level.getBlockState(blockPos);
-            Block block = blockState.getBlock();
+	private BlockPos traceDown(BlockPos blockPos) {
+		BlockPos.MutableBlockPos movePos = blockPos.mutable();
 
-            if (isBedrock(block) || canReplace(blockState)) {
-                return null;
-            }
-            return blockPos.immutable();
-        }, ctx -> null);
-    }
+		while (movePos.getY() >= 0) {
+			movePos.move(Direction.DOWN);
+			BlockState blockState = level.getBlockState(movePos);
 
-    private BlockPos traceDown(BlockPos blockPos) {
-        BlockPos.MutableBlockPos movePos = blockPos.mutable();
+			if (isBedrock(blockState.getBlock())) {
+				return movePos.move(Direction.UP).immutable();
+			}
 
-        while (movePos.getY() >= 0) {
-            movePos.move(Direction.DOWN);
-            BlockState blockState = level.getBlockState(movePos);
+			if (!blockState.isAir()) {
+				return movePos.immutable();
+			}
+		}
 
-            if (isBedrock(blockState.getBlock())) {
-                return movePos.move(Direction.UP).immutable();
-            }
+		return movePos.immutable();
+	}
 
-            if (!blockState.isAir()) {
-                return movePos.immutable();
-            }
-        }
+	private void spawnOre(BlockPos pos) {
+		ServerLevel serverWorld = (ServerLevel) level;
+		LootTable table = serverWorld.getServer().getLootTables().get(lootTables[getTier()]);
+		LootContext context = new LootContext.Builder(serverWorld).withLuck(luck).create(LootContextParamSets.EMPTY);
 
-        return movePos.immutable();
-    }
+		table.getRandomItems(context).stream()
+			.filter(itemStack -> !itemStack.isEmpty())
+			.findAny()
+			.ifPresent(itemStack -> {
+				if (itemStack.getItem() instanceof BlockItem) {
+					BlockState newState = ((BlockItem) itemStack.getItem()).getBlock().defaultBlockState();
+					level.levelEvent(null, 2001, pos, Block.getId(newState));
+					level.setBlock(pos, newState, 2);
+				} else {
+					Block.popResource(level, pos, itemStack);
+				}
+			});
+	}
 
-    public static boolean breakBlock(Level world, BlockPos pos, BlockState blockState) {
-        if (world instanceof ServerLevel serverLevel
-                && !blockState.isAir()
-                && breakMaterials.contains(blockState.getMaterial())
-                && blockState.getDestroySpeed(world, pos) > -1) {
-            BlockEntity tile = blockState.getBlock() instanceof EntityBlock ? world.getBlockEntity(pos) : null;
-            LootContext.Builder lootBuilder = new LootContext.Builder(serverLevel)
-                    .withRandom(world.random)
-                    .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(pos))
-                    .withParameter(LootContextParams.TOOL, ItemStack.EMPTY)
-                    .withOptionalParameter(LootContextParams.BLOCK_ENTITY, tile)
-                    .withOptionalParameter(LootContextParams.THIS_ENTITY, null);
+	/**
+	 * Spawns one of the biomes "monster type" mobs at the given location, based on {@link WorldEntitySpawner#performWorldGenSpawning}
+	 *
+	 * @param pos
+	 */
+	private void spawnMob(BlockPos pos) {
+		if (spawnInfo == null) {
+			spawnInfo = level.getBiome(pos).getMobSettings();
+		}
 
-            blockState.getDrops(lootBuilder).forEach(itemStack -> Block.popResource(world, pos, itemStack));
+		if (getBlockPos().distSqr(pos) < 42 && level.getRandom().nextFloat() >= spawnInfo.getCreatureProbability() / 5) {
+			return;
+		}
 
-            world.levelEvent(null, 2001, pos, Block.getId(world.getBlockState(pos)));
-            world.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
+		WeightedRandomList<MobSpawnSettings.SpawnerData> spawners = spawnInfo.getMobs(MobCategory.MONSTER);
+		Optional<MobSpawnSettings.SpawnerData> optionalSpawnerData = spawners.getRandom(level.getRandom());
+		if (!optionalSpawnerData.isPresent())
+			return;
+		MobSpawnSettings.SpawnerData mob = optionalSpawnerData.get();
 
-            return true;
-        }
-
-        return false;
-    }
-
-    private void spawnOre(BlockPos pos) {
-        ServerLevel serverWorld = (ServerLevel) level;
-        LootTable table = serverWorld.getServer().getLootTables().get(lootTables[getTier()]);
-        LootContext context = new LootContext.Builder(serverWorld).withLuck(luck).create(LootContextParamSets.EMPTY);
-
-        table.getRandomItems(context).stream()
-                .filter(itemStack -> !itemStack.isEmpty())
-                .findAny()
-                .ifPresent(itemStack -> {
-                    if (itemStack.getItem() instanceof BlockItem) {
-                        BlockState newState = ((BlockItem) itemStack.getItem()).getBlock().defaultBlockState();
-                        level.levelEvent(null, 2001, pos, Block.getId(newState));
-                        level.setBlock(pos, newState, 2);
-                    } else {
-                        Block.popResource(level, pos, itemStack);
-                    }
-                });
-    }
-
-    /**
-     * Spawns one of the biomes "monster type" mobs at the given location, based on {@link WorldEntitySpawner#performWorldGenSpawning}
-     * @param pos
-     */
-    private void spawnMob(BlockPos pos) {
-        if (spawnInfo == null) {
-            spawnInfo = level.getBiome(pos).getMobSettings();
-        }
-
-        if (getBlockPos().distSqr(pos) < 42 && level.getRandom().nextFloat() >= spawnInfo.getCreatureProbability() / 5) {
-            return;
-        }
-
-        WeightedRandomList<MobSpawnSettings.SpawnerData> spawners = spawnInfo.getMobs(MobCategory.MONSTER);
-        Optional<MobSpawnSettings.SpawnerData> optionalSpawnerData = spawners.getRandom(level.getRandom());
-        if (!optionalSpawnerData.isPresent())
-            return;
-        MobSpawnSettings.SpawnerData mob = optionalSpawnerData.get();
-
-        ServerLevel serverWorld = (ServerLevel) level;
-        if (mob.type.canSummon()
+		ServerLevel serverWorld = (ServerLevel) level;
+		if (mob.type.canSummon()
 //                && WorldEntitySpawner.canCreatureTypeSpawnAtLocation(EntitySpawnPlacementRegistry.getPlacementType(mob.type), world, pos, mob.type)
-                && serverWorld.noCollision(mob.type.getAABB(pos.getX(), pos.getY(), pos.getZ()))
-                && SpawnPlacements.checkSpawnRules(mob.type, serverWorld, MobSpawnType.SPAWNER, pos, serverWorld.getRandom())) {
+			&& serverWorld.noCollision(mob.type.getAABB(pos.getX(), pos.getY(), pos.getZ()))
+			&& SpawnPlacements.checkSpawnRules(mob.type, serverWorld, MobSpawnType.SPAWNER, pos, serverWorld.getRandom())) {
 
-            Entity entity;
-            try {
-                entity = mob.type.create(serverWorld.getLevel());
-            } catch (Exception exception) {
-                logger.warn("Failed to create mob", exception);
-                return;
-            }
+			Entity entity;
+			try {
+				entity = mob.type.create(serverWorld.getLevel());
+			} catch (Exception exception) {
+				logger.warn("Failed to create mob", exception);
+				return;
+			}
 
-            entity.moveTo(pos.getX(), pos.getY(), pos.getZ(), 0, 0);
-            CastOptional.cast(entity, Mob.class)
-                    .filter(e -> ForgeHooks.canEntitySpawn(e, serverWorld, pos.getX(), pos.getY(), pos.getZ(), null, MobSpawnType.SPAWNER) != -1)
-                    .filter(e -> e.checkSpawnRules(serverWorld, MobSpawnType.CHUNK_GENERATION))
-                    .filter(e -> e.checkSpawnObstruction(serverWorld))
-                    .ifPresent(e -> {
-                        e.finalizeSpawn(serverWorld, serverWorld.getCurrentDifficultyAt(e.blockPosition()), MobSpawnType.CHUNK_GENERATION, null, null);
-                        serverWorld.addFreshEntityWithPassengers(e);
+			entity.moveTo(pos.getX(), pos.getY(), pos.getZ(), 0, 0);
+			CastOptional.cast(entity, Mob.class)
+				.filter(e -> ForgeHooks.canEntitySpawn(e, serverWorld, pos.getX(), pos.getY(), pos.getZ(), null, MobSpawnType.SPAWNER) != -1)
+				.filter(e -> e.checkSpawnRules(serverWorld, MobSpawnType.CHUNK_GENERATION))
+				.filter(e -> e.checkSpawnObstruction(serverWorld))
+				.ifPresent(e -> {
+					e.finalizeSpawn(serverWorld, serverWorld.getCurrentDifficultyAt(e.blockPosition()), MobSpawnType.CHUNK_GENERATION, null, null);
+					serverWorld.addFreshEntityWithPassengers(e);
 
-                        // makes the mob angry at a nearby player
-                        serverWorld.getEntitiesOfClass(Player.class, new AABB(getBlockPos()).inflate(24, 8, 24)).stream()
-                                .findAny()
-                                .ifPresent(e::setLastHurtMob);
-                    });
-        }
-    }
+					// makes the mob angry at a nearby player
+					serverWorld.getEntitiesOfClass(Player.class, new AABB(getBlockPos()).inflate(24, 8, 24)).stream()
+						.findAny()
+						.ifPresent(e::setLastHurtMob);
+				});
+		}
+	}
 
-    private void playSound() {
-        level.playSound(null, worldPosition.below(worldPosition.getY()), SoundEvents.BEACON_AMBIENT, SoundSource.BLOCKS, 3f, 0.5f);
-    }
+	private void playSound() {
+		level.playSound(null, worldPosition.below(worldPosition.getY()), SoundEvents.BEACON_AMBIENT, SoundSource.BLOCKS, 3f, 0.5f);
+	}
 
-    @Override
-    public void tick(Level p_155253_, BlockPos p_155254_, BlockState p_155255_, FracturedBedrockTile p_155256_) {
-        if (!level.isClientSide && activity > 0 && level.getGameTime() % getRate() == 0) {
-            int intensity = getIntensity();
-            Vec3 origin = Vec3.atCenterOf(getBlockPos());
+	@Override
+	public void tick(Level p_155253_, BlockPos p_155254_, BlockState p_155255_, FracturedBedrockTile p_155256_) {
+		if (!level.isClientSide && activity > 0 && level.getGameTime() % getRate() == 0) {
+			int intensity = getIntensity();
+			Vec3 origin = Vec3.atCenterOf(getBlockPos());
 
-            for (int i = 0; i < intensity; i++) {
-                Vec3 target = getTarget(step + i);
-                BlockPos hitPos = raytrace(origin, origin.add(target));
+			for (int i = 0; i < intensity; i++) {
+				Vec3 target = getTarget(step + i);
+				BlockPos hitPos = raytrace(origin, origin.add(target));
 
-                if (hitPos != null) {
-                    BlockState blockState = level.getBlockState(hitPos);
+				if (hitPos != null) {
+					BlockState blockState = level.getBlockState(hitPos);
 
-                    breakBlock(level, hitPos, blockState);
+					breakBlock(level, hitPos, blockState);
 
-                    BlockPos spawnPos = traceDown(hitPos);
-                    BlockState spawnState = level.getBlockState(spawnPos);
+					BlockPos spawnPos = traceDown(hitPos);
+					BlockState spawnState = level.getBlockState(spawnPos);
 
-                    if (canReplace(spawnState)) {
-                        if (level.getRandom().nextFloat() < spawnRatio) {
-                            if (spawnPos.getY() < spawnYLimit) {
-                                spawnOre(spawnPos);
-                            }
-                        } else {
-                            spawnMob(spawnPos);
-                        }
-                    } else {
-                        breakBlock(level, spawnPos, spawnState);
-                    }
-                }
-            }
+					if (canReplace(spawnState)) {
+						if (level.getRandom().nextFloat() < spawnRatio) {
+							if (spawnPos.getY() < spawnYLimit) {
+								spawnOre(spawnPos);
+							}
+						} else {
+							spawnMob(spawnPos);
+						}
+					} else {
+						breakBlock(level, spawnPos, spawnState);
+					}
+				}
+			}
 
-            ((ServerLevel) level).sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, FracturedBedrockBlock.instance.defaultBlockState()),
-                    worldPosition.getX() + 0.5, worldPosition.getY() + 1.1, worldPosition.getZ() + 0.5,
-                    8, 0, level.random.nextGaussian() * 0.1, 0, 0.1);
+			((ServerLevel) level).sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, FracturedBedrockBlock.instance.defaultBlockState()),
+				worldPosition.getX() + 0.5, worldPosition.getY() + 1.1, worldPosition.getZ() + 0.5,
+				8, 0, level.random.nextGaussian() * 0.1, 0, 0.1);
 
-            step += intensity;
-            activity -= intensity;
+			step += intensity;
+			activity -= intensity;
 
-            if (shouldDeplete()) {
-                level.setBlock(getBlockPos(), DepletedBedrockBlock.instance.defaultBlockState(), 2);
-            }
-        }
+			if (shouldDeplete()) {
+				level.setBlock(getBlockPos(), DepletedBedrockBlock.instance.defaultBlockState(), 2);
+			}
+		}
 
-        if (!level.isClientSide  && activity > 0 && level.getGameTime() % 80 == 0) {
-            playSound();
-        }
-    }
+		if (!level.isClientSide && activity > 0 && level.getGameTime() % 80 == 0) {
+			playSound();
+		}
+	}
 
-    @Override
-    public void load(CompoundTag compound) {
-        super.load(compound);
+	@Override
+	public void load(CompoundTag compound) {
+		super.load(compound);
 
-        if (compound.contains(activityKey)) {
-            activity = compound.getInt(activityKey);
-        }
+		if (compound.contains(activityKey)) {
+			activity = compound.getInt(activityKey);
+		}
 
-        if (compound.contains(stepKey)) {
-            step = compound.getInt(stepKey);
-        }
+		if (compound.contains(stepKey)) {
+			step = compound.getInt(stepKey);
+		}
 
-        if (compound.contains(luckKey)) {
-            luck = compound.getInt(luckKey);
-        }
-    }
+		if (compound.contains(luckKey)) {
+			luck = compound.getInt(luckKey);
+		}
+	}
 
-    @Override
-    public CompoundTag save(CompoundTag compound) {
-        super.save(compound);
+	@Override
+	public CompoundTag save(CompoundTag compound) {
+		super.save(compound);
 
-        compound.putInt(activityKey, activity);
-        compound.putInt(stepKey, step);
-        compound.putInt(luckKey, luck);
+		compound.putInt(activityKey, activity);
+		compound.putInt(stepKey, step);
+		compound.putInt(luckKey, luck);
 
-        return compound;
-    }
+		return compound;
+	}
 
-    @Nullable
-    @Override
-    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-        return ClientboundBlockEntityDataPacket.create(this);
-    }
+	@Nullable
+	@Override
+	public ClientboundBlockEntityDataPacket getUpdatePacket() {
+		return ClientboundBlockEntityDataPacket.create(this);
+	}
 
-    @Override
-    public CompoundTag getUpdateTag() {
-        return save(new CompoundTag());
-    }
+	@Override
+	public CompoundTag getUpdateTag() {
+		return save(new CompoundTag());
+	}
 
-    @Override
-    public void deserializeNBT(CompoundTag nbt) {
-        super.deserializeNBT(nbt);
-    }
+	@Override
+	public void deserializeNBT(CompoundTag nbt) {
+		super.deserializeNBT(nbt);
+	}
 
-    @Override
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket packet) {
-        this.load(packet.getTag());
-    }
+	@Override
+	public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket packet) {
+		this.load(packet.getTag());
+	}
 }

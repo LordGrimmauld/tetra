@@ -28,81 +28,81 @@ import se.mickelus.tetra.util.CastOptional;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Collection;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 @OnlyIn(Dist.CLIENT)
 public class ModularShieldISTER extends BlockEntityWithoutLevelRenderer {
 
-    private final ModularShieldModel model = new ModularShieldModel();
+	private final ModularShieldModel model = new ModularShieldModel();
 
-    public ModularShieldISTER(BlockEntityRenderDispatcher p_172550_, EntityModelSet p_172551_) {
-        super(p_172550_, p_172551_);
-    }
+	public ModularShieldISTER(BlockEntityRenderDispatcher p_172550_, EntityModelSet p_172551_) {
+		super(p_172550_, p_172551_);
+	}
 
-    @Override
-    public void renderByItem(ItemStack itemStack, ItemTransforms.TransformType transformType, PoseStack matrixStack, MultiBufferSource buffer, int combinedLight, int combinedOverlay) {
+	@Override
+	public void renderByItem(ItemStack itemStack, ItemTransforms.TransformType transformType, PoseStack matrixStack, MultiBufferSource buffer, int combinedLight, int combinedOverlay) {
 //        boolean flag = itemStack.getChildTag("BlockEntityTag") != null;
-        matrixStack.pushPose();
-        matrixStack.scale(1.0F, -1.0F, -1.0F);
+		matrixStack.pushPose();
+		matrixStack.scale(1.0F, -1.0F, -1.0F);
 
-        Collection<ModuleModel> models = CastOptional.cast(itemStack.getItem(), ModularShieldItem.class)
-                .map(item -> item.getModels(itemStack, null))
-                .orElse(ImmutableList.of());
+		Collection<ModuleModel> models = CastOptional.cast(itemStack.getItem(), ModularShieldItem.class)
+			.map(item -> item.getModels(itemStack, null))
+			.orElse(ImmutableList.of());
 
-        // handle
-        models.stream()
-                .forEach(modelData -> {
-                    ModelPart modelRenderer = model.getModel(modelData.type);
-                    if (model.bannerModel.isBannerModel(modelRenderer)) {
-                        if (itemStack.getTagElement("BlockEntityTag") != null) { // banner data is stored in a compound keyed with "BlockEntityTag"
-                            renderBanner(itemStack, modelRenderer, matrixStack, buffer, combinedLight, combinedOverlay);
-                        }
-                    } else if (modelRenderer != null) {
-                        Material material = new Material(TextureAtlas.LOCATION_BLOCKS, modelData.location);
-                        VertexConsumer vertexBuilder = material.sprite().wrap(
-                                ItemRenderer.getFoilBuffer(buffer, model.renderType(material.atlasLocation()), false, itemStack.hasFoil()));
+		// handle
+		models.stream()
+			.forEach(modelData -> {
+				ModelPart modelRenderer = model.getModel(modelData.type);
+				if (model.bannerModel.isBannerModel(modelRenderer)) {
+					if (itemStack.getTagElement("BlockEntityTag") != null) { // banner data is stored in a compound keyed with "BlockEntityTag"
+						renderBanner(itemStack, modelRenderer, matrixStack, buffer, combinedLight, combinedOverlay);
+					}
+				} else if (modelRenderer != null) {
+					Material material = new Material(TextureAtlas.LOCATION_BLOCKS, modelData.location);
+					VertexConsumer vertexBuilder = material.sprite().wrap(
+						ItemRenderer.getFoilBuffer(buffer, model.renderType(material.atlasLocation()), false, itemStack.hasFoil()));
 
-                        float r = ((modelData.tint >> 16) & 0xFF) / 255f; // red
-                        float g = ((modelData.tint >>  8) & 0xFF) / 255f; // green
-                        float b = ((modelData.tint >>  0) & 0xFF) / 255f; // blue
-                        float a = ((modelData.tint >> 24) & 0xFF) / 255f; // alpha
+					float r = ((modelData.tint >> 16) & 0xFF) / 255f; // red
+					float g = ((modelData.tint >> 8) & 0xFF) / 255f; // green
+					float b = ((modelData.tint >> 0) & 0xFF) / 255f; // blue
+					float a = ((modelData.tint >> 24) & 0xFF) / 255f; // alpha
 
-                        // reset alpha to 1 if it's 0 to avoid mistakes & make things cleaner
-                        a = a == 0 ? 1 : a;
+					// reset alpha to 1 if it's 0 to avoid mistakes & make things cleaner
+					a = a == 0 ? 1 : a;
 
-                        modelRenderer.render(matrixStack, vertexBuilder, combinedLight, combinedOverlay, r, g, b, a);
-                    }
-                });
+					modelRenderer.render(matrixStack, vertexBuilder, combinedLight, combinedOverlay, r, g, b, a);
+				}
+			});
 
 
+		matrixStack.popPose();
+	}
 
-        matrixStack.popPose();
-    }
+	private void renderBanner(ItemStack itemStack, ModelPart modelRenderer, PoseStack matrixStack, MultiBufferSource buffer,
+							  int combinedLight, int combinedOverlay) {
+		List<Pair<BannerPattern, DyeColor>> list = BannerBlockEntity.createPatterns(ShieldItem.getColor(itemStack), BannerBlockEntity.getItemPatterns(itemStack));
 
-    private void renderBanner(ItemStack itemStack, ModelPart modelRenderer, PoseStack matrixStack, MultiBufferSource buffer,
-            int combinedLight, int combinedOverlay) {
-        List<Pair<BannerPattern, DyeColor>> list = BannerBlockEntity.createPatterns(ShieldItem.getColor(itemStack), BannerBlockEntity.getItemPatterns(itemStack));
+		for (int i = 0; i < 17 && i < list.size(); ++i) {
+			Pair<BannerPattern, DyeColor> pair = list.get(i);
+			float[] tint = pair.getSecond().getTextureDiffuseColors();
+			Material material = new Material(Sheets.SHIELD_SHEET, pair.getFirst().location(false));
+			VertexConsumer vertexBuilder = material.sprite().wrap(ItemRenderer.getFoilBuffer(buffer, RenderType.entitySmoothCutout(material.atlasLocation()), false, itemStack.hasFoil()));
+			modelRenderer.render(matrixStack, vertexBuilder, combinedLight, combinedOverlay, tint[0], tint[1], tint[2], 1.0f);
+		}
+	}
 
-        for(int i = 0; i < 17 && i < list.size(); ++i) {
-            Pair<BannerPattern, DyeColor> pair = list.get(i);
-            float[] tint = pair.getSecond().getTextureDiffuseColors();
-            Material material = new Material(Sheets.SHIELD_SHEET, pair.getFirst().location(false));
-            VertexConsumer vertexBuilder = material.sprite().wrap(ItemRenderer.getFoilBuffer(buffer, RenderType.entitySmoothCutout(material.atlasLocation()), false, itemStack.hasFoil()));
-            modelRenderer.render(matrixStack, vertexBuilder, combinedLight, combinedOverlay, tint[0], tint[1], tint[2], 1.0f);
-        }
-    }
+	private void renderEtching(ItemStack itemStack, ModelPart modelRenderer, PoseStack matrixStack, MultiBufferSource buffer,
+							   int combinedLight, int combinedOverlay) {
+		List<Pair<BannerPattern, DyeColor>> list = BannerBlockEntity.createPatterns(ShieldItem.getColor(itemStack), BannerBlockEntity.getItemPatterns(itemStack));
 
-    private void renderEtching(ItemStack itemStack, ModelPart modelRenderer, PoseStack matrixStack, MultiBufferSource buffer,
-            int combinedLight, int combinedOverlay) {
-        List<Pair<BannerPattern, DyeColor>> list = BannerBlockEntity.createPatterns(ShieldItem.getColor(itemStack), BannerBlockEntity.getItemPatterns(itemStack));
-
-        for(int i = 0; i < 17 && i < list.size(); ++i) {
-            Pair<BannerPattern, DyeColor> pair = list.get(i);
-            if (!pair.getFirst().equals(BannerPattern.BASE)) {
-                float[] tint = pair.getSecond().getTextureDiffuseColors();
-                Material material = new Material(Sheets.SHIELD_SHEET, pair.getFirst().location(false));
-                VertexConsumer vertexBuilder = material.sprite().wrap(ItemRenderer.getFoilBuffer(buffer, RenderType.entityNoOutline(material.atlasLocation()), false, itemStack.hasFoil()));
-                modelRenderer.render(matrixStack, vertexBuilder, combinedLight, combinedOverlay, tint[0], tint[1], tint[2], 0.7f);
-            }
-        }
-    }
+		for (int i = 0; i < 17 && i < list.size(); ++i) {
+			Pair<BannerPattern, DyeColor> pair = list.get(i);
+			if (!pair.getFirst().equals(BannerPattern.BASE)) {
+				float[] tint = pair.getSecond().getTextureDiffuseColors();
+				Material material = new Material(Sheets.SHIELD_SHEET, pair.getFirst().location(false));
+				VertexConsumer vertexBuilder = material.sprite().wrap(ItemRenderer.getFoilBuffer(buffer, RenderType.entityNoOutline(material.atlasLocation()), false, itemStack.hasFoil()));
+				modelRenderer.render(matrixStack, vertexBuilder, combinedLight, combinedOverlay, tint[0], tint[1], tint[2], 0.7f);
+			}
+		}
+	}
 }

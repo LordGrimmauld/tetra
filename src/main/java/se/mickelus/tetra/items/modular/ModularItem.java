@@ -36,227 +36,221 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public abstract class ModularItem extends TetraItem implements IModularItem, IToolProvider {
-    private static final Logger logger = LogManager.getLogger();
+	public static final UUID attackDamageModifier = Item.BASE_ATTACK_DAMAGE_UUID;
+	public static final UUID attackSpeedModifier = Item.BASE_ATTACK_SPEED_UUID;
+	private static final Logger logger = LogManager.getLogger();
+	protected int honeBase = 450;
+	protected int honeIntegrityMultiplier = 200;
+	// static marker for item, denoting if it can progress towards being honed
+	protected boolean canHone = true;
+	protected String[] majorModuleKeys;
+	protected String[] minorModuleKeys;
+	protected String[] requiredModules = new String[0];
+	protected int baseDurability = 0;
+	protected int baseIntegrity = 0;
+	protected SynergyData[] synergies = new SynergyData[0];
+	private final Cache<String, Multimap<Attribute, AttributeModifier>> attributeCache = CacheBuilder.newBuilder()
+		.maximumSize(1000)
+		.expireAfterWrite(5, TimeUnit.MINUTES)
+		.build();
 
-    protected int honeBase = 450;
-    protected int honeIntegrityMultiplier = 200;
+	private final Cache<String, ToolData> toolCache = CacheBuilder.newBuilder()
+		.maximumSize(1000)
+		.expireAfterWrite(5, TimeUnit.MINUTES)
+		.build();
 
-    // static marker for item, denoting if it can progress towards being honed
-    protected boolean canHone = true;
+	private final Cache<String, EffectData> effectCache = CacheBuilder.newBuilder()
+		.maximumSize(1000)
+		.expireAfterWrite(5, TimeUnit.MINUTES)
+		.build();
 
-    protected String[] majorModuleKeys;
-    protected String[] minorModuleKeys;
+	private final Cache<String, ItemProperties> propertyCache = CacheBuilder.newBuilder()
+		.maximumSize(1000)
+		.expireAfterWrite(5, TimeUnit.MINUTES)
+		.build();
 
-    protected String[] requiredModules = new String[0];
+	public ModularItem(Properties properties) {
+		super(properties);
 
-    protected int baseDurability = 0;
-    protected int baseIntegrity = 0;
+		DataManager.moduleData.onReload(this::clearCaches);
+	}
 
-    protected SynergyData[] synergies = new SynergyData[0];
+	public void clearCaches() {
+		logger.debug("Clearing item data caches for {}...", getRegistryName());
+		attributeCache.invalidateAll();
+		toolCache.invalidateAll();
+		effectCache.invalidateAll();
+		propertyCache.invalidateAll();
+	}
 
-    public static final UUID attackDamageModifier = Item.BASE_ATTACK_DAMAGE_UUID;
-    public static final UUID attackSpeedModifier = Item.BASE_ATTACK_SPEED_UUID;
+	@Override
+	public String[] getMajorModuleKeys() {
+		return majorModuleKeys;
+	}
 
-    private Cache<String, Multimap<Attribute, AttributeModifier>> attributeCache = CacheBuilder.newBuilder()
-            .maximumSize(1000)
-            .expireAfterWrite(5, TimeUnit.MINUTES)
-            .build();
+	@Override
+	public String[] getMinorModuleKeys() {
+		return minorModuleKeys;
+	}
 
-    private Cache<String, ToolData> toolCache = CacheBuilder.newBuilder()
-            .maximumSize(1000)
-            .expireAfterWrite(5, TimeUnit.MINUTES)
-            .build();
+	@Override
+	public String[] getRequiredModules() {
+		return requiredModules;
+	}
 
-    private Cache<String, EffectData> effectCache = CacheBuilder.newBuilder()
-            .maximumSize(1000)
-            .expireAfterWrite(5, TimeUnit.MINUTES)
-            .build();
+	@Override
+	public int getHoneBase() {
+		return honeBase;
+	}
 
-    private Cache<String, ItemProperties> propertyCache = CacheBuilder.newBuilder()
-            .maximumSize(1000)
-            .expireAfterWrite(5, TimeUnit.MINUTES)
-            .build();
+	@Override
+	public int getHoneIntegrityMultiplier() {
+		return honeIntegrityMultiplier;
+	}
 
-    public ModularItem(Properties properties) {
-        super(properties);
+	@Override
+	public boolean canGainHoneProgress() {
+		return canHone;
+	}
 
-        DataManager.moduleData.onReload(this::clearCaches);
-    }
+	@Override
+	public Cache<String, Multimap<Attribute, AttributeModifier>> getAttributeModifierCache() {
+		return attributeCache;
+	}
 
-    public void clearCaches() {
-        logger.debug("Clearing item data caches for {}...", getRegistryName());
-        attributeCache.invalidateAll();
-        toolCache.invalidateAll();
-        effectCache.invalidateAll();
-        propertyCache.invalidateAll();
-    }
+	@Override
+	public Cache<String, EffectData> getEffectDataCache() {
+		return effectCache;
+	}
 
-    @Override
-    public String[] getMajorModuleKeys() {
-        return majorModuleKeys;
-    }
+	@Override
+	public Cache<String, ItemProperties> getPropertyCache() {
+		return propertyCache;
+	}
 
-    @Override
-    public String[] getMinorModuleKeys() {
-        return minorModuleKeys;
-    }
+	public Cache<String, ToolData> getToolDataCache() {
+		return toolCache;
+	}
 
-    @Override
-    public String[] getRequiredModules() {
-        return requiredModules;
-    }
+	@Override
+	public Item getItem() {
+		return this;
+	}
 
-    @Override
-    public int getHoneBase() {
-        return honeBase;
-    }
+	@Override
+	public boolean canProvideTools(ItemStack itemStack) {
+		return !isBroken(itemStack);
+	}
 
-    @Override
-    public int getHoneIntegrityMultiplier() {
-        return honeIntegrityMultiplier;
-    }
+	@Override
+	public ToolData getToolData(ItemStack itemStack) {
+		try {
+			return getToolDataCache().get(getDataCacheKey(itemStack),
+				() -> Optional.ofNullable(getToolDataRaw(itemStack)).orElseGet(ToolData::new));
+		} catch (ExecutionException e) {
+			e.printStackTrace();
+			return Optional.ofNullable(getToolDataRaw(itemStack)).orElseGet(ToolData::new);
+		}
+	}
 
-    @Override
-    public boolean canGainHoneProgress() {
-        return canHone;
-    }
+	/**
+	 * Get uncached tool data, this is not needed in most cases.
+	 *
+	 * @param itemStack
+	 * @return
+	 */
+	protected ToolData getToolDataRaw(ItemStack itemStack) {
+		logger.debug("Gathering tool data for {} ({})", getName(itemStack).getString(), getDataCacheKey(itemStack));
+		return Stream.concat(
+				getAllModules(itemStack).stream()
+					.map(module -> module.getToolData(itemStack)),
+				Arrays.stream(getSynergyData(itemStack))
+					.map(synergy -> synergy.tools))
+			.filter(Objects::nonNull)
+			.reduce(null, ToolData::merge);
+	}
 
-    @Override
-    public Cache<String, Multimap<Attribute, AttributeModifier>> getAttributeModifierCache() {
-        return attributeCache;
-    }
+	@Override
+	public Component getName(ItemStack stack) {
+		return new TextComponent(getItemName(stack));
+	}
 
-    @Override
-    public Cache<String, EffectData> getEffectDataCache() {
-        return effectCache;
-    }
+	@Override
+	public void appendHoverText(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
+		tooltip.addAll(getTooltip(stack, world, flag));
+	}
 
-    @Override
-    public Cache<String, ItemProperties> getPropertyCache() {
-        return propertyCache;
-    }
+	@Override
+	public void inventoryTick(ItemStack itemStack, Level world, Entity entity, int itemSlot, boolean isSelected) {
+		ManaRepair.itemInventoryTick(itemStack, world, entity);
+	}
 
-    public Cache<String, ToolData> getToolDataCache() {
-        return toolCache;
-    }
+	@Override
+	public int getMaxDamage(ItemStack itemStack) {
+		return Optional.of(getPropertiesCached(itemStack))
+			.map(properties -> (properties.durability + baseDurability) * properties.durabilityMultiplier)
+			.map(Math::round)
+			.orElse(0);
+	}
 
-    @Override
-    public Item getItem() {
-        return this;
-    }
+	@Override
+	public void setDamage(ItemStack itemStack, int damage) {
+		super.setDamage(itemStack, Math.min(itemStack.getMaxDamage() - 1, damage));
+	}
 
-    @Override
-    public boolean canProvideTools(ItemStack itemStack) {
-        return !isBroken(itemStack);
-    }
+	@Override
+	public <T extends LivingEntity> int damageItem(ItemStack stack, int amount, T entity, Consumer<T> onBroken) {
+		return Math.min(stack.getMaxDamage() - stack.getDamageValue() - 1, amount);
+	}
 
-    @Override
-    public ToolData getToolData(ItemStack itemStack) {
-        try {
-            return getToolDataCache().get(getDataCacheKey(itemStack),
-                    () -> Optional.ofNullable(getToolDataRaw(itemStack)).orElseGet(ToolData::new));
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-            return Optional.ofNullable(getToolDataRaw(itemStack)).orElseGet(ToolData::new);
-        }
-    }
+	@Override
+	public void onCraftedBy(ItemStack itemStack, Level world, Player player) {
+		IModularItem.updateIdentifier(itemStack);
+	}
 
-    /**
-     * Get uncached tool data, this is not needed in most cases.
-     * @param itemStack
-     * @return
-     */
-    protected ToolData getToolDataRaw(ItemStack itemStack) {
-        logger.debug("Gathering tool data for {} ({})", getName(itemStack).getString(), getDataCacheKey(itemStack));
-        return Stream.concat(
-                getAllModules(itemStack).stream()
-                        .map(module -> module.getToolData(itemStack)),
-                Arrays.stream(getSynergyData(itemStack))
-                        .map(synergy -> synergy.tools))
-                .filter(Objects::nonNull)
-                .reduce(null, ToolData::merge);
-    }
+	/**
+	 * Vanilla method for determining if the item should display the enchantment glint
+	 *
+	 * @param itemStack The itemstack for the item
+	 * @return true if should display glint
+	 */
+	@Override
+	public boolean isFoil(@Nonnull ItemStack itemStack) {
+		if (ConfigHandler.enableGlint.get()) {
+			return Arrays.stream(getImprovements(itemStack))
+				.anyMatch(improvement -> improvement.enchantment);
+		}
 
-    @Override
-    public Component getName(ItemStack stack) {
-        return new TextComponent(getItemName(stack));
-    }
+		return false;
+	}
 
-    @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.addAll(getTooltip(stack, world, flag));
-    }
+	@Override
+	public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
+		return slotChanged;
+	}
 
-    @Override
-    public void inventoryTick(ItemStack itemStack, Level world, Entity entity, int itemSlot, boolean isSelected) {
-        ManaRepair.itemInventoryTick(itemStack, world, entity);
-    }
+	@Override
+	public SynergyData[] getAllSynergyData(ItemStack itemStack) {
+		return synergies;
+	}
 
-    @Override
-    public int getMaxDamage(ItemStack itemStack) {
-        return Optional.of(getPropertiesCached(itemStack))
-                .map(properties -> (properties.durability + baseDurability) * properties.durabilityMultiplier)
-                .map(Math::round)
-                .orElse(0);
-    }
+	@Override
+	public boolean isEnchantable(ItemStack itemStack) {
+		return canEnchantInEnchantingTable(itemStack);
+	}
 
-    @Override
-    public void setDamage(ItemStack itemStack, int damage) {
-        super.setDamage(itemStack, Math.min(itemStack.getMaxDamage() - 1, damage));
-    }
+	@Override
+	public boolean isBookEnchantable(final ItemStack itemStack, final ItemStack bookStack) {
+		return false;
+	}
 
-    @Override
-    public <T extends LivingEntity> int damageItem(ItemStack stack, int amount, T entity, Consumer<T> onBroken) {
-        return Math.min(stack.getMaxDamage() - stack.getDamageValue() - 1, amount);
-    }
+	@Override
+	public boolean canApplyAtEnchantingTable(ItemStack itemStack, Enchantment enchantment) {
+		return acceptsEnchantment(itemStack, enchantment);
+	}
 
-    @Override
-    public void onCraftedBy(ItemStack itemStack, Level world, Player player) {
-        IModularItem.updateIdentifier(itemStack);
-    }
-
-    /**
-     * Vanilla method for determining if the item should display the enchantment glint
-     * @param itemStack The itemstack for the item
-     * @return true if should display glint
-     */
-    @Override
-    public boolean isFoil(@Nonnull ItemStack itemStack) {
-        if (ConfigHandler.enableGlint.get()) {
-            return Arrays.stream(getImprovements(itemStack))
-                    .anyMatch(improvement -> improvement.enchantment);
-        }
-
-        return false;
-    }
-
-    @Override
-    public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
-        return slotChanged;
-    }
-
-    @Override
-    public SynergyData[] getAllSynergyData(ItemStack itemStack) {
-        return synergies;
-    }
-
-    @Override
-    public boolean isEnchantable(ItemStack itemStack) {
-        return canEnchantInEnchantingTable(itemStack);
-    }
-
-    @Override
-    public boolean isBookEnchantable(final ItemStack itemStack, final ItemStack bookStack) {
-        return false;
-    }
-
-    @Override
-    public boolean canApplyAtEnchantingTable(ItemStack itemStack, Enchantment enchantment) {
-        return acceptsEnchantment(itemStack, enchantment);
-    }
-
-    @Override
-    public int getItemEnchantability(ItemStack itemStack) {
-        return getEnchantability(itemStack);
-    }
+	@Override
+	public int getItemEnchantability(ItemStack itemStack) {
+		return getEnchantability(itemStack);
+	}
 }

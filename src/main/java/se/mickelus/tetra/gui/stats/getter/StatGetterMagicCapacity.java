@@ -9,46 +9,48 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Stream;
+
 @ParametersAreNonnullByDefault
 public class StatGetterMagicCapacity implements IStatGetter {
 
-    public StatGetterMagicCapacity() { }
+	public StatGetterMagicCapacity() {
+	}
 
-    @Override
-    public double getValue(Player player, ItemStack itemStack) {
-        return CastOptional.cast(itemStack.getItem(), IModularItem.class)
-                .map(item -> item.getMajorModules(itemStack))
-                .map(Arrays::stream)
-                .orElse(Stream.empty())
-                .filter(Objects::nonNull)
-                .mapToInt(module -> module.getMagicCapacity(itemStack))
-                .sum();
-    }
+	@Override
+	public double getValue(Player player, ItemStack itemStack) {
+		return CastOptional.cast(itemStack.getItem(), IModularItem.class)
+			.map(item -> item.getMajorModules(itemStack))
+			.map(Arrays::stream)
+			.orElse(Stream.empty())
+			.filter(Objects::nonNull)
+			.mapToInt(module -> module.getMagicCapacity(itemStack))
+			.sum();
+	}
 
-    @Override
-    public double getValue(Player player, ItemStack itemStack, String slot) {
-        return CastOptional.cast(itemStack.getItem(), IModularItem.class)
-                .map(item -> item.getModuleFromSlot(itemStack, slot).getMagicCapacity(itemStack))
-                .orElse(0);
-    }
+	@Override
+	public double getValue(Player player, ItemStack itemStack, String slot) {
+		return CastOptional.cast(itemStack.getItem(), IModularItem.class)
+			.map(item -> item.getModuleFromSlot(itemStack, slot).getMagicCapacity(itemStack))
+			.orElse(0);
+	}
 
-    public boolean hasGain(ItemStack itemStack) {
-        return CastOptional.cast(itemStack.getItem(), IModularItem.class)
-                .map(item -> item.getMajorModules(itemStack))
-                .map(Arrays::stream)
-                .orElse(Stream.empty())
-                .filter(Objects::nonNull)
-                .mapToInt(module -> module.getMagicCapacityGain(itemStack))
-                .anyMatch(gain -> gain > 0);
-    }
+	public boolean hasGain(ItemStack itemStack) {
+		return CastOptional.cast(itemStack.getItem(), IModularItem.class)
+			.map(item -> item.getMajorModules(itemStack))
+			.map(Arrays::stream)
+			.orElse(Stream.empty())
+			.filter(Objects::nonNull)
+			.mapToInt(module -> module.getMagicCapacityGain(itemStack))
+			.anyMatch(gain -> gain > 0);
+	}
 
-    @Override
-    public double getValue(Player player, ItemStack itemStack, String slot, String improvement) {
-        return 0;
-    }
+	@Override
+	public double getValue(Player player, ItemStack itemStack, String slot, String improvement) {
+		return 0;
+	}
 
-    @Override
-    public boolean shouldShow(Player player, ItemStack currentStack, ItemStack previewStack) {
-        return hasGain(currentStack) || hasGain(previewStack);
-    }
+	@Override
+	public boolean shouldShow(Player player, ItemStack currentStack, ItemStack previewStack) {
+		return hasGain(currentStack) || hasGain(previewStack);
+	}
 }

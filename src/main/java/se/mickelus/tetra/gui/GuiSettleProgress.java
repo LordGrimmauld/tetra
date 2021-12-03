@@ -14,86 +14,87 @@ import se.mickelus.tetra.module.ItemModuleMajor;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Collections;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class GuiSettleProgress extends GuiElement {
-    protected GuiString labelString;
-    protected GuiString valueString;
-    protected GuiBar bar;
+	protected GuiString labelString;
+	protected GuiString valueString;
+	protected GuiBar bar;
 
-    protected List<String> tooltip;
+	protected List<String> tooltip;
 
-    public GuiSettleProgress(int x, int y, int barLength) {
-        super(x, y, barLength, 12);
+	public GuiSettleProgress(int x, int y, int barLength) {
+		super(x, y, barLength, 12);
 
-        labelString = new GuiStringSmall(0, 0, I18n.get("item.tetra.modular.settle_progress.label"));
-        addChild(labelString);
+		labelString = new GuiStringSmall(0, 0, I18n.get("item.tetra.modular.settle_progress.label"));
+		addChild(labelString);
 
-        valueString = new GuiStringSmall(0, 0, "");
-        valueString.setAttachment(GuiAttachment.topRight);
-        addChild(valueString);
+		valueString = new GuiStringSmall(0, 0, "");
+		valueString.setAttachment(GuiAttachment.topRight);
+		addChild(valueString);
 
-        bar = new GuiBar(0, 0, barLength, 0, 1);
-        addChild(bar);
+		bar = new GuiBar(0, 0, barLength, 0, 1);
+		addChild(bar);
 
-    }
+	}
 
-    public void update(ItemStack itemStack, ItemModuleMajor module) {
-        int value = module.getSettleProgress(itemStack);
-        int limit = module.getSettleLimit(itemStack);
-        float progress = (1f * limit - value) / limit;
+	public void update(ItemStack itemStack, ItemModuleMajor module) {
+		int value = module.getSettleProgress(itemStack);
+		int limit = module.getSettleLimit(itemStack);
+		float progress = (1f * limit - value) / limit;
 
-        int settleMaxCount = module.getSettleMaxCount(itemStack);
+		int settleMaxCount = module.getSettleMaxCount(itemStack);
 
-        boolean fullySettled = settleMaxCount <= module.getImprovementLevel(itemStack, ItemModuleMajor.settleImprovement);
-        boolean isArrested = module.getImprovementLevel(itemStack, ItemModuleMajor.arrestedImprovement) != -1;
-        boolean isGain = module.getIntegrityGain(itemStack) > 0;
+		boolean fullySettled = settleMaxCount <= module.getImprovementLevel(itemStack, ItemModuleMajor.settleImprovement);
+		boolean isArrested = module.getImprovementLevel(itemStack, ItemModuleMajor.arrestedImprovement) != -1;
+		boolean isGain = module.getIntegrityGain(itemStack) > 0;
 
-        if (isArrested) {
-            labelString.setString(ChatFormatting.RED + I18n.get("tetra.improvement.arrested.name"));
-            labelString.setAttachment(GuiAttachment.topCenter);
-            tooltip = Collections.singletonList(I18n.get("tetra.improvement.arrested.description"));
+		if (isArrested) {
+			labelString.setString(ChatFormatting.RED + I18n.get("tetra.improvement.arrested.name"));
+			labelString.setAttachment(GuiAttachment.topCenter);
+			tooltip = Collections.singletonList(I18n.get("tetra.improvement.arrested.description"));
 
-            valueString.setString("");
-            bar.setValue(0, 0);
-        } else if (fullySettled) {
-            labelString.setString(ChatFormatting.GREEN + I18n.get("item.tetra.modular.settle_full.label"));
-            labelString.setAttachment(GuiAttachment.topCenter);
+			valueString.setString("");
+			bar.setValue(0, 0);
+		} else if (fullySettled) {
+			labelString.setString(ChatFormatting.GREEN + I18n.get("item.tetra.modular.settle_full.label"));
+			labelString.setAttachment(GuiAttachment.topCenter);
 
-            if (isGain) {
-                tooltip = Collections.singletonList(I18n.get("item.tetra.modular.settle_full_gain.description"));
-            } else {
-                tooltip = Collections.singletonList(I18n.get("item.tetra.modular.settle_full_cost.description"));
-            }
+			if (isGain) {
+				tooltip = Collections.singletonList(I18n.get("item.tetra.modular.settle_full_gain.description"));
+			} else {
+				tooltip = Collections.singletonList(I18n.get("item.tetra.modular.settle_full_cost.description"));
+			}
 
-            valueString.setString("");
-            bar.setValue(1f, 1f);
-        } else if (settleMaxCount == 0) {
-            labelString.setString(I18n.get("item.tetra.modular.settle_full_null.label"));
-            labelString.setAttachment(GuiAttachment.topCenter);
-            tooltip = Collections.singletonList(I18n.get("item.tetra.modular.settle_full_null.description"));
+			valueString.setString("");
+			bar.setValue(1f, 1f);
+		} else if (settleMaxCount == 0) {
+			labelString.setString(I18n.get("item.tetra.modular.settle_full_null.label"));
+			labelString.setAttachment(GuiAttachment.topCenter);
+			tooltip = Collections.singletonList(I18n.get("item.tetra.modular.settle_full_null.description"));
 
-            valueString.setString("");
-            bar.setValue(1f, 1f);
-        } else {
-            double durabilityPenalty = Math.max(module.getImprovementLevel(itemStack, ItemModuleMajor.settleImprovement) * ConfigHandler.settleLimitLevelMultiplier.get(), 1f)
-                    * module.getDurability(itemStack) * ConfigHandler.settleLimitDurabilityMultiplier.get();
+			valueString.setString("");
+			bar.setValue(1f, 1f);
+		} else {
+			double durabilityPenalty = Math.max(module.getImprovementLevel(itemStack, ItemModuleMajor.settleImprovement) * ConfigHandler.settleLimitLevelMultiplier.get(), 1f)
+				* module.getDurability(itemStack) * ConfigHandler.settleLimitDurabilityMultiplier.get();
 
-            labelString.setString(I18n.get("item.tetra.modular.settle_progress.label"));
-            labelString.setAttachment(GuiAttachment.topLeft);
-            tooltip = Collections.singletonList(I18n.get(isGain ? "item.tetra.modular.settle_progress_gain.description" : "item.tetra.modular.settle_progress_cost.description",
-                    limit - value /*String.format("%.0f", (100f * progress))*/, limit, ConfigHandler.settleLimitBase.get(), (int) durabilityPenalty));
+			labelString.setString(I18n.get("item.tetra.modular.settle_progress.label"));
+			labelString.setAttachment(GuiAttachment.topLeft);
+			tooltip = Collections.singletonList(I18n.get(isGain ? "item.tetra.modular.settle_progress_gain.description" : "item.tetra.modular.settle_progress_cost.description",
+				limit - value /*String.format("%.0f", (100f * progress))*/, limit, ConfigHandler.settleLimitBase.get(), (int) durabilityPenalty));
 
-            valueString.setString(String.format("%.0f%%", (100f * progress)));
+			valueString.setString(String.format("%.0f%%", (100f * progress)));
 
-            bar.setValue((1f * progress), (1f * progress));
-        }
-    }
+			bar.setValue((1f * progress), (1f * progress));
+		}
+	}
 
-    @Override
-    public List<String> getTooltipLines() {
-        if (hasFocus()) {
-            return tooltip;
-        }
-        return super.getTooltipLines();
-    }
+	@Override
+	public List<String> getTooltipLines() {
+		if (hasFocus()) {
+			return tooltip;
+		}
+		return super.getTooltipLines();
+	}
 }

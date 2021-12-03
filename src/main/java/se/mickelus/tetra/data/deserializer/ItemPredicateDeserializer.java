@@ -10,21 +10,23 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.lang.reflect.Type;
+
 @ParametersAreNonnullByDefault
 public class ItemPredicateDeserializer implements JsonDeserializer<ItemPredicate> {
-    private static final Logger logger = LogManager.getLogger();
-    @Override
-    public ItemPredicate deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-        return deserialize(json);
-    }
+	private static final Logger logger = LogManager.getLogger();
 
-    public static ItemPredicate deserialize(JsonElement json) {
-        try {
-            return ItemPredicate.fromJson(json);
-        } catch (JsonParseException e) {
-            logger.debug("Failed to parse item predicate from \"{}\": '{}'", json, e.getMessage());
-            // todo: debug level log
-            return null;
-        }
-    }
+	public static ItemPredicate deserialize(JsonElement json) {
+		try {
+			return ItemPredicate.fromJson(json);
+		} catch (JsonParseException e) {
+			logger.debug("Failed to parse item predicate from \"{}\": '{}'", json, e.getMessage());
+			// todo: debug level log
+			return null;
+		}
+	}
+
+	@Override
+	public ItemPredicate deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+		return deserialize(json);
+	}
 }

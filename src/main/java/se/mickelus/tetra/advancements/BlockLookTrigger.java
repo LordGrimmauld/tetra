@@ -21,71 +21,71 @@ import se.mickelus.tetra.blocks.PropertyMatcher;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
 @ParametersAreNonnullByDefault
 public class BlockLookTrigger extends GenericTrigger<BlockLookTrigger.Instance> {
-    private Cache<UUID, BlockState> stateCache;
+	public static final BlockLookTrigger instance = new BlockLookTrigger();
+	private final Cache<UUID, BlockState> stateCache;
 
-    public static final BlockLookTrigger instance = new BlockLookTrigger();
+	public BlockLookTrigger() {
+		super("tetra:block_look", BlockLookTrigger::deserialize);
+		stateCache = CacheBuilder.newBuilder()
+			.maximumSize(100)
+			.expireAfterWrite(1, TimeUnit.MINUTES)
+			.build();
+	}
 
-    public BlockLookTrigger() {
-        super("tetra:block_look", BlockLookTrigger::deserialize);
-        stateCache = CacheBuilder.newBuilder()
-                .maximumSize(100)
-                .expireAfterWrite(1, TimeUnit.MINUTES)
-                .build();
-    }
+	public static Instance deserialize(JsonObject json, EntityPredicate.Composite entityPredicate, DeserializationContext conditionsParser) {
+		PropertyMatcher propertyMatcher = null;
+		if (json.has("block")) {
+			propertyMatcher = PropertyMatcher.deserialize(json.get("block"));
+		}
 
-    @SubscribeEvent(priority = EventPriority.LOW)
-    public void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (TickEvent.Phase.START == event.phase && event.player.tickCount % 20 == 0 && !event.player.level.isClientSide) {
-            event.player.level.getProfiler().push("lookTrigger");
-            Vec3 playerPosition = event.player.getEyePosition(0);
+		return new Instance(entityPredicate, propertyMatcher);
+	}
 
-            float lookDistance = 5; // event.player.getAttribute(ForgeMod.REACH_DISTANCE.get()).getValue()
-            Vec3 lookingPosition = event.player.getLookAngle().scale(lookDistance).add(playerPosition);
+	@SubscribeEvent(priority = EventPriority.LOW)
+	public void onPlayerTick(TickEvent.PlayerTickEvent event) {
+		if (TickEvent.Phase.START == event.phase && event.player.tickCount % 20 == 0 && !event.player.level.isClientSide) {
+			event.player.level.getProfiler().push("lookTrigger");
+			Vec3 playerPosition = event.player.getEyePosition(0);
 
-            BlockHitResult result = event.player.level.clip(new ClipContext(playerPosition, lookingPosition,
-                    ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, event.player));
+			float lookDistance = 5; // event.player.getAttribute(ForgeMod.REACH_DISTANCE.get()).getValue()
+			Vec3 lookingPosition = event.player.getLookAngle().scale(lookDistance).add(playerPosition);
+
+			BlockHitResult result = event.player.level.clip(new ClipContext(playerPosition, lookingPosition,
+				ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, event.player));
 
 
-            if (!HitResult.Type.MISS.equals(result.getType())) {
-                BlockState currentState = event.player.level.getBlockState(new BlockPos(result.getBlockPos()));
+			if (!HitResult.Type.MISS.equals(result.getType())) {
+				BlockState currentState = event.player.level.getBlockState(new BlockPos(result.getBlockPos()));
 
-                if (!currentState.equals(stateCache.getIfPresent(event.player.getUUID()))) {
-                    trigger((ServerPlayer) event.player, currentState);
-                    stateCache.put(event.player.getUUID(), currentState);
-                }
-            } else {
-                stateCache.invalidate(event.player.getUUID());
-            }
-            event.player.level.getProfiler().pop();
-        }
-    }
+				if (!currentState.equals(stateCache.getIfPresent(event.player.getUUID()))) {
+					trigger((ServerPlayer) event.player, currentState);
+					stateCache.put(event.player.getUUID(), currentState);
+				}
+			} else {
+				stateCache.invalidate(event.player.getUUID());
+			}
+			event.player.level.getProfiler().pop();
+		}
+	}
 
-    public static Instance deserialize(JsonObject json, EntityPredicate.Composite entityPredicate, DeserializationContext conditionsParser) {
-        PropertyMatcher propertyMatcher = null;
-        if (json.has("block")) {
-            propertyMatcher = PropertyMatcher.deserialize(json.get("block"));
-        }
+	public void trigger(ServerPlayer player, BlockState state) {
+		fulfillCriterion(player, instance -> instance.test(state));
+	}
 
-        return new Instance(entityPredicate, propertyMatcher);
-    }
+	public static class Instance extends AbstractCriterionTriggerInstance {
+		private PropertyMatcher block = null;
 
-    public void trigger(ServerPlayer player, BlockState state) {
-        fulfillCriterion(player, instance -> instance.test(state));
-    }
+		public Instance(EntityPredicate.Composite playerCondition, PropertyMatcher propertyMatcher) {
+			super(instance.getId(), playerCondition);
 
-    public static class Instance extends AbstractCriterionTriggerInstance {
-        private PropertyMatcher block = null;
+			this.block = propertyMatcher;
+		}
 
-        public Instance(EntityPredicate.Composite playerCondition, PropertyMatcher propertyMatcher) {
-            super(instance.getId(), playerCondition);
-
-            this.block = propertyMatcher;
-        }
-
-        public boolean test(BlockState state) {
-            return block != null && block.test(state);
-        }
-    }
+		public boolean test(BlockState state) {
+			return block != null && block.test(state);
+		}
+	}
 }

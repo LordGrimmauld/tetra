@@ -9,20 +9,21 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class VibrationDebuffer {
-    @SubscribeEvent(priority = EventPriority.LOW)
-    public void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (!event.player.level.isClientSide && event.player.level.getGameTime() % 20 == 0
-                && hasApplicableItem(event.player)) {
-            event.player.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 80, 1));
-        }
-    }
+	@SubscribeEvent(priority = EventPriority.LOW)
+	public void onPlayerTick(TickEvent.PlayerTickEvent event) {
+		if (!event.player.level.isClientSide && event.player.level.getGameTime() % 20 == 0
+			&& hasApplicableItem(event.player)) {
+			event.player.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 80, 1));
+		}
+	}
 
-    private boolean hasApplicableItem(Player player) {
-        Item mainHandItem = player.getMainHandItem().getItem();
-        Item offHandItem = player.getOffhandItem().getItem();
-        return EarthpiercerItem.instance.equals(mainHandItem) || EarthpiercerItem.instance.equals(offHandItem)
-                || StonecutterItem.instance != null && (StonecutterItem.instance.equals(mainHandItem) || StonecutterItem.instance.equals(offHandItem));
-    }
+	private boolean hasApplicableItem(Player player) {
+		Item mainHandItem = player.getMainHandItem().getItem();
+		Item offHandItem = player.getOffhandItem().getItem();
+		return EarthpiercerItem.instance.equals(mainHandItem) || EarthpiercerItem.instance.equals(offHandItem)
+			|| StonecutterItem.instance != null && (StonecutterItem.instance.equals(mainHandItem) || StonecutterItem.instance.equals(offHandItem));
+	}
 }

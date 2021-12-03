@@ -7,41 +7,42 @@ import se.mickelus.tetra.items.modular.ItemModularHandheld;
 import se.mickelus.tetra.util.CastOptional;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
-public class  TooltipGetterBlockingDuration implements ITooltipGetter {
-    private IStatGetter durationGetter;
-    private IStatGetter cooldownGetter;
+public class TooltipGetterBlockingDuration implements ITooltipGetter {
+	private final IStatGetter durationGetter;
+	private final IStatGetter cooldownGetter;
 
-    public TooltipGetterBlockingDuration(IStatGetter durationGetter, IStatGetter cooldownGetter) {
-        this.durationGetter = durationGetter;
-        this.cooldownGetter = cooldownGetter;
-    }
+	public TooltipGetterBlockingDuration(IStatGetter durationGetter, IStatGetter cooldownGetter) {
+		this.durationGetter = durationGetter;
+		this.cooldownGetter = cooldownGetter;
+	}
 
-    @Override
-    public String getTooltipBase(Player player, ItemStack itemStack) {
-        double cooldownMultiplier = cooldownGetter.getValue(player, itemStack);
-        if (cooldownMultiplier > 0) {
-            if (cooldownMultiplier != 1) {
-                double baseCooldown = CastOptional.cast(itemStack.getItem(), ItemModularHandheld.class)
-                        .map(item -> item.getCooldownBase(itemStack))
-                        .orElse(1d);
-                return I18n.get("tetra.stats.blocking_duration_cooldown.tooltip",
-                        String.format("%.1f", durationGetter.getValue(player, itemStack)),
-                        String.format("%.2f", cooldownMultiplier),
-                        String.format("%.1f", cooldownMultiplier * baseCooldown));
-            }
-            return I18n.get("tetra.stats.blocking_duration.tooltip", String.format("%.1f", durationGetter.getValue(player, itemStack)));
-        }
-        return I18n.get("tetra.stats.blocking.tooltip");
-    }
+	@Override
+	public String getTooltipBase(Player player, ItemStack itemStack) {
+		double cooldownMultiplier = cooldownGetter.getValue(player, itemStack);
+		if (cooldownMultiplier > 0) {
+			if (cooldownMultiplier != 1) {
+				double baseCooldown = CastOptional.cast(itemStack.getItem(), ItemModularHandheld.class)
+					.map(item -> item.getCooldownBase(itemStack))
+					.orElse(1d);
+				return I18n.get("tetra.stats.blocking_duration_cooldown.tooltip",
+					String.format("%.1f", durationGetter.getValue(player, itemStack)),
+					String.format("%.2f", cooldownMultiplier),
+					String.format("%.1f", cooldownMultiplier * baseCooldown));
+			}
+			return I18n.get("tetra.stats.blocking_duration.tooltip", String.format("%.1f", durationGetter.getValue(player, itemStack)));
+		}
+		return I18n.get("tetra.stats.blocking.tooltip");
+	}
 
-    @Override
-    public boolean hasExtendedTooltip(Player player, ItemStack itemStack) {
-        return true;
-    }
+	@Override
+	public boolean hasExtendedTooltip(Player player, ItemStack itemStack) {
+		return true;
+	}
 
-    @Override
-    public String getTooltipExtension(Player player, ItemStack itemStack) {
-        return I18n.get("tetra.stats.blocking.tooltip_extended");
-    }
+	@Override
+	public String getTooltipExtension(Player player, ItemStack itemStack) {
+		return I18n.get("tetra.stats.blocking.tooltip_extended");
+	}
 }

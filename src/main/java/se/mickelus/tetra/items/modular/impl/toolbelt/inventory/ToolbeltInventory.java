@@ -23,246 +23,245 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+
 @ParametersAreNonnullByDefault
 public class ToolbeltInventory implements Container {
-    protected static final String slotKey = "slot";
+	protected static final String slotKey = "slot";
+	public static ItemPredicate potionPredicate = ItemPredicate.ANY;
+	public static ItemPredicate quickPredicate = ItemPredicate.ANY;
+	public static ItemPredicate quiverPredicate = ItemPredicate.ANY;
+	public static ItemPredicate storagePredicate = ItemPredicate.ANY;
+	protected final String inventoryKey;
+	protected ItemStack toolbeltItemStack;
+	protected SlotType inventoryType;
+	protected NonNullList<ItemStack> inventoryContents;
+	protected int numSlots = 0;
+	protected int maxSize = 0;
+	ItemPredicate predicate = ItemPredicate.ANY;
 
-    protected ItemStack toolbeltItemStack;
+	public ToolbeltInventory(String inventoryKey, ItemStack stack, int maxSize, SlotType inventoryType) {
+		this.inventoryKey = inventoryKey;
+		toolbeltItemStack = stack;
 
-    protected SlotType inventoryType;
+		this.inventoryType = inventoryType;
 
-    protected final String inventoryKey;
-    protected NonNullList<ItemStack> inventoryContents;
-    protected int numSlots = 0;
-    protected int maxSize = 0;
+		this.maxSize = maxSize;
+		inventoryContents = NonNullList.withSize(maxSize, ItemStack.EMPTY);
+	}
 
-    ItemPredicate predicate = ItemPredicate.ANY;
-    public static ItemPredicate potionPredicate = ItemPredicate.ANY;
-    public static ItemPredicate quickPredicate = ItemPredicate.ANY;
-    public static ItemPredicate quiverPredicate = ItemPredicate.ANY;
-    public static ItemPredicate storagePredicate = ItemPredicate.ANY;
+	public static void initializePredicates() {
+		DataManager.predicateData.onReload(() -> {
+			potionPredicate = getPredicate("potion");
+			quickPredicate = getPredicate("quick");
+			quiverPredicate = getPredicate("quiver");
+			storagePredicate = getPredicate("storage");
+		});
+	}
 
-    public ToolbeltInventory(String inventoryKey, ItemStack stack, int maxSize, SlotType inventoryType) {
-        this.inventoryKey = inventoryKey;
-        toolbeltItemStack = stack;
+	private static ItemPredicate getPredicate(String inventory) {
+		ItemPredicate[] predicates = Arrays.stream(DataManager.predicateData.getData(
+				new ResourceLocation(TetraMod.MOD_ID, String.format("toolbelt/%s", inventory))))
+			.filter(Objects::nonNull)
+			.toArray(ItemPredicate[]::new);
 
-        this.inventoryType = inventoryType;
+		// todo: add debug log
+		if (predicates.length > 0) {
+			return new ItemPredicateComposite(predicates);
+		}
 
-        this.maxSize = maxSize;
-        inventoryContents = NonNullList.withSize(maxSize, ItemStack.EMPTY);
-    }
-
-    public static void initializePredicates() {
-        DataManager.predicateData.onReload(() -> {
-            potionPredicate = getPredicate("potion");
-            quickPredicate = getPredicate("quick");
-            quiverPredicate = getPredicate("quiver");
-            storagePredicate = getPredicate("storage");
-        });
-    }
-
-    private static ItemPredicate getPredicate(String inventory) {
-        ItemPredicate[] predicates = Arrays.stream(DataManager.predicateData.getData(
-                new ResourceLocation(TetraMod.MOD_ID, String.format("toolbelt/%s", inventory))))
-                .filter(Objects::nonNull)
-                .toArray(ItemPredicate[]::new);
-
-        // todo: add debug log
-        if (predicates.length > 0) {
-            return new ItemPredicateComposite(predicates);
-        }
-
-        return ItemPredicate.ANY;
-    }
+		return ItemPredicate.ANY;
+	}
 
 
-    public void readFromNBT(CompoundTag compound) {
-        ListTag items = compound.getList(inventoryKey, Tag.TAG_COMPOUND);
+	public void readFromNBT(CompoundTag compound) {
+		ListTag items = compound.getList(inventoryKey, Tag.TAG_COMPOUND);
 
-        for (int i = 0; i < items.size(); i++) {
-            CompoundTag itemTag = items.getCompound(i);
-            int slot = itemTag.getByte(slotKey) & 255;
+		for (int i = 0; i < items.size(); i++) {
+			CompoundTag itemTag = items.getCompound(i);
+			int slot = itemTag.getByte(slotKey) & 255;
 
-            if (0 <= slot && slot < maxSize) {
-                inventoryContents.set(slot, ItemStack.of(itemTag));
-            }
-        }
-    }
+			if (0 <= slot && slot < maxSize) {
+				inventoryContents.set(slot, ItemStack.of(itemTag));
+			}
+		}
+	}
 
-    public void writeToNBT(CompoundTag tagcompound) {
-        ListTag items = new ListTag();
+	public void writeToNBT(CompoundTag tagcompound) {
+		ListTag items = new ListTag();
 
-        for (int i = 0; i < maxSize; i++) {
-            if (getItem(i) != null) {
-                CompoundTag compound = new CompoundTag();
-                getItem(i).save(compound);
-                compound.putByte(slotKey, (byte)i);
-                items.add(compound);
-            }
-        }
+		for (int i = 0; i < maxSize; i++) {
+			if (getItem(i) != null) {
+				CompoundTag compound = new CompoundTag();
+				getItem(i).save(compound);
+				compound.putByte(slotKey, (byte) i);
+				items.add(compound);
+			}
+		}
 
-        tagcompound.put(inventoryKey, items);
-    }
+		tagcompound.put(inventoryKey, items);
+	}
 
-    @Override
-    public int getContainerSize() {
-        return numSlots;
-    }
+	@Override
+	public int getContainerSize() {
+		return numSlots;
+	}
 
-    @Override
-    public boolean isEmpty() {
-        for (int i = 0; i < getContainerSize(); i++) {
-            if (!getItem(i).isEmpty()) {
-                return false;
-            }
-        }
-        return true;
-    }
+	@Override
+	public boolean isEmpty() {
+		for (int i = 0; i < getContainerSize(); i++) {
+			if (!getItem(i).isEmpty()) {
+				return false;
+			}
+		}
+		return true;
+	}
 
-    @Override
-    public ItemStack getItem(int index) {
-        return inventoryContents.get(index);
-    }
+	@Override
+	public ItemStack getItem(int index) {
+		return inventoryContents.get(index);
+	}
 
-    @Override
-    public ItemStack removeItem(int index, int count) {
-        ItemStack itemstack = ContainerHelper.removeItem(this.inventoryContents, index, count);
+	@Override
+	public ItemStack removeItem(int index, int count) {
+		ItemStack itemstack = ContainerHelper.removeItem(this.inventoryContents, index, count);
 
-        if (!itemstack.isEmpty()) {
-            this.setChanged();
-        }
+		if (!itemstack.isEmpty()) {
+			this.setChanged();
+		}
 
-        return itemstack;
-    }
+		return itemstack;
+	}
 
-    @Override
-    public ItemStack removeItemNoUpdate(int index) {
-        ItemStack itemStack = this.inventoryContents.get(index);
+	@Override
+	public ItemStack removeItemNoUpdate(int index) {
+		ItemStack itemStack = this.inventoryContents.get(index);
 
-        if (itemStack.isEmpty()) {
-            return itemStack;
-        } else {
-            this.inventoryContents.set(index, ItemStack.EMPTY);
-            return itemStack;
-        }
-    }
+		if (itemStack.isEmpty()) {
+			return itemStack;
+		} else {
+			this.inventoryContents.set(index, ItemStack.EMPTY);
+			return itemStack;
+		}
+	}
 
-    @Override
-    public void setItem(int index, ItemStack stack) {
-        this.inventoryContents.set(index, stack);
+	@Override
+	public void setItem(int index, ItemStack stack) {
+		this.inventoryContents.set(index, stack);
 
-        if (!stack.isEmpty() && stack.getCount() > this.getMaxStackSize()) {
-            stack.setCount(this.getMaxStackSize());
-        }
+		if (!stack.isEmpty() && stack.getCount() > this.getMaxStackSize()) {
+			stack.setCount(this.getMaxStackSize());
+		}
 
-        this.setChanged();
-    }
+		this.setChanged();
+	}
 
-    @Override
-    public int getMaxStackSize() {
-        return 64;
-    }
+	@Override
+	public int getMaxStackSize() {
+		return 64;
+	}
 
-    @Override
-    public void setChanged() {
-        for (int i = 0; i < getContainerSize(); ++i) {
-            if (getItem(i).getCount() == 0) {
-                inventoryContents.set(i, ItemStack.EMPTY);
-            }
-        }
+	@Override
+	public void setChanged() {
+		for (int i = 0; i < getContainerSize(); ++i) {
+			if (getItem(i).getCount() == 0) {
+				inventoryContents.set(i, ItemStack.EMPTY);
+			}
+		}
 
-        writeToNBT(toolbeltItemStack.getOrCreateTag());
-    }
+		writeToNBT(toolbeltItemStack.getOrCreateTag());
+	}
 
-    @Override
-    public boolean stillValid(Player player) {
-        return true;
-    }
+	@Override
+	public boolean stillValid(Player player) {
+		return true;
+	}
 
-    @Override
-    public void startOpen(Player player) {}
+	@Override
+	public void startOpen(Player player) {
+	}
 
-    @Override
-    public void stopOpen(Player player) {}
+	@Override
+	public void stopOpen(Player player) {
+	}
 
-    @Override
-    public boolean canPlaceItem(int index, ItemStack stack) {
-        return isItemValid(stack);
-    }
+	@Override
+	public boolean canPlaceItem(int index, ItemStack stack) {
+		return isItemValid(stack);
+	}
 
-    @Override
-    public void clearContent() {
-        inventoryContents.clear();
-    }
+	@Override
+	public void clearContent() {
+		inventoryContents.clear();
+	}
 
-    public ItemStack takeItemStack(int index) {
-        ItemStack itemStack = getItem(index);
-        setItem(index, ItemStack.EMPTY);
-        return itemStack;
-    }
+	public ItemStack takeItemStack(int index) {
+		ItemStack itemStack = getItem(index);
+		setItem(index, ItemStack.EMPTY);
+		return itemStack;
+	}
 
-    public void emptyOverflowSlots(Player player) {
-        for (int i = getContainerSize(); i < maxSize; i++) {
-            moveStackToPlayer(removeItemNoUpdate(i), player);
-        }
-        this.setChanged();
-    }
+	public void emptyOverflowSlots(Player player) {
+		for (int i = getContainerSize(); i < maxSize; i++) {
+			moveStackToPlayer(removeItemNoUpdate(i), player);
+		}
+		this.setChanged();
+	}
 
-    protected void moveStackToPlayer(ItemStack itemStack, Player player) {
-        if (!itemStack.isEmpty()) {
-            if (!player.getInventory().add(itemStack)) {
-                player.drop(itemStack, false);
-            }
-        }
-    }
+	protected void moveStackToPlayer(ItemStack itemStack, Player player) {
+		if (!itemStack.isEmpty()) {
+			if (!player.getInventory().add(itemStack)) {
+				player.drop(itemStack, false);
+			}
+		}
+	}
 
-    public boolean isItemValid(ItemStack itemStack) {
-        return !ModularToolbeltItem.instance.equals(itemStack.getItem()) && predicate.matches(itemStack);
-    }
+	public boolean isItemValid(ItemStack itemStack) {
+		return !ModularToolbeltItem.instance.equals(itemStack.getItem()) && predicate.matches(itemStack);
+	}
 
-    public boolean storeItemInInventory(ItemStack itemStack) {
-        if (!isItemValid(itemStack)) {
-            return false;
-        }
+	public boolean storeItemInInventory(ItemStack itemStack) {
+		if (!isItemValid(itemStack)) {
+			return false;
+		}
 
-        // attempt to merge the itemstack with itemstacks in the toolbelt
-        for (int i = 0; i < getContainerSize(); i++) {
-            ItemStack storedStack = getItem(i);
-            if (ItemStack.isSame(itemStack, storedStack)
-                    && ItemStack.tagMatches(itemStack, storedStack)
-                    && storedStack.getCount() < storedStack.getMaxStackSize()) {
+		// attempt to merge the itemstack with itemstacks in the toolbelt
+		for (int i = 0; i < getContainerSize(); i++) {
+			ItemStack storedStack = getItem(i);
+			if (ItemStack.isSame(itemStack, storedStack)
+				&& ItemStack.tagMatches(itemStack, storedStack)
+				&& storedStack.getCount() < storedStack.getMaxStackSize()) {
 
-                int moveCount = Math.min(itemStack.getCount(), storedStack.getMaxStackSize() - storedStack.getCount());
-                storedStack.grow(moveCount);
-                setItem(i, storedStack);
-                itemStack.shrink(moveCount);
+				int moveCount = Math.min(itemStack.getCount(), storedStack.getMaxStackSize() - storedStack.getCount());
+				storedStack.grow(moveCount);
+				setItem(i, storedStack);
+				itemStack.shrink(moveCount);
 
-                if (itemStack.isEmpty()) {
-                    return true;
-                }
-            }
-        }
+				if (itemStack.isEmpty()) {
+					return true;
+				}
+			}
+		}
 
-        // put item in the first empty slot
-        for (int i = 0; i < getContainerSize(); i++) {
-            if (getItem(i).isEmpty()) {
-                setItem(i, itemStack);
-                return true;
-            }
-        }
-        return false;
-    }
+		// put item in the first empty slot
+		for (int i = 0; i < getContainerSize(); i++) {
+			if (getItem(i).isEmpty()) {
+				setItem(i, itemStack);
+				return true;
+			}
+		}
+		return false;
+	}
 
-    public int getFirstIndexForItem(Item item) {
-        for (int i = 0; i < inventoryContents.size(); i++) {
-            if (!inventoryContents.get(i).isEmpty() && inventoryContents.get(i).getItem().equals(item)) {
-                return i;
-            }
-        }
-        return -1;
-    }
+	public int getFirstIndexForItem(Item item) {
+		for (int i = 0; i < inventoryContents.size(); i++) {
+			if (!inventoryContents.get(i).isEmpty() && inventoryContents.get(i).getItem().equals(item)) {
+				return i;
+			}
+		}
+		return -1;
+	}
 
-    public List<Collection<ItemEffect>> getSlotEffects() {
-        return ModularToolbeltItem.instance.getSlotEffects(toolbeltItemStack, inventoryType);
-    }
+	public List<Collection<ItemEffect>> getSlotEffects() {
+		return ModularToolbeltItem.instance.getSlotEffects(toolbeltItemStack, inventoryType);
+	}
 }

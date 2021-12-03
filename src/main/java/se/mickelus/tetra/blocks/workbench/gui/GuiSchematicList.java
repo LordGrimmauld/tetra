@@ -9,78 +9,79 @@ import se.mickelus.tetra.module.schematic.UpgradeSchematic;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.function.Consumer;
+
 @ParametersAreNonnullByDefault
 public class GuiSchematicList extends GuiElement {
-    private static int pageLength = 8;
+	private static final int pageLength = 8;
 
-    private int page = 0;
+	private int page = 0;
 
-    private UpgradeSchematic[] schematics;
+	private UpgradeSchematic[] schematics;
 
-    private Consumer<UpgradeSchematic> schematicSelectionConsumer;
+	private final Consumer<UpgradeSchematic> schematicSelectionConsumer;
 
-    private GuiElement listGroup;
+	private final GuiElement listGroup;
 
-    private GuiButton buttonBack;
-    private GuiButton buttonForward;
+	private final GuiButton buttonBack;
+	private final GuiButton buttonForward;
 
-    private GuiText emptyStateText;
+	private final GuiText emptyStateText;
 
-    public GuiSchematicList(int x, int y, Consumer<UpgradeSchematic> schematicSelectionConsumer) {
-        super(x, y, 224, 67);
+	public GuiSchematicList(int x, int y, Consumer<UpgradeSchematic> schematicSelectionConsumer) {
+		super(x, y, 224, 67);
 
-        listGroup = new GuiElement(3, 3, width - 6, height - 6);
-        addChild(listGroup);
+		listGroup = new GuiElement(3, 3, width - 6, height - 6);
+		addChild(listGroup);
 
-        buttonBack = new GuiButton(-25, height + 4, 45, 12, "< Previous", () -> setPage(getPage() - 1));
-        addChild(buttonBack);
-        buttonForward = new GuiButton(width - 20, height + 4, 30, 12, "Next >", () -> setPage(getPage() + 1));
-        addChild(buttonForward);
+		buttonBack = new GuiButton(-25, height + 4, 45, 12, "< Previous", () -> setPage(getPage() - 1));
+		addChild(buttonBack);
+		buttonForward = new GuiButton(width - 20, height + 4, 30, 12, "Next >", () -> setPage(getPage() + 1));
+		addChild(buttonForward);
 
-        emptyStateText = new GuiText(10, 23, 204, ChatFormatting.GRAY + I18n.get("tetra.workbench.schematic_list.empty"));
-        addChild(emptyStateText);
+		emptyStateText = new GuiText(10, 23, 204, ChatFormatting.GRAY + I18n.get("tetra.workbench.schematic_list.empty"));
+		addChild(emptyStateText);
 
-        this.schematicSelectionConsumer = schematicSelectionConsumer;
-    }
+		this.schematicSelectionConsumer = schematicSelectionConsumer;
+	}
 
-    public void setSchematics(UpgradeSchematic[] schematics) {
-        this.schematics = schematics;
-        emptyStateText.setVisible(schematics.length == 0);
-        setPage(0);
-    }
+	public void setSchematics(UpgradeSchematic[] schematics) {
+		this.schematics = schematics;
+		emptyStateText.setVisible(schematics.length == 0);
+		setPage(0);
+	}
 
-    private void updateSchematics() {
-        int offset = page * pageLength;
-        int count = pageLength;
+	private void updateSchematics() {
+		int offset = page * pageLength;
+		int count = pageLength;
 
-        if (count + offset > schematics.length) {
-            count = schematics.length - offset;
-        }
+		if (count + offset > schematics.length) {
+			count = schematics.length - offset;
+		}
 
-        listGroup.clearChildren();
-        for (int i = 0; i < count; i++) {
-            UpgradeSchematic schematic = schematics[i + offset];
-            listGroup.addChild(new GuiSchematicListItem(
-                    i / (pageLength / 2) * 109,
-                    i % (pageLength / 2) * 14,
-                    schematic, () -> schematicSelectionConsumer.accept(schematic)));
-        }
-    }
+		listGroup.clearChildren();
+		for (int i = 0; i < count; i++) {
+			UpgradeSchematic schematic = schematics[i + offset];
+			listGroup.addChild(new GuiSchematicListItem(
+				i / (pageLength / 2) * 109,
+				i % (pageLength / 2) * 14,
+				schematic, () -> schematicSelectionConsumer.accept(schematic)));
+		}
+	}
 
-    private int getPage() {
-        return page;
-    }
+	private int getPage() {
+		return page;
+	}
 
-    private void setPage(int page) {
-        this.page = page;
+	private void setPage(int page) {
+		this.page = page;
 
-        buttonBack.setVisible(page > 0);
-        buttonForward.setVisible(page < getNumPages() - 1);
-        updateSchematics();
+		buttonBack.setVisible(page > 0);
+		buttonForward.setVisible(page < getNumPages() - 1);
+		updateSchematics();
 
-    }
+	}
 
-    private int getNumPages() {
-        return (int) Math.ceil(1f * schematics.length / pageLength );
-    }
+	private int getNumPages() {
+		return (int) Math.ceil(1f * schematics.length / pageLength);
+	}
 }

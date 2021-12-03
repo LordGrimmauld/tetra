@@ -8,15 +8,16 @@ import se.mickelus.tetra.blocks.PropertyMatcher;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.lang.reflect.Type;
+
 @ParametersAreNonnullByDefault
 public class PropertyMatcherDeserializer implements JsonDeserializer<PropertyMatcher> {
-    @Override
-    public PropertyMatcher deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-        try {
-            return PropertyMatcher.deserialize(json);
-        } catch (JsonParseException e) {
-            // todo: debug level log
-            return null;
-        }
-    }
+	@Override
+	public PropertyMatcher deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+		try {
+			return PropertyMatcher.deserialize(json);
+		} catch (JsonParseException e) {
+			// todo: debug level log
+			return null;
+		}
+	}
 }

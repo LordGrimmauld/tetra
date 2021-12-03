@@ -11,18 +11,19 @@ import net.minecraftforge.common.ToolAction;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Map;
+
 @ParametersAreNonnullByDefault
 public class MaterialCondition implements CraftingEffectCondition {
-    ItemPredicate material;
+	ItemPredicate material;
 
-    @Override
-    public boolean test(ResourceLocation[] unlocks, ItemStack upgradedStack, String slot, boolean isReplacing, Player player,
-            ItemStack[] materials, Map<ToolAction, Integer> tools, Level world, BlockPos pos, BlockState blockState) {
-        for (ItemStack material: materials) {
-            if (this.material.matches(material)) {
-                return true;
-            }
-        }
-        return false;
-    }
+	@Override
+	public boolean test(ResourceLocation[] unlocks, ItemStack upgradedStack, String slot, boolean isReplacing, Player player,
+						ItemStack[] materials, Map<ToolAction, Integer> tools, Level world, BlockPos pos, BlockState blockState) {
+		for (ItemStack material : materials) {
+			if (this.material.matches(material)) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

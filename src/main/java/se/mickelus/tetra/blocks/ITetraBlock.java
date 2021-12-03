@@ -24,66 +24,68 @@ import java.util.stream.Collectors;
 
 public interface ITetraBlock {
 
-    @OnlyIn(Dist.CLIENT)
-    default void clientInit() { }
+	@OnlyIn(Dist.CLIENT)
+	default void clientInit() {
+	}
 
-    default void init(PacketHandler packetHandler) {}
+	default void init(PacketHandler packetHandler) {
+	}
 
-    boolean hasItem();
+	boolean hasItem();
 
-    default void registerItem(IForgeRegistry<Item> registry) {
-        if (this instanceof Block) {
-            registerItem(registry, (Block) this);
-        }
-    }
+	default void registerItem(IForgeRegistry<Item> registry) {
+		if (this instanceof Block) {
+			registerItem(registry, (Block) this);
+		}
+	}
 
-    default void registerItem(IForgeRegistry<Item> registry, Block block) {
-        Item item = new BlockItem(block, new Item.Properties().tab(TetraItemGroup.instance))
-                .setRegistryName(block.getRegistryName());
+	default void registerItem(IForgeRegistry<Item> registry, Block block) {
+		Item item = new BlockItem(block, new Item.Properties().tab(TetraItemGroup.instance))
+			.setRegistryName(block.getRegistryName());
 
-        registry.register(item);
-    }
+		registry.register(item);
+	}
 
-    default boolean canProvideTools(Level world, BlockPos pos, BlockPos targetPos) {
-        return false;
-    }
+	default boolean canProvideTools(Level world, BlockPos pos, BlockPos targetPos) {
+		return false;
+	}
 
-    default Collection<ToolAction> getTools(Level world, BlockPos pos, BlockState blockState) {
-        return Collections.emptyList();
-    }
+	default Collection<ToolAction> getTools(Level world, BlockPos pos, BlockState blockState) {
+		return Collections.emptyList();
+	}
 
-    default int getToolLevel(Level world, BlockPos pos, BlockState blockState, ToolAction toolAction) {
-        return -1;
-    }
+	default int getToolLevel(Level world, BlockPos pos, BlockState blockState, ToolAction toolAction) {
+		return -1;
+	}
 
-    default Map<ToolAction, Integer> getToolLevels(Level world, BlockPos pos, BlockState blockState) {
-        return getTools(world, pos, blockState).stream()
-                .collect(Collectors.toMap(Function.identity(), toolAction -> getToolLevel(world, pos, blockState, toolAction)));
-    }
+	default Map<ToolAction, Integer> getToolLevels(Level world, BlockPos pos, BlockState blockState) {
+		return getTools(world, pos, blockState).stream()
+			.collect(Collectors.toMap(Function.identity(), toolAction -> getToolLevel(world, pos, blockState, toolAction)));
+	}
 
-    default ItemStack onCraftConsumeTool(Level world, BlockPos pos, BlockState blockState, ItemStack targetStack, String slot, boolean isReplacing,
-            Player player, ToolAction requiredTool, int requiredLevel, boolean consumeResources) {
-        return null;
-    }
+	default ItemStack onCraftConsumeTool(Level world, BlockPos pos, BlockState blockState, ItemStack targetStack, String slot, boolean isReplacing,
+										 Player player, ToolAction requiredTool, int requiredLevel, boolean consumeResources) {
+		return null;
+	}
 
-    default ItemStack onActionConsumeTool(Level world, BlockPos pos, BlockState blockState, ItemStack targetStack, Player player,
-            ToolAction requiredTool, int requiredLevel, boolean consumeResources) {
-        return null;
-    }
+	default ItemStack onActionConsumeTool(Level world, BlockPos pos, BlockState blockState, ItemStack targetStack, Player player,
+										  ToolAction requiredTool, int requiredLevel, boolean consumeResources) {
+		return null;
+	}
 
-    default boolean canUnlockSchematics(Level world, BlockPos pos, BlockPos targetPos) {
-        return false;
-    }
+	default boolean canUnlockSchematics(Level world, BlockPos pos, BlockPos targetPos) {
+		return false;
+	}
 
-    default ResourceLocation[] getSchematics(Level world, BlockPos pos, BlockState blockState) {
-        return new ResourceLocation[0];
-    }
+	default ResourceLocation[] getSchematics(Level world, BlockPos pos, BlockState blockState) {
+		return new ResourceLocation[0];
+	}
 
-    default boolean canUnlockCraftingEffects(Level world, BlockPos pos, BlockPos targetPos) {
-        return false;
-    }
+	default boolean canUnlockCraftingEffects(Level world, BlockPos pos, BlockPos targetPos) {
+		return false;
+	}
 
-    default ResourceLocation[] getCraftingEffects(Level world, BlockPos pos, BlockState blockState) {
-        return new ResourceLocation[0];
-    }
+	default ResourceLocation[] getCraftingEffects(Level world, BlockPos pos, BlockState blockState) {
+		return new ResourceLocation[0];
+	}
 }

@@ -12,26 +12,27 @@ import se.mickelus.tetra.blocks.ITetraBlock;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class BlockForgedPillar extends RotatedPillarBlock implements ITetraBlock {
-    private static final String unlocalizedName = "forged_pillar";
+	private static final String unlocalizedName = "forged_pillar";
 
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static BlockForgedPillar instance;
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static BlockForgedPillar instance;
 
-    public BlockForgedPillar() {
-        super(ForgedBlockCommon.propertiesSolid);
+	public BlockForgedPillar() {
+		super(ForgedBlockCommon.propertiesSolid);
 
-        setRegistryName(unlocalizedName);
-    }
+		setRegistryName(unlocalizedName);
+	}
 
-    @Override
-    public void appendHoverText(ItemStack itemStack, @Nullable BlockGetter world, List<Component> tooltip, TooltipFlag advanced) {
-        tooltip.add(ForgedBlockCommon.locationTooltip);
-    }
+	@Override
+	public void appendHoverText(ItemStack itemStack, @Nullable BlockGetter world, List<Component> tooltip, TooltipFlag advanced) {
+		tooltip.add(ForgedBlockCommon.locationTooltip);
+	}
 
-    @Override
-    public boolean hasItem() {
-        return true;
-    }
+	@Override
+	public boolean hasItem() {
+		return true;
+	}
 }

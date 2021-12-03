@@ -24,275 +24,274 @@ import se.mickelus.tetra.util.TileEntityOptional;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Optional;
+
 @ParametersAreNonnullByDefault
 public class TransferUnitTile extends BlockEntity implements BlockEntityTicker<TransferUnitTile>, IHeatTransfer {
-    @ObjectHolder(TetraMod.MOD_ID + ":" + TransferUnitBlock.unlocalizedName)
-    public static BlockEntityType<TransferUnitTile> type;
+	private static final int baseAmount = 8;
+	@ObjectHolder(TetraMod.MOD_ID + ":" + TransferUnitBlock.unlocalizedName)
+	public static BlockEntityType<TransferUnitTile> type;
+	private ItemStack cell;
+	private float efficiency = 1;
 
-    private ItemStack cell;
+	public TransferUnitTile(BlockPos p_155268_, BlockState p_155269_) {
+		super(type, p_155268_, p_155269_);
+		cell = ItemStack.EMPTY;
+	}
 
-    private static final int baseAmount = 8;
-    private float efficiency = 1;
+	public static final void writeCell(CompoundTag compound, ItemStack cell) {
+		if (!cell.isEmpty()) {
+			CompoundTag cellNBT = new CompoundTag();
+			cell.save(cellNBT);
+			compound.put("cell", cellNBT);
+		}
+	}
 
-    public TransferUnitTile(BlockPos p_155268_, BlockState p_155269_) {
-        super(type, p_155268_, p_155269_);
-        cell = ItemStack.EMPTY;
-    }
+	public boolean canRecieve() {
+		return TransferUnitBlock.getEffectPowered(level, worldPosition, getBlockState()).equals(EnumTransferEffect.receive)
+			&& hasCell()
+			&& getCharge() < ItemCellMagmatic.maxCharge;
+	}
 
-    public boolean canRecieve() {
-        return TransferUnitBlock.getEffectPowered(level, worldPosition, getBlockState()).equals(EnumTransferEffect.receive)
-                && hasCell()
-                && getCharge() < ItemCellMagmatic.maxCharge;
-    }
+	public boolean canSend() {
+		return TransferUnitBlock.getEffectPowered(level, worldPosition, getBlockState()).equals(EnumTransferEffect.send)
+			&& hasCell()
+			&& getCharge() > 0;
+	}
 
-    public boolean canSend() {
-        return TransferUnitBlock.getEffectPowered(level, worldPosition, getBlockState()).equals(EnumTransferEffect.send)
-                && hasCell()
-                && getCharge() > 0;
-    }
+	@Override
+	public boolean isReceiving() {
+		return TransferUnitBlock.isReceiving(getBlockState());
+	}
 
-    @Override
-    public void setReceiving(boolean receiving) {
-        TransferUnitBlock.setReceiving(level, worldPosition, getBlockState(), receiving);
-    }
+	@Override
+	public void setReceiving(boolean receiving) {
+		TransferUnitBlock.setReceiving(level, worldPosition, getBlockState(), receiving);
+	}
 
-    @Override
-    public boolean isReceiving() {
-        return TransferUnitBlock.isReceiving(getBlockState());
-    }
+	@Override
+	public boolean isSending() {
+		return TransferUnitBlock.isSending(getBlockState());
+	}
 
-    @Override
-    public void setSending(boolean sending) {
-        TransferUnitBlock.setSending(level, worldPosition, getBlockState(), sending);
-    }
+	@Override
+	public void setSending(boolean sending) {
+		TransferUnitBlock.setSending(level, worldPosition, getBlockState(), sending);
+	}
 
-    @Override
-    public boolean isSending() {
-        return TransferUnitBlock.isSending(getBlockState());
-    }
+	public boolean hasCell() {
+		return !cell.isEmpty();
+	}
 
-    public boolean hasCell() {
-        return !cell.isEmpty();
-    }
+	public ItemStack removeCell() {
+		ItemStack removedCell = cell;
+		cell = ItemStack.EMPTY;
 
-    public ItemStack removeCell() {
-        ItemStack removedCell = cell;
-        cell = ItemStack.EMPTY;
+		TransferUnitBlock.updateCellProp(level, worldPosition, hasCell(), getCharge());
+		updateTransferState();
+		return removedCell;
+	}
 
-        TransferUnitBlock.updateCellProp(level, worldPosition, hasCell(), getCharge());
-        updateTransferState();
-        return removedCell;
-    }
+	public ItemStack getCell() {
+		return cell;
+	}
 
-    public ItemStack getCell() {
-        return cell;
-    }
+	public boolean putCell(ItemStack itemStack) {
+		if (itemStack.getItem() instanceof ItemCellMagmatic) {
+			cell = itemStack;
 
-    public boolean putCell(ItemStack itemStack) {
-        if (itemStack.getItem() instanceof ItemCellMagmatic) {
-            cell = itemStack;
+			TransferUnitBlock.updateCellProp(level, worldPosition, hasCell(), getCharge());
+			updateTransferState();
+			return true;
+		}
+		return false;
+	}
 
-            TransferUnitBlock.updateCellProp(level, worldPosition, hasCell(), getCharge());
-            updateTransferState();
-            return true;
-        }
-        return false;
-    }
+	private Optional<IHeatTransfer> getConnectedUnit() {
+		return TileEntityOptional.from(level, worldPosition.relative(TransferUnitBlock.getFacing(getBlockState())), IHeatTransfer.class);
+	}
 
-    private Optional<IHeatTransfer> getConnectedUnit() {
-        return TileEntityOptional.from(level, worldPosition.relative(TransferUnitBlock.getFacing(getBlockState())), IHeatTransfer.class);
-    }
+	@Override
+	public int getCharge() {
+		return CastOptional.cast(cell.getItem(), ItemCellMagmatic.class)
+			.map(item -> item.getCharge(cell))
+			.orElse(0);
+	}
 
-    @Override
-    public int getCharge() {
-        return CastOptional.cast(cell.getItem(), ItemCellMagmatic.class)
-                .map(item -> item.getCharge(cell))
-                .orElse(0);
-    }
+	@Override
+	public float getEfficiency() {
+		return TransferUnitBlock.hasPlate(getBlockState()) ? 1 : 0.9f;
+	}
 
-    @Override
-    public float getEfficiency() {
-        return TransferUnitBlock.hasPlate(getBlockState()) ? 1 : 0.9f;
-    }
+	@Override
+	public int getReceiveLimit() {
+		return baseAmount;
+	}
 
-    @Override
-    public int getReceiveLimit() {
-        return baseAmount;
-    }
+	@Override
+	public int getSendLimit() {
+		return baseAmount;
+	}
 
-    @Override
-    public int getSendLimit() {
-        return baseAmount;
-    }
+	@Override
+	public int drain(int amount) {
+		return CastOptional.cast(cell.getItem(), ItemCellMagmatic.class)
+			.map(item -> {
+				int drained = item.drainCharge(cell, amount);
 
-    @Override
-    public int drain(int amount) {
-        return CastOptional.cast(cell.getItem(), ItemCellMagmatic.class)
-                .map(item -> {
-                    int drained = item.drainCharge(cell, amount);
+				if (item.getCharge(cell) == 0) {
+					TransferUnitBlock.updateCellProp(level, worldPosition, hasCell(), 0);
+					runDrainedEffects();
+				}
 
-                    if (item.getCharge(cell) == 0) {
-                        TransferUnitBlock.updateCellProp(level, worldPosition, hasCell(), 0);
-                        runDrainedEffects();
-                    }
+				return drained;
+			})
+			.orElse(0);
+	}
 
-                    return drained;
-                })
-                .orElse(0);
-    }
+	@Override
+	public int fill(int amount) {
+		return CastOptional.cast(cell.getItem(), ItemCellMagmatic.class)
+			.map(item -> {
+				int initialCharge = item.getCharge(cell);
 
-    @Override
-    public int fill(int amount) {
-        return CastOptional.cast(cell.getItem(), ItemCellMagmatic.class)
-                .map(item -> {
-                    int initialCharge = item.getCharge(cell);
+				int overfill = item.recharge(cell, amount);
 
-                    int overfill = item.recharge(cell, amount);
+				if (item.getCharge(cell) == ItemCellMagmatic.maxCharge) {
+					runFilledEffects();
+				}
 
-                    if (item.getCharge(cell) == ItemCellMagmatic.maxCharge) {
-                        runFilledEffects();
-                    }
+				if (initialCharge == 0) {
+					TransferUnitBlock.updateCellProp(level, worldPosition, hasCell(), getCharge());
+				}
 
-                    if (initialCharge == 0) {
-                        TransferUnitBlock.updateCellProp(level, worldPosition, hasCell(), getCharge());
-                    }
+				setChanged();
+				return overfill;
+			})
+			.orElse(0);
+	}
 
-                    setChanged();
-                    return overfill;
-                })
-                .orElse(0);
-    }
+	@Override
+	public void tick(Level p_155253_, BlockPos p_155254_, BlockState p_155255_, TransferUnitTile p_155256_) {
+		if (!level.isClientSide
+			&& level.getGameTime() % 5 == 0
+			&& TransferUnitBlock.isSending(getBlockState())) {
+			transfer();
+		}
+	}
 
-    @Override
-    public void tick(Level p_155253_, BlockPos p_155254_, BlockState p_155255_, TransferUnitTile p_155256_) {
-        if (!level.isClientSide
-                && level.getGameTime() % 5 == 0
-                && TransferUnitBlock.isSending(getBlockState())) {
-            transfer();
-        }
-    }
+	public void transfer() {
+		if (canSend()) {
+			getConnectedUnit()
+				.ifPresent(connected -> {
+					if (connected.canRecieve()) {
+						int amount = drain(baseAmount);
+						int overfill = connected.fill((int) (amount * efficiency));
 
-    public void transfer() {
-        if (canSend()) {
-            getConnectedUnit()
-                    .ifPresent(connected -> {
-                        if (connected.canRecieve()) {
-                            int amount = drain(baseAmount);
-                            int overfill = connected.fill((int) (amount * efficiency));
+						if (overfill > 0) {
+							fill(overfill);
+						}
 
-                            if (overfill > 0) {
-                                fill(overfill);
-                            }
+						setChanged();
+					} else {
+						setSending(false);
+						connected.setReceiving(false);
+					}
+				});
+		} else {
+			getConnectedUnit().ifPresent(connected -> connected.setReceiving(false));
+			setSending(false);
+		}
+	}
 
-                            setChanged();
-                        } else {
-                            setSending(false);
-                            connected.setReceiving(false);
-                        }
-                    });
-        } else {
-            getConnectedUnit().ifPresent(connected -> connected.setReceiving(false));
-            setSending(false);
-        }
-    }
+	private void runDrainedEffects() {
+		if (level instanceof ServerLevel) {
+			((ServerLevel) level).sendParticles(ParticleTypes.SMOKE,
+				worldPosition.getX() + 0.5, worldPosition.getY() + 0.7, worldPosition.getZ() + 0.5,
+				10, 0, 0, 0, 0.02f);
+			level.playSound(null, worldPosition, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS,
+				0.2f, 1);
+		}
+	}
 
-    private void runDrainedEffects() {
-        if (level instanceof ServerLevel) {
-            ((ServerLevel) level).sendParticles(ParticleTypes.SMOKE,
-                    worldPosition.getX() + 0.5, worldPosition.getY() + 0.7, worldPosition.getZ() + 0.5,
-                    10,  0, 0, 0, 0.02f);
-            level.playSound(null, worldPosition, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS,
-                    0.2f, 1);
-        }
-    }
+	private void runFilledEffects() {
+		if (level instanceof ServerLevel) {
+			((ServerLevel) level).sendParticles(ParticleTypes.FLAME,
+				worldPosition.getX() + 0.5, worldPosition.getY() + 0.7, worldPosition.getZ() + 0.5,
+				5, 0, 0, 0, 0.02f);
+			level.playSound(null, worldPosition, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS,
+				0.2f, 1);
+		}
+	}
 
-    private void runFilledEffects() {
-        if (level instanceof ServerLevel) {
-            ((ServerLevel) level).sendParticles(ParticleTypes.FLAME,
-                    worldPosition.getX() + 0.5, worldPosition.getY() + 0.7, worldPosition.getZ() + 0.5,
-                    5,  0, 0, 0, 0.02f);
-            level.playSound(null, worldPosition, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS,
-                    0.2f, 1);
-        }
-    }
+	@Override
+	public void updateTransferState() {
+		switch (TransferUnitBlock.getEffectPowered(level, worldPosition, getBlockState())) {
+			case send:
+				getConnectedUnit().ifPresent(connected -> {
+					boolean canTransfer = canSend() && connected.canRecieve();
+					setReceiving(false);
+					setSending(canTransfer);
+					connected.setReceiving(canTransfer);
 
-    @Override
-    public void updateTransferState() {
-        switch (TransferUnitBlock.getEffectPowered(level, worldPosition, getBlockState())) {
-            case send:
-                getConnectedUnit().ifPresent(connected -> {
-                    boolean canTransfer = canSend() && connected.canRecieve();
-                    setReceiving(false);
-                    setSending(canTransfer);
-                    connected.setReceiving(canTransfer);
+					efficiency = getEfficiency() * connected.getEfficiency();
+				});
+				break;
+			case receive:
+				getConnectedUnit().ifPresent(connected -> {
+					if (isSending()) {
+						setSending(false);
+					}
 
-                    efficiency = getEfficiency() * connected.getEfficiency();
-                });
-                break;
-            case receive:
-                getConnectedUnit().ifPresent(connected -> {
-                    if (isSending()) {
-                        setSending(false);
-                    }
+					if (connected.canSend()) {
+						connected.updateTransferState();
+					}
+				});
+				break;
+			case redstone:
+				getConnectedUnit().ifPresent(connected -> {
+					connected.setSending(false);
+					connected.setReceiving(false);
+					setSending(false);
+					setReceiving(false);
+				});
+				break;
+		}
+		setChanged();
+	}
 
-                    if (connected.canSend()) {
-                        connected.updateTransferState();
-                    }
-                });
-                break;
-            case redstone:
-                getConnectedUnit().ifPresent(connected -> {
-                    connected.setSending(false);
-                    connected.setReceiving(false);
-                    setSending(false);
-                    setReceiving(false);
-                });
-                break;
-        }
-        setChanged();
-    }
+	@Override
+	public void load(CompoundTag compound) {
+		super.load(compound);
 
-    @Override
-    public void load(CompoundTag compound) {
-        super.load(compound);
+		if (compound.contains("cell")) {
+			cell = ItemStack.of(compound.getCompound("cell"));
+		} else {
+			cell = ItemStack.EMPTY;
+		}
+	}
 
-        if (compound.contains("cell")) {
-            cell = ItemStack.of(compound.getCompound("cell"));
-        } else {
-            cell = ItemStack.EMPTY;
-        }
-    }
+	@Override
+	public CompoundTag save(CompoundTag compound) {
+		super.save(compound);
 
-    public static final void writeCell(CompoundTag compound, ItemStack cell) {
-        if (!cell.isEmpty()) {
-            CompoundTag cellNBT = new CompoundTag();
-            cell.save(cellNBT);
-            compound.put("cell", cellNBT);
-        }
-    }
+		writeCell(compound, cell);
 
-    @Override
-    public CompoundTag save(CompoundTag compound) {
-        super.save(compound);
+		return compound;
+	}
 
-        writeCell(compound, cell);
+	@Nullable
+	@Override
+	public ClientboundBlockEntityDataPacket getUpdatePacket() {
+		return ClientboundBlockEntityDataPacket.create(this);
+	}
 
-        return compound;
-    }
+	@Override
+	public CompoundTag getUpdateTag() {
+		return save(new CompoundTag());
+	}
 
-    @Nullable
-    @Override
-    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-        return ClientboundBlockEntityDataPacket.create(this);
-    }
-
-    @Override
-    public CompoundTag getUpdateTag() {
-        return save(new CompoundTag());
-    }
-
-    @Override
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket packet) {
-        this.load(packet.getTag());
-    }
+	@Override
+	public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket packet) {
+		this.load(packet.getTag());
+	}
 }

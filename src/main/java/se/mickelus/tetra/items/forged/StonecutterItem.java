@@ -20,30 +20,31 @@ import se.mickelus.tetra.items.TetraItemGroup;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class StonecutterItem extends TetraItem {
-    private static final String unlocalizedName = "stonecutter";
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static StonecutterItem instance;
+	private static final String unlocalizedName = "stonecutter";
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static StonecutterItem instance;
 
-    public StonecutterItem() {
-        super(new Properties().tab(TetraItemGroup.instance));
-        setRegistryName(unlocalizedName);
-    }
+	public StonecutterItem() {
+		super(new Properties().tab(TetraItemGroup.instance));
+		setRegistryName(unlocalizedName);
+	}
 
-    @OnlyIn(Dist.CLIENT)
-    @Override
-    public void appendHoverText(ItemStack itemStack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(ForgedBlockCommon.unsettlingTooltip);
-        tooltip.add(new TextComponent(" "));
+	@OnlyIn(Dist.CLIENT)
+	@Override
+	public void appendHoverText(ItemStack itemStack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
+		tooltip.add(ForgedBlockCommon.unsettlingTooltip);
+		tooltip.add(new TextComponent(" "));
 
-        if (Screen.hasShiftDown()) {
-            tooltip.add(Tooltips.expanded);
-            tooltip.add(new TranslatableComponent("item.tetra.stonecutter.description").withStyle(ChatFormatting.GRAY));
-            tooltip.add(new TextComponent(" "));
-            tooltip.add(ForgedBlockCommon.locationTooltip);
-        } else {
-            tooltip.add(Tooltips.expand);
-        }
-    }
+		if (Screen.hasShiftDown()) {
+			tooltip.add(Tooltips.expanded);
+			tooltip.add(new TranslatableComponent("item.tetra.stonecutter.description").withStyle(ChatFormatting.GRAY));
+			tooltip.add(new TextComponent(" "));
+			tooltip.add(ForgedBlockCommon.locationTooltip);
+		} else {
+			tooltip.add(Tooltips.expand);
+		}
+	}
 }

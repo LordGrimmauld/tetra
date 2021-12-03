@@ -15,129 +15,121 @@ import se.mickelus.tetra.gui.GuiColors;
 import se.mickelus.tetra.gui.GuiTextures;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class OverlayGuiPotionSlot extends GuiElement {
-    private ItemStack itemStack;
+	GuiTexture backdrop;
+	private final ItemStack itemStack;
+	private final int slot;
+	private final Minecraft mc;
+	private final KeyframeAnimation showAnimation;
+	private Font fontRenderer;
 
-    private int slot;
+	public OverlayGuiPotionSlot(int x, int y, ItemStack itemStack, int slot, boolean animateUp) {
+		super(x, y, 23, 23);
 
-    private Minecraft mc;
+		setAttachmentPoint(GuiAttachment.middleLeft);
+		setAttachmentAnchor(GuiAttachment.middleLeft);
 
-    private KeyframeAnimation showAnimation;
+		this.itemStack = itemStack;
+		this.slot = slot;
 
-    private Font fontRenderer;
+		mc = Minecraft.getInstance();
 
-    GuiTexture backdrop;
+		if (itemStack != null) {
+			fontRenderer = null; // itemStack.getItem().getFontRenderer(itemStack);
+		}
 
-    public OverlayGuiPotionSlot(int x, int y, ItemStack itemStack, int slot, boolean animateUp) {
-        super(x, y, 23, 23);
+		if (fontRenderer == null) {
+			fontRenderer = mc.font;
+		}
 
-        setAttachmentPoint(GuiAttachment.middleLeft);
-        setAttachmentAnchor(GuiAttachment.middleLeft);
+		backdrop = new GuiTexture(0, 0, 23, 23, 32, 28, GuiTextures.toolbelt);
+		addChild(backdrop);
 
-        this.itemStack = itemStack;
-        this.slot = slot;
+		isVisible = false;
+		showAnimation = new KeyframeAnimation(80, this)
+			.applyTo(new Applier.TranslateY(animateUp ? y + 2 : y - 2, y), new Applier.Opacity(0, 1))
+			.withDelay((int) (Math.random() * 300));
+	}
 
-        mc = Minecraft.getInstance();
+	@Override
+	protected void onShow() {
+		showAnimation.start();
+	}
 
-        if (itemStack != null) {
-            fontRenderer = null; // itemStack.getItem().getFontRenderer(itemStack);
-        }
+	@Override
+	protected boolean onHide() {
+		if (showAnimation.isActive()) {
+			showAnimation.stop();
+		}
+		return true;
+	}
 
-        if (fontRenderer == null) {
-            fontRenderer = mc.font;
-        }
+	@Override
+	public void draw(PoseStack matrixStack, int refX, int refY, int screenWidth, int screenHeight, int mouseX, int mouseY, float opacity) {
+		super.draw(matrixStack, refX, refY, screenWidth, screenHeight, mouseX, mouseY, opacity);
 
-        backdrop  = new GuiTexture(0, 0, 23, 23, 32, 28, GuiTextures.toolbelt);
-        addChild(backdrop);
+		if (this.opacity == 1) {
+			drawItemStack(itemStack, x + refX + 3, y + refY + 2);
+		}
+	}
 
-        isVisible = false;
-        showAnimation = new KeyframeAnimation(80, this)
-            .applyTo(new Applier.TranslateY(animateUp ? y + 2 : y - 2, y), new Applier.Opacity(0, 1))
-            .withDelay((int) (Math.random() * 300));
-    }
+	private void drawItemStack(ItemStack itemStack, int x, int y) {
+		PoseStack renderSystemStack = RenderSystem.getModelViewStack();
+		renderSystemStack.pushPose();
+		GlStateManager._enableDepthTest();
+		RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+		// Lighting.turnBackOn();
 
-    @Override
-    protected void onShow() {
-        showAnimation.start();
-    }
+		mc.getItemRenderer().renderAndDecorateItem(itemStack, x, y);
+		mc.getItemRenderer().renderGuiItemDecorations(fontRenderer, itemStack, x, y, "");
+		GlStateManager._disableDepthTest();
 
-    @Override
-    protected boolean onHide() {
-        if (showAnimation.isActive()) {
-            showAnimation.stop();
-        }
-        return true;
-    }
-
-    @Override
-    public void draw(PoseStack matrixStack, int refX, int refY, int screenWidth, int screenHeight, int mouseX, int mouseY, float opacity) {
-        super.draw(matrixStack, refX, refY, screenWidth, screenHeight, mouseX, mouseY, opacity);
-
-        if (this.opacity == 1) {
-            drawItemStack(itemStack, x + refX + 3, y + refY + 2);
-        }
-    }
-
-    private void drawItemStack(ItemStack itemStack, int x, int y) {
-        PoseStack renderSystemStack = RenderSystem.getModelViewStack();
-        renderSystemStack.pushPose();
-        GlStateManager._enableDepthTest();
-        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
-        // Lighting.turnBackOn();
-
-        mc.getItemRenderer().renderAndDecorateItem(itemStack, x, y);
-        mc.getItemRenderer().renderGuiItemDecorations(fontRenderer, itemStack, x, y, "");
-        GlStateManager._disableDepthTest();
-
-        renderSystemStack.popPose();
-        // Lighting.turnOff();
-    }
+		renderSystemStack.popPose();
+		// Lighting.turnOff();
+	}
 
 
-    public int getSlot() {
-        return slot;
-    }
+	public int getSlot() {
+		return slot;
+	}
 
-    @Override
-    protected void onFocus() {
-        backdrop.setColor(GuiColors.hover);
-    }
+	@Override
+	protected void onFocus() {
+		backdrop.setColor(GuiColors.hover);
+	}
 
-    @Override
-    protected void onBlur() {
-        backdrop.setColor(GuiColors.normal);
-    }
+	@Override
+	protected void onBlur() {
+		backdrop.setColor(GuiColors.normal);
+	}
 
-    @Override
-    protected void calculateFocusState(int refX, int refY, int mouseX, int mouseY) {
-        mouseX -= refX + x;
-        mouseY -= refY + y;
-        boolean gainFocus = true;
+	@Override
+	protected void calculateFocusState(int refX, int refY, int mouseX, int mouseY) {
+		mouseX -= refX + x;
+		mouseY -= refY + y;
+		boolean gainFocus = mouseX + mouseY >= 12;
 
-        if (mouseX + mouseY < 12) {
-            gainFocus = false;
-        }
+		if (mouseX + mouseY > 34) {
+			gainFocus = false;
+		}
 
-        if (mouseX + mouseY > 34) {
-            gainFocus = false;
-        }
+		if (mouseX - mouseY > 8) {
+			gainFocus = false;
+		}
 
-        if (mouseX - mouseY > 8) {
-            gainFocus = false;
-        }
+		if (mouseY - mouseX > 12) {
+			gainFocus = false;
+		}
 
-        if (mouseY - mouseX > 12) {
-            gainFocus = false;
-        }
-
-        if (gainFocus != hasFocus) {
-            hasFocus = gainFocus;
-            if (hasFocus) {
-                onFocus();
-            } else {
-                onBlur();
-            }
-        }
-    }
+		if (gainFocus != hasFocus) {
+			hasFocus = gainFocus;
+			if (hasFocus) {
+				onFocus();
+			} else {
+				onBlur();
+			}
+		}
+	}
 }

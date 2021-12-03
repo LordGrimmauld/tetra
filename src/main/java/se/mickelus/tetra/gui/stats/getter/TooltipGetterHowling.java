@@ -6,18 +6,20 @@ import net.minecraft.world.item.ItemStack;
 import se.mickelus.tetra.effect.ItemEffect;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class TooltipGetterHowling implements ITooltipGetter {
 
-    private static final IStatGetter levelGetter = new StatGetterEffectLevel(ItemEffect.howling, 1);
-    private static final IStatGetter efficiencyGetter = new StatGetterEffectEfficiency(ItemEffect.howling, 1);
+	private static final IStatGetter levelGetter = new StatGetterEffectLevel(ItemEffect.howling, 1);
+	private static final IStatGetter efficiencyGetter = new StatGetterEffectEfficiency(ItemEffect.howling, 1);
 
-    public TooltipGetterHowling() { }
+	public TooltipGetterHowling() {
+	}
 
-    @Override
-    public String getTooltipBase(Player player, ItemStack itemStack) {
-        return I18n.get("tetra.stats.howling.tooltip",
-                String.format("%.0f", levelGetter.getValue(player, itemStack)),
-                String.format("%.1f", efficiencyGetter.getValue(player, itemStack)));
-    }
+	@Override
+	public String getTooltipBase(Player player, ItemStack itemStack) {
+		return I18n.get("tetra.stats.howling.tooltip",
+			String.format("%.0f", levelGetter.getValue(player, itemStack)),
+			String.format("%.1f", efficiencyGetter.getValue(player, itemStack)));
+	}
 }

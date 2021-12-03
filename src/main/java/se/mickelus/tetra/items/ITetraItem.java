@@ -5,7 +5,9 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import se.mickelus.tetra.network.PacketHandler;
 
 public interface ITetraItem {
-    @OnlyIn(Dist.CLIENT)
-    public default void clientInit() {}
-    public void init(PacketHandler packetHandler);
+	@OnlyIn(Dist.CLIENT)
+	default void clientInit() {
+	}
+
+	void init(PacketHandler packetHandler);
 }

@@ -12,80 +12,82 @@ import java.util.Map;
 import java.util.Set;
 
 public interface IToolProvider {
-    Logger logger = LogManager.getLogger();
+	Logger logger = LogManager.getLogger();
 
-    public boolean canProvideTools(ItemStack itemStack);
+	boolean canProvideTools(ItemStack itemStack);
 
-    public ToolData getToolData(ItemStack itemStack);
+	ToolData getToolData(ItemStack itemStack);
 
 
-    default int getToolLevel(ItemStack itemStack, ToolAction tool) {
-        if (!canProvideTools(itemStack)) {
-            return -1;
-        }
+	default int getToolLevel(ItemStack itemStack, ToolAction tool) {
+		if (!canProvideTools(itemStack)) {
+			return -1;
+		}
 
-        return getToolData(itemStack).getLevel(tool);
-    }
+		return getToolData(itemStack).getLevel(tool);
+	}
 
-    default float getToolEfficiency(ItemStack itemStack, ToolAction tool) {
-        if (!canProvideTools(itemStack)) {
-            return 0;
-        }
+	default float getToolEfficiency(ItemStack itemStack, ToolAction tool) {
+		if (!canProvideTools(itemStack)) {
+			return 0;
+		}
 
-        if (getToolLevel(itemStack, tool) <= 0) {
-            return 0;
-        }
+		if (getToolLevel(itemStack, tool) <= 0) {
+			return 0;
+		}
 
-        return getToolData(itemStack).getEfficiency(tool);
-    }
+		return getToolData(itemStack).getEfficiency(tool);
+	}
 
-    default Set<ToolAction> getTools(ItemStack itemStack) {
-        if (!canProvideTools(itemStack)) {
-            return Collections.emptySet();
-        }
+	default Set<ToolAction> getTools(ItemStack itemStack) {
+		if (!canProvideTools(itemStack)) {
+			return Collections.emptySet();
+		}
 
-        return getToolData(itemStack).getValues();
-    }
+		return getToolData(itemStack).getValues();
+	}
 
-    default Map<ToolAction, Integer> getToolLevels(ItemStack itemStack) {
-        if (!canProvideTools(itemStack)) {
-            return Collections.emptyMap();
-        }
+	default Map<ToolAction, Integer> getToolLevels(ItemStack itemStack) {
+		if (!canProvideTools(itemStack)) {
+			return Collections.emptyMap();
+		}
 
-        return getToolData(itemStack).getLevelMap();
-    }
+		return getToolData(itemStack).getLevelMap();
+	}
 
-    /**
-     * Apply special effects and possibly consume required resources after this item has been used to craft or upgrade
-     * another item. This is called once for each tool used by the craft, which this item provide.
-     * @param providerStack The providing stack, the itemstack for this item
-     * @param targetStack The itemstack which is being upgraded/crafted/altered in some way
-     * @param player The player performing the actions
-     * @param tool The tool used
-     * @param toolLevel The level of the used tool
-     * @param consumeResources
-     */
-    public default ItemStack onCraftConsume(ItemStack providerStack, ItemStack targetStack, Player player, ToolAction tool, int toolLevel,
-            boolean consumeResources) {
-        ItemStack result = targetStack.copy();
+	/**
+	 * Apply special effects and possibly consume required resources after this item has been used to craft or upgrade
+	 * another item. This is called once for each tool used by the craft, which this item provide.
+	 *
+	 * @param providerStack    The providing stack, the itemstack for this item
+	 * @param targetStack      The itemstack which is being upgraded/crafted/altered in some way
+	 * @param player           The player performing the actions
+	 * @param tool             The tool used
+	 * @param toolLevel        The level of the used tool
+	 * @param consumeResources
+	 */
+	default ItemStack onCraftConsume(ItemStack providerStack, ItemStack targetStack, Player player, ToolAction tool, int toolLevel,
+									 boolean consumeResources) {
+		ItemStack result = targetStack.copy();
 
-        return result;
-    }
+		return result;
+	}
 
-    /**
-     * Apply special effects and possibly consume required resources after this item has been used to perform a
-     * workbench action.
-     * @param providerStack The providing stack, the itemstack for this item
-     * @param targetStack The itemstack which the action is performed upon
-     * @param player The player performing the action
-     * @param tool The tool used
-     * @param toolLevel The level of the used tool
-     * @param consumeResources
-     */
-    public default ItemStack onActionConsume(ItemStack providerStack, ItemStack targetStack, Player player, ToolAction tool, int toolLevel,
-            boolean consumeResources) {
-        ItemStack result = targetStack.copy();
+	/**
+	 * Apply special effects and possibly consume required resources after this item has been used to perform a
+	 * workbench action.
+	 *
+	 * @param providerStack    The providing stack, the itemstack for this item
+	 * @param targetStack      The itemstack which the action is performed upon
+	 * @param player           The player performing the action
+	 * @param tool             The tool used
+	 * @param toolLevel        The level of the used tool
+	 * @param consumeResources
+	 */
+	default ItemStack onActionConsume(ItemStack providerStack, ItemStack targetStack, Player player, ToolAction tool, int toolLevel,
+									  boolean consumeResources) {
+		ItemStack result = targetStack.copy();
 
-        return result;
-    }
+		return result;
+	}
 }

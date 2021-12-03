@@ -24,196 +24,190 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+
 @ParametersAreNonnullByDefault
 @OnlyIn(Dist.CLIENT)
 public class HoloGui extends Screen {
-    private static final Logger logger = LogManager.getLogger();
+	private static final Logger logger = LogManager.getLogger();
+	private static HoloGui instance = null;
+	private static boolean hasListener = false;
+	private final HoloHeaderGui header;
+	private final HoloRootBaseGui[] pages;
+	private HoloRootBaseGui currentPage;
+	private final GuiElement defaultGui;
+	private final GuiElement spinner;
+	private Runnable closeCallback;
 
-    private final HoloHeaderGui header;
+	public HoloGui() {
+		super(new TextComponent("tetra:holosphere"));
 
-    private final HoloRootBaseGui[] pages;
-    private HoloRootBaseGui currentPage;
+		width = 320;
+		height = 240;
 
-    private GuiElement defaultGui;
+		// fontRenderer = Minecraft.getInstance().fontRenderer;
+		defaultGui = new GuiElement(0, 0, width, height);
 
-    private GuiElement spinner;
+		header = new HoloHeaderGui(0, 0, width, this::changePage);
+		defaultGui.addChild(header);
 
-    private static HoloGui instance = null;
+		pages = new HoloRootBaseGui[HoloPage.values().length];
+		pages[0] = new HoloCraftRootGui(0, 18);
+		defaultGui.addChild(pages[0]);
+		pages[1] = new HoloScanRootGui(0, 18);
+		pages[1].setVisible(false);
+		defaultGui.addChild(pages[1]);
+		pages[2] = new HoloSystemRootGui(0, 18);
+		pages[2].setVisible(false);
+		defaultGui.addChild(pages[2]);
 
-    private static boolean hasListener = false;
+		currentPage = pages[0];
 
-    private Runnable closeCallback;
+		spinner = new GuiSpinner(-8, 6);
+		spinner.setVisible(false);
+		defaultGui.addChild(spinner);
 
-    public HoloGui() {
-        super(new TextComponent("tetra:holosphere"));
+		if (ConfigHandler.development.get() && !hasListener) {
+			DataManager.featureData.onReload(() -> {
+				Minecraft.getInstance().executeBlocking(HoloGui::onReload);
+			});
+			hasListener = true;
+		}
+	}
 
-        width = 320;
-        height = 240;
+	public static HoloGui getInstance() {
+		if (instance == null) {
+			instance = new HoloGui();
+		}
 
-        // fontRenderer = Minecraft.getInstance().fontRenderer;
-        defaultGui = new GuiElement(0, 0, width, height);
+		return instance;
+	}
 
-        header = new HoloHeaderGui(0, 0, width, this::changePage);
-        defaultGui.addChild(header);
+	private static void onReload() {
+		if (instance != null && instance.getMinecraft().screen == instance) {
+			logger.info("Refreshing holosphere gui data");
+			instance.spinner.setVisible(false);
+			if (instance.currentPage != null) {
+				instance.currentPage.onReload();
+			}
+		}
+	}
 
-        pages = new HoloRootBaseGui[HoloPage.values().length];
-        pages[0] = new HoloCraftRootGui(0, 18);
-        defaultGui.addChild(pages[0]);
-        pages[1] = new HoloScanRootGui(0, 18);
-        pages[1].setVisible(false);
-        defaultGui.addChild(pages[1]);
-        pages[2] = new HoloSystemRootGui(0, 18);
-        pages[2].setVisible(false);
-        defaultGui.addChild(pages[2]);
+	public void openSchematic(IModularItem item, String slot, UpgradeSchematic schematic, Runnable closeCallback) {
+		changePage(HoloPage.craft);
 
-        currentPage = pages[0];
+		((HoloCraftRootGui) pages[0]).updateState(item, slot, schematic);
+		this.closeCallback = closeCallback;
+	}
 
-        spinner = new GuiSpinner(-8, 6);
-        spinner.setVisible(false);
-        defaultGui.addChild(spinner);
+	@Override
+	public void removed() {
+		super.removed();
+		if (closeCallback != null) {
+			// onClose is called in Minecarft.displayGuiScreen, pre-null-assignement prevents gui chaining from getting stuck in recursion
+			Runnable callback = closeCallback;
+			this.closeCallback = null;
+			callback.run();
+		}
+	}
 
-        if (ConfigHandler.development.get() && !hasListener) {
-            DataManager.featureData.onReload(() -> {
-                Minecraft.getInstance().executeBlocking(HoloGui::onReload);
-            });
-            hasListener = true;
-        }
-    }
+	public void onShow() {
+		header.onShow();
+		currentPage.animateOpen();
+	}
 
-    public void openSchematic(IModularItem item, String slot, UpgradeSchematic schematic, Runnable closeCallback) {
-        changePage(HoloPage.craft);
+	private void changePage(HoloPage page) {
+		header.changePage(page);
 
-        ((HoloCraftRootGui) pages[0]).updateState(item, slot, schematic);
-        this.closeCallback = closeCallback;
-    }
+		for (int i = 0; i < pages.length; i++) {
+			pages[i].setVisible(page.ordinal() == i);
+		}
 
-    @Override
-    public void removed() {
-        super.removed();
-        if (closeCallback != null) {
-            // onClose is called in Minecarft.displayGuiScreen, pre-null-assignement prevents gui chaining from getting stuck in recursion
-            Runnable callback = closeCallback;
-            this.closeCallback = null;
-            callback.run();
-        }
-    }
+		currentPage = pages[page.ordinal()];
+	}
 
-    public static HoloGui getInstance() {
-        if (instance == null) {
-            instance = new HoloGui();
-        }
+	@Override
+	public void render(PoseStack matrixStack, final int mouseX, final int mouseY, final float partialTicks) {
+		renderBackground(matrixStack, 0);
+		super.render(matrixStack, mouseX, mouseY, partialTicks);
 
-        return instance;
-    }
+		defaultGui.draw(matrixStack, (width - defaultGui.getWidth()) / 2, (height - defaultGui.getHeight()) / 2,
+			width, height, mouseX, mouseY, 1);
 
-    public void onShow() {
-        header.onShow();
-        currentPage.animateOpen();
-    }
+		renderHoveredToolTip(matrixStack, mouseX, mouseY);
+	}
 
-    private void changePage(HoloPage page) {
-        header.changePage(page);
+	protected void renderHoveredToolTip(PoseStack matrixStack, int mouseX, int mouseY) {
+		List<String> tooltipLines = defaultGui.getTooltipLines();
+		if (tooltipLines != null) {
+			List<Component> textComponents = tooltipLines.stream()
+				.map(line -> line.replace("\\n", "\n"))
+				.flatMap(line -> Arrays.stream(line.split("\n")))
+				.map(TextComponent::new)
+				.collect(Collectors.toList());
 
-        for (int i = 0; i < pages.length; i++) {
-            pages[i].setVisible(page.ordinal() == i);
-        }
+			GuiUtils.drawHoveringText(matrixStack, textComponents, mouseX, mouseY, width, height, 280, font);
+		}
+	}
 
-        currentPage = pages[page.ordinal()];
-    }
+	@Override
+	public boolean mouseClicked(double x, double y, int button) {
+		if (defaultGui.onMouseClick((int) x, (int) y, button)) {
+			return true;
+		}
 
-    @Override
-    public void render(PoseStack matrixStack, final int mouseX, final int mouseY, final float partialTicks) {
-        renderBackground(matrixStack, 0);
-        super.render(matrixStack, mouseX, mouseY, partialTicks);
+		return super.mouseClicked(x, y, button);
+	}
 
-        defaultGui.draw(matrixStack, (width - defaultGui.getWidth()) / 2, (height - defaultGui.getHeight()) / 2,
-                width, height, mouseX, mouseY, 1);
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double distance) {
+		if (currentPage.onMouseScroll(mouseX, mouseY, distance)) {
+			return true;
+		}
 
-        renderHoveredToolTip(matrixStack, mouseX, mouseY);
-    }
+		return super.mouseScrolled(mouseX, mouseY, distance);
+	}
 
-    protected void renderHoveredToolTip(PoseStack matrixStack, int mouseX, int mouseY) {
-        List<String> tooltipLines = defaultGui.getTooltipLines();
-        if (tooltipLines != null) {
-            List<Component> textComponents = tooltipLines.stream()
-                    .map(line -> line.replace("\\n", "\n"))
-                    .flatMap(line -> Arrays.stream(line.split("\n")))
-                    .map(TextComponent::new)
-                    .collect(Collectors.toList());
+	@Override
+	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+		if (currentPage.onKeyPress(keyCode, scanCode, modifiers)) {
+			return true;
+		}
 
-            GuiUtils.drawHoveringText(matrixStack, textComponents, mouseX, mouseY, width, height, 280, font);
-        }
-    }
+		return super.keyPressed(keyCode, scanCode, modifiers);
+	}
 
-    @Override
-    public boolean mouseClicked(double x, double y, int button) {
-        if (defaultGui.onMouseClick((int) x, (int) y, button)) {
-            return true;
-        }
+	@Override
+	public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+		if (currentPage.onKeyRelease(keyCode, scanCode, modifiers)) {
+			return true;
+		}
 
-        return super.mouseClicked(x, y, button);
-    }
+		return super.keyReleased(keyCode, scanCode, modifiers);
+	}
 
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double distance) {
-        if (currentPage.onMouseScroll(mouseX, mouseY, distance)) {
-            return true;
-        }
+	@Override
+	public boolean charTyped(char typedChar, int keyCode) {
+		if (currentPage.onCharType(typedChar, keyCode)) {
+			return true;
+		}
 
-        return super.mouseScrolled(mouseX, mouseY, distance);
-    }
+		if (ConfigHandler.development.get()) {
+			switch (typedChar) {
+				case 'r':
+					instance = null;
+					Minecraft.getInstance().setScreen(null);
 
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (currentPage.onKeyPress(keyCode, scanCode, modifiers)) {
-            return true;
-        }
+					HoloGui gui = HoloGui.getInstance();
+					Minecraft.getInstance().setScreen(gui);
+					gui.onShow();
+					break;
+				case 't':
+					getMinecraft().player.chat("/reload");
+					spinner.setVisible(true);
+					break;
+			}
+		}
 
-        return super.keyPressed(keyCode, scanCode, modifiers);
-    }
-
-    @Override
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        if (currentPage.onKeyRelease(keyCode, scanCode, modifiers)) {
-            return true;
-        }
-
-        return super.keyReleased(keyCode, scanCode, modifiers);
-    }
-
-    @Override
-    public boolean charTyped(char typedChar, int keyCode) {
-        if (currentPage.onCharType(typedChar, keyCode)) {
-            return true;
-        }
-
-        if (ConfigHandler.development.get()) {
-            switch (typedChar) {
-                case 'r':
-                    instance = null;
-                    Minecraft.getInstance().setScreen(null);
-
-                    HoloGui gui = HoloGui.getInstance();
-                    Minecraft.getInstance().setScreen(gui);
-                    gui.onShow();
-                    break;
-                case 't':
-                    getMinecraft().player.chat("/reload");
-                    spinner.setVisible(true);
-                    break;
-            }
-        }
-
-        return false;
-    }
-
-    private static void onReload() {
-        if (instance != null && instance.getMinecraft().screen == instance) {
-            logger.info("Refreshing holosphere gui data");
-            instance.spinner.setVisible(false);
-            if (instance.currentPage != null) {
-                instance.currentPage.onReload();
-            }
-        }
-    }
+		return false;
+	}
 }

@@ -15,20 +15,20 @@ import java.lang.reflect.Type;
 import java.util.Map;
 
 public interface CraftingEffectCondition {
-    boolean test(ResourceLocation[] unlocks, ItemStack upgradedStack, String slot, boolean isReplacing, Player player, ItemStack[] materials,
-            Map<ToolAction, Integer> tools, Level world, BlockPos pos, BlockState blockState);
+	boolean test(ResourceLocation[] unlocks, ItemStack upgradedStack, String slot, boolean isReplacing, Player player, ItemStack[] materials,
+				 Map<ToolAction, Integer> tools, Level world, BlockPos pos, BlockState blockState);
 
-    class Deserializer implements JsonDeserializer<CraftingEffectCondition> {
-        @Override
-        public CraftingEffectCondition deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            JsonObject jsonObject = json.getAsJsonObject();
-            String type = jsonObject.get("type").getAsString();
-            Class<? extends CraftingEffectCondition> clazz = CraftingEffectRegistry.getConditionClass(type);
-            if (clazz != null) {
-                return DataManager.gson.fromJson(json, clazz);
-            }
+	class Deserializer implements JsonDeserializer<CraftingEffectCondition> {
+		@Override
+		public CraftingEffectCondition deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+			JsonObject jsonObject = json.getAsJsonObject();
+			String type = jsonObject.get("type").getAsString();
+			Class<? extends CraftingEffectCondition> clazz = CraftingEffectRegistry.getConditionClass(type);
+			if (clazz != null) {
+				return DataManager.gson.fromJson(json, clazz);
+			}
 
-            throw new JsonParseException("Crafting effect condition type \"" + type + "\" is not valid");
-        }
-    }
+			throw new JsonParseException("Crafting effect condition type \"" + type + "\" is not valid");
+		}
+	}
 }

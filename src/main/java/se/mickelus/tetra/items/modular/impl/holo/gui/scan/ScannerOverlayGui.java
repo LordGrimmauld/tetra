@@ -34,250 +34,245 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Objects;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
 @ParametersAreNonnullByDefault
 public class ScannerOverlayGui extends GuiRoot {
-    private static final ResourceLocation tag = new ResourceLocation("tetra:scannable");
+	private static final ResourceLocation tag = new ResourceLocation("tetra:scannable");
+	private static final int snoozeLength = 6000; // 5 min
+	public static ScannerOverlayGui instance;
+	BlockPos upHighlight;
+	BlockPos midHighlight;
+	BlockPos downHighlight;
 
-    public static ScannerOverlayGui instance;
+	float widthRatio = 1;
 
-    private ScannerBarGui scanner;
+	ScannerSound sound;
+	// stats
+	boolean available;
+	int horizontalSpread = 44;
+	int verticalSpread = 3;
+	float cooldown = 1.2f;
+	int range = 32;
+	private final ScannerBarGui scanner;
+	private int ticks;
+	private int snooze = -1;
 
-    BlockPos upHighlight;
-    BlockPos midHighlight;
-    BlockPos downHighlight;
+	public ScannerOverlayGui() {
+		super(Minecraft.getInstance());
 
-    float widthRatio = 1;
+		scanner = new ScannerBarGui(2, 16, horizontalSpread);
+		scanner.setAttachment(GuiAttachment.topCenter);
+		scanner.setOpacity(0);
+		scanner.setVisible(false);
+		addChild(scanner);
 
-    ScannerSound sound;
+		sound = new ScannerSound(mc);
 
-    private int ticks;
+		if (ConfigHandler.development.get()) {
+			MinecraftForge.EVENT_BUS.register(new ScannerDebugRenderer(this));
+		}
 
-    private int snooze = -1;
-    private static final int snoozeLength = 6000; // 5 min
+		instance = this;
+	}
 
-    // stats
-    boolean available;
-    int horizontalSpread = 44;
-    int verticalSpread = 3;
-    float cooldown = 1.2f;
-    int range = 32;
+	public boolean isAvailable() {
+		return available;
+	}
 
-    public ScannerOverlayGui() {
-        super(Minecraft.getInstance());
+	public void toggleSnooze() {
+		if (isSnoozed()) {
+			snooze = -1;
+			mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.GRINDSTONE_USE, 2f, 0.3f));
+		} else {
+			snooze = ticks + snoozeLength;
+			mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.GRINDSTONE_USE, 1.6f, 0.3f));
+		}
+	}
 
-        scanner = new ScannerBarGui(2, 16, horizontalSpread);
-        scanner.setAttachment(GuiAttachment.topCenter);
-        scanner.setOpacity(0);
-        scanner.setVisible(false);
-        addChild(scanner);
+	public boolean isSnoozed() {
+		return ticks < snooze;
+	}
 
-        sound = new ScannerSound(mc);
+	public String getStatus() {
+		if (isSnoozed()) {
+			int seconds = Math.round((snooze - ticks) / 20f);
 
-        if (ConfigHandler.development.get()) {
-            MinecraftForge.EVENT_BUS.register(new ScannerDebugRenderer(this));
-        }
+			if (seconds > 60) {
+				return I18n.get("tetra.holo.scan.snoozed", String.format("%02d", seconds / 60), String.format("%02d", seconds % 60));
+			}
 
-        instance = this;
-    }
+			return I18n.get("tetra.holo.scan.snoozed", String.format("%02d", seconds / 60), String.format("%02d", seconds % 60));
+		} else {
+			return I18n.get("tetra.holo.scan.active");
+		}
+	}
 
-    public boolean isAvailable() {
-        return available;
-    }
+	private void updateStats() {
+		ItemStack itemStack = ModularHolosphereItem.findHolosphere(mc.player);
 
-    public void toggleSnooze() {
-        if (isSnoozed()) {
-            snooze = -1;
-            mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.GRINDSTONE_USE, 2f, 0.3f));
-        } else {
-            snooze = ticks + snoozeLength;
-            mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.GRINDSTONE_USE, 1.6f, 0.3f));
-        }
-    }
+		if (!itemStack.isEmpty()) {
+			ModularHolosphereItem item = (ModularHolosphereItem) itemStack.getItem();
+			horizontalSpread = 2 * item.getEffectLevel(itemStack, ItemEffect.scannerHorizontalSpread);
+			verticalSpread = item.getEffectLevel(itemStack, ItemEffect.scannerVerticalSpread);
+			range = item.getEffectLevel(itemStack, ItemEffect.scannerRange);
 
-    public boolean isSnoozed() {
-        return ticks < snooze;
-    }
+			cooldown = Math.max((float) item.getCooldownBase(itemStack), 1);
 
-    public String getStatus() {
-        if (isSnoozed()) {
-            int seconds = Math.round((snooze - ticks) / 20f);
+			scanner.setHorizontalSpread(horizontalSpread);
 
-            if (seconds > 60) {
-                return I18n.get("tetra.holo.scan.snoozed", String.format("%02d", seconds / 60), String.format("%02d", seconds % 60));
-            }
+			available = range > 0;
+		} else {
+			available = false;
+		}
+	}
 
-            return I18n.get("tetra.holo.scan.snoozed", String.format("%02d", seconds / 60), String.format("%02d", seconds % 60));
-        } else {
-            return I18n.get("tetra.holo.scan.active");
-        }
-    }
+	private void updateGuiVisibility() {
+		int scannerRange = Stream.of(mc.player.getMainHandItem(), mc.player.getOffhandItem())
+			.filter(stack -> stack.getItem() instanceof ModularHolosphereItem)
+			.map(stack -> ((IModularItem) stack.getItem()).getEffectLevel(stack, ItemEffect.scannerRange))
+			.findFirst()
+			.orElse(0);
 
-    private void updateStats() {
-        ItemStack itemStack = ModularHolosphereItem.findHolosphere(mc.player);
+		if (!scanner.isVisible() && scannerRange > 0) {
+			updateStats();
+		}
 
-        if (!itemStack.isEmpty()) {
-            ModularHolosphereItem item = (ModularHolosphereItem) itemStack.getItem();
-            horizontalSpread = 2 * item.getEffectLevel(itemStack, ItemEffect.scannerHorizontalSpread);
-            verticalSpread = item.getEffectLevel(itemStack, ItemEffect.scannerVerticalSpread);
-            range = item.getEffectLevel(itemStack, ItemEffect.scannerRange);
-
-            cooldown = Math.max((float) item.getCooldownBase(itemStack), 1);
-
-            scanner.setHorizontalSpread(horizontalSpread);
-
-            available = range > 0;
-        } else {
-            available = false;
-        }
-    }
-
-    private void updateGuiVisibility() {
-        int scannerRange = Stream.of(mc.player.getMainHandItem(), mc.player.getOffhandItem())
-                .filter(stack -> stack.getItem() instanceof ModularHolosphereItem)
-                .map(stack -> ((IModularItem) stack.getItem()).getEffectLevel(stack, ItemEffect.scannerRange))
-                .findFirst()
-                .orElse(0);
-
-        if (!scanner.isVisible() && scannerRange > 0) {
-            updateStats();
-        }
-
-        if (scannerRange > 0) {
-            scanner.show();
-        } else {
-            scanner.hide();
-        }
-    }
+		if (scannerRange > 0) {
+			scanner.show();
+		} else {
+			scanner.hide();
+		}
+	}
 
 
-    @SubscribeEvent
-    public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-        mc.getSoundManager().stop(sound);
-        sound = new ScannerSound(mc);
-    }
+	@SubscribeEvent
+	public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+		mc.getSoundManager().stop(sound);
+		sound = new ScannerSound(mc);
+	}
 
-    @SubscribeEvent
-    public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        mc.getSoundManager().stop(sound);
-        sound = new ScannerSound(mc);
-    }
+	@SubscribeEvent
+	public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+		mc.getSoundManager().stop(sound);
+		sound = new ScannerSound(mc);
+	}
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        Level world = mc.level;
-        Player player = mc.player;
+	@SubscribeEvent
+	public void onClientTick(TickEvent.ClientTickEvent event) {
+		Level world = mc.level;
+		Player player = mc.player;
 
-        if (world == null || player == null || TickEvent.Phase.START != event.phase) {
-            return;
-        }
+		if (world == null || player == null || TickEvent.Phase.START != event.phase) {
+			return;
+		}
 
-        updateGuiVisibility();
-        ticks++;
+		updateGuiVisibility();
+		ticks++;
 
-        if (ticks % 200 == 0) {
-            updateStats();
-        }
+		if (ticks % 200 == 0) {
+			updateStats();
+		}
 
-        if (available && ticks % 20 == 0) {
-            if (isSnoozed()) {
-                scanner.setStatus(getStatus());
-            } else {
-                scanner.setStatus(null);
-            }
-        }
+		if (available && ticks % 20 == 0) {
+			if (isSnoozed()) {
+				scanner.setStatus(getStatus());
+			} else {
+				scanner.setStatus(null);
+			}
+		}
 
-        if (available && ticks % 2 == 0 && !isSnoozed()) {
-            int offset = (int) (ticks / 2) % (int) (horizontalSpread * 2 * cooldown);
-            if (offset < horizontalSpread * 2) {
-                int yawOffset = (int) ((-horizontalSpread + offset) * ScannerBarGui.getDegreesPerUnit());
-                if (offset % 2 == 0) {
-                    if (verticalSpread > 0) {
-                        upHighlight = IntStream.range(0, verticalSpread)
-                                .map(i -> i * -5 - 25)
-                                .mapToObj(pitch -> getPositions(player, world, pitch, yawOffset))
-                                .filter(Objects::nonNull)
-                                .findAny()
-                                .orElse(null);
-                        scanner.highlightUp(offset / 2, upHighlight != null);
-                        if (upHighlight != null) {
-                            sound.activate();
-                        }
+		if (available && ticks % 2 == 0 && !isSnoozed()) {
+			int offset = (ticks / 2) % (int) (horizontalSpread * 2 * cooldown);
+			if (offset < horizontalSpread * 2) {
+				int yawOffset = (int) ((-horizontalSpread + offset) * ScannerBarGui.getDegreesPerUnit());
+				if (offset % 2 == 0) {
+					if (verticalSpread > 0) {
+						upHighlight = IntStream.range(0, verticalSpread)
+							.map(i -> i * -5 - 25)
+							.mapToObj(pitch -> getPositions(player, world, pitch, yawOffset))
+							.filter(Objects::nonNull)
+							.findAny()
+							.orElse(null);
+						scanner.highlightUp(offset / 2, upHighlight != null);
+						if (upHighlight != null) {
+							sound.activate();
+						}
 
-                        downHighlight = IntStream.range(0, verticalSpread)
-                                .map(i -> i * 5 + 25)
-                                .mapToObj(pitch -> getPositions(player, world, pitch, yawOffset))
-                                .filter(Objects::nonNull)
-                                .findAny()
-                                .orElse(null);
-                        scanner.highlightDown(offset / 2, downHighlight != null);
-                        if (downHighlight != null) {
-                            sound.activate();
-                        }
-                    }
-                } else if (offset / 2 < horizontalSpread - 1) {
-                    midHighlight = IntStream.range(-1, 2)
-                            .map(i -> i * 10)
-                            .mapToObj(pitch -> getPositions(player, world, pitch, yawOffset))
-                            .filter(Objects::nonNull)
-                            .findAny()
-                            .orElse(null);
+						downHighlight = IntStream.range(0, verticalSpread)
+							.map(i -> i * 5 + 25)
+							.mapToObj(pitch -> getPositions(player, world, pitch, yawOffset))
+							.filter(Objects::nonNull)
+							.findAny()
+							.orElse(null);
+						scanner.highlightDown(offset / 2, downHighlight != null);
+						if (downHighlight != null) {
+							sound.activate();
+						}
+					}
+				} else if (offset / 2 < horizontalSpread - 1) {
+					midHighlight = IntStream.range(-1, 2)
+						.map(i -> i * 10)
+						.mapToObj(pitch -> getPositions(player, world, pitch, yawOffset))
+						.filter(Objects::nonNull)
+						.findAny()
+						.orElse(null);
 
-                    scanner.highlightMid(offset / 2, midHighlight != null);
-                    if (midHighlight != null) {
-                        sound.activate();
-                    }
+					scanner.highlightMid(offset / 2, midHighlight != null);
+					if (midHighlight != null) {
+						sound.activate();
+					}
 
-                }
-            }
-        }
-    }
+				}
+			}
+		}
+	}
 
-    @Nullable
-    private BlockPos getPositions(Player player, Level world, int pitchOffset, int yawOffset) {
-        Vec3 eyePosition = player.getEyePosition(0);
-        Vec3 lookVector = getVectorForRotation(player.getViewXRot(1) + pitchOffset, player.getViewYRot(1) + yawOffset);
-        Vec3 endVector = eyePosition.add(lookVector.x * range, lookVector.y * range, lookVector.z * range);
+	@Nullable
+	private BlockPos getPositions(Player player, Level world, int pitchOffset, int yawOffset) {
+		Vec3 eyePosition = player.getEyePosition(0);
+		Vec3 lookVector = getVectorForRotation(player.getViewXRot(1) + pitchOffset, player.getViewYRot(1) + yawOffset);
+		Vec3 endVector = eyePosition.add(lookVector.x * range, lookVector.y * range, lookVector.z * range);
 
-        return BlockGetter.traverseBlocks(new ClipContext(eyePosition, endVector, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player), (ctx, blockPos) -> {
-            BlockState blockState = world.getBlockState(blockPos);
+		return BlockGetter.traverseBlocks(new ClipContext(eyePosition, endVector, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player), (ctx, blockPos) -> {
+			BlockState blockState = world.getBlockState(blockPos);
 
-            if (blockState.getBlock().getTags().contains(tag)) {
-                return blockPos.immutable();
-            }
-            return null;
-        }, ctx -> null);
-    }
+			if (blockState.getBlock().getTags().contains(tag)) {
+				return blockPos.immutable();
+			}
+			return null;
+		}, ctx -> null);
+	}
 
-    private Vec3 getVectorForRotation(float pitch, float yaw) {
-        float f = pitch * ((float)Math.PI / 180F);
-        float f1 = -yaw * ((float)Math.PI / 180F);
-        float f2 = Mth.cos(f1);
-        float f3 = Mth.sin(f1);
-        float f4 = Mth.cos(f);
-        float f5 = Mth.sin(f);
-        return new Vec3(f3 * f4, -f5, f2 * f4);
-    }
+	private Vec3 getVectorForRotation(float pitch, float yaw) {
+		float f = pitch * ((float) Math.PI / 180F);
+		float f1 = -yaw * ((float) Math.PI / 180F);
+		float f2 = Mth.cos(f1);
+		float f3 = Mth.sin(f1);
+		float f4 = Mth.cos(f);
+		float f5 = Mth.sin(f);
+		return new Vec3(f3 * f4, -f5, f2 * f4);
+	}
 
-    @SubscribeEvent(priority = EventPriority.NORMAL)
-    public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
-        if (event.getType() == RenderGameOverlayEvent.ElementType.HOTBAR) {
-            draw();
-        }
-    }
+	@SubscribeEvent(priority = EventPriority.NORMAL)
+	public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
+		if (event.getType() == RenderGameOverlayEvent.ElementType.HOTBAR) {
+			draw();
+		}
+	}
 
-    @Override
-    public void draw() {
-        if (isVisible()) {
-            Window window = mc.getWindow();
-            width = window.getGuiScaledWidth();
-            height = window.getGuiScaledHeight();
+	@Override
+	public void draw() {
+		if (isVisible()) {
+			Window window = mc.getWindow();
+			width = window.getGuiScaledWidth();
+			height = window.getGuiScaledHeight();
 
-            int mouseX = (int) (mc.mouseHandler.xpos() * width / window.getScreenWidth());
-            int mouseY = (int) (mc.mouseHandler.ypos() * height / window.getScreenHeight());
+			int mouseX = (int) (mc.mouseHandler.xpos() * width / window.getScreenWidth());
+			int mouseY = (int) (mc.mouseHandler.ypos() * height / window.getScreenHeight());
 
-            this.drawChildren(new PoseStack(), 0, 0, width, height, mouseX, mouseY, 1.0F);
+			this.drawChildren(new PoseStack(), 0, 0, width, height, mouseX, mouseY, 1.0F);
 
-            widthRatio = scanner.getWidth() * 1f / width;
-        }
-    }
+			widthRatio = scanner.getWidth() * 1f / width;
+		}
+	}
 }

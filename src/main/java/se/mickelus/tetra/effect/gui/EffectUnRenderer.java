@@ -11,6 +11,7 @@ import net.minecraftforge.client.EffectRenderer;
 @OnlyIn(Dist.CLIENT)
 public class EffectUnRenderer extends EffectRenderer {
 	public static final EffectRenderer INSTANCE = new EffectUnRenderer();
+
 	@Override
 	public void renderInventoryEffect(MobEffectInstance effect, EffectRenderingInventoryScreen<?> gui, PoseStack mStack, int x, int y, float z) {
 

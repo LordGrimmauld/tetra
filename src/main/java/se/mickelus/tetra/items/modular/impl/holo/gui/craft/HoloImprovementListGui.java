@@ -13,111 +13,109 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+
 @ParametersAreNonnullByDefault
 public class HoloImprovementListGui extends GuiElement {
-    private final List<HoloImprovementGui> improvements;
-    private final GuiHorizontalScrollable container;
-    private final GuiHorizontalLayoutGroup[] groups;
+	private final List<HoloImprovementGui> improvements;
+	private final GuiHorizontalScrollable container;
+	private final GuiHorizontalLayoutGroup[] groups;
+	private final Consumer<OutcomePreview> onVariantHover;
+	private final Consumer<OutcomePreview> onVariantBlur;
+	private final Consumer<OutcomeStack> onVariantSelect;
+	private final KeyframeAnimation showAnimation;
+	private final KeyframeAnimation hideAnimation;
+	private final int originalY;
 
-    private KeyframeAnimation showAnimation;
-    private KeyframeAnimation hideAnimation;
+	public HoloImprovementListGui(int x, int y, int width, int height, Consumer<OutcomePreview> onVariantHover,
+								  Consumer<OutcomePreview> onVariantBlur, Consumer<OutcomeStack> onVariantSelect) {
+		super(x, y, width, height);
 
-    private final Consumer<OutcomePreview> onVariantHover;
-    private final Consumer<OutcomePreview> onVariantBlur;
-    private final Consumer<OutcomeStack> onVariantSelect;
+		originalY = y;
 
-    private int originalY;
+		improvements = new ArrayList<>();
 
-    public HoloImprovementListGui(int x, int y, int width, int height, Consumer<OutcomePreview> onVariantHover,
-            Consumer<OutcomePreview> onVariantBlur, Consumer<OutcomeStack> onVariantSelect) {
-        super(x, y, width, height);
+		container = new GuiHorizontalScrollable(0, 0, width, height).setGlobal(true);
+		addChild(container);
 
-        originalY = y;
+		groups = new GuiHorizontalLayoutGroup[3];
+		for (int i = 0; i < groups.length; i++) {
+			groups[i] = new GuiHorizontalLayoutGroup(0, i * 32, 32, 8);
+			container.addChild(groups[i]);
+		}
 
-        improvements = new ArrayList<>();
+		showAnimation = new KeyframeAnimation(60, this)
+			.applyTo(new Applier.Opacity(1), new Applier.TranslateY(y))
+			.withDelay(100);
 
-        container = new GuiHorizontalScrollable(0, 0, width, height).setGlobal(true);
-        addChild(container);
+		hideAnimation = new KeyframeAnimation(60, this)
+			.applyTo(new Applier.Opacity(0), new Applier.TranslateY(y - 5))
+			.onStop(complete -> {
+				if (complete) {
+					this.isVisible = false;
+				}
+			});
 
-        groups = new GuiHorizontalLayoutGroup[3];
-        for (int i = 0; i < groups.length; i++) {
-            groups[i] = new GuiHorizontalLayoutGroup(0, i * 32, 32, 8);
-            container.addChild(groups[i]);
-        }
+		this.onVariantHover = onVariantHover;
+		this.onVariantBlur = onVariantBlur;
+		this.onVariantSelect = onVariantSelect;
+	}
 
-        showAnimation = new KeyframeAnimation(60, this)
-                .applyTo(new Applier.Opacity(1), new Applier.TranslateY(y))
-                .withDelay(100);
+	public void updateSchematics(ItemStack baseStack, String slot, UpgradeSchematic[] schematics) {
+		improvements.clear();
 
-        hideAnimation = new KeyframeAnimation(60, this)
-                .applyTo(new Applier.Opacity(0), new Applier.TranslateY(y - 5))
-                .onStop(complete -> {
-                    if (complete) {
-                        this.isVisible = false;
-                    }
-                });
+		for (GuiElement group : groups) {
+			group.clearChildren();
+			group.setWidth(0);
+		}
 
-        this.onVariantHover = onVariantHover;
-        this.onVariantBlur = onVariantBlur;
-        this.onVariantSelect = onVariantSelect;
-    }
+		for (int i = 0; i < schematics.length; i++) {
+			HoloImprovementGui improvement = new HoloImprovementGui(0, 0, schematics[i], baseStack, slot,
+				onVariantHover, onVariantBlur, onVariantSelect);
 
-    public void updateSchematics(ItemStack baseStack, String slot, UpgradeSchematic[] schematics) {
-        improvements.clear();
+			improvements.add(improvement);
 
-        for (GuiElement group : groups) {
-            group.clearChildren();
-            group.setWidth(0);
-        }
+			GuiHorizontalLayoutGroup group = getNextGroup();
+			group.addChild(improvement);
+			group.forceLayout();
+		}
 
-        for (int i = 0; i < schematics.length; i++) {
-            HoloImprovementGui improvement = new HoloImprovementGui(0, 0, schematics[i], baseStack, slot,
-                    onVariantHover, onVariantBlur, onVariantSelect);
+		container.markDirty();
+	}
 
-            improvements.add(improvement);
+	private GuiHorizontalLayoutGroup getNextGroup() {
+		GuiHorizontalLayoutGroup next = groups[0];
+		int width = next.getWidth();
 
-            GuiHorizontalLayoutGroup group = getNextGroup();
-            group.addChild(improvement);
-            group.forceLayout();
-        }
+		for (int i = 1; i < groups.length; i++) {
+			if (groups[i].getWidth() < width) {
+				next = groups[i];
+				width = next.getWidth();
+			}
+		}
 
-        container.markDirty();
-    }
+		return next;
+	}
 
-    private GuiHorizontalLayoutGroup getNextGroup() {
-        GuiHorizontalLayoutGroup next = groups[0];
-        int width = next.getWidth();
+	public void show() {
+		hideAnimation.stop();
+		setVisible(true);
+		showAnimation.start();
 
-        for (int i = 1; i < groups.length; i++) {
-            if (groups[i].getWidth() < width) {
-                next = groups[i];
-                width = next.getWidth();
-            }
-        }
+		container.setOffset(0);
+	}
 
-        return next;
-    }
+	public void hide() {
+		showAnimation.stop();
+		hideAnimation.start();
+	}
 
-    public void show() {
-        hideAnimation.stop();
-        setVisible(true);
-        showAnimation.start();
+	public void forceHide() {
+		setY(originalY);
+		setOpacity(0);
+		setVisible(false);
+	}
 
-        container.setOffset(0);
-    }
-
-    public void hide() {
-        showAnimation.stop();
-        hideAnimation.start();
-    }
-
-    public void forceHide() {
-        setY(originalY);
-        setOpacity(0);
-        setVisible(false);
-    }
-
-    public void updateSelection(ItemStack itemStack, List<OutcomeStack> selectedOutcomes) {
-        improvements.forEach(improvement -> improvement.updateSelection(itemStack, selectedOutcomes));
-    }
+	public void updateSelection(ItemStack itemStack, List<OutcomeStack> selectedOutcomes) {
+		improvements.forEach(improvement -> improvement.updateSelection(itemStack, selectedOutcomes));
+	}
 }

@@ -14,35 +14,36 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Stream;
+
 @ParametersAreNonnullByDefault
 public class CraftingEffect {
-    public boolean replace = false;
-    CraftingEffectCondition[] requirements = new CraftingEffectCondition[0];
-    CraftingEffectOutcome[] outcomes = new CraftingEffectOutcome[0];
-    CraftingProperties properties = new CraftingProperties();
+	public boolean replace = false;
+	CraftingEffectCondition[] requirements = new CraftingEffectCondition[0];
+	CraftingEffectOutcome[] outcomes = new CraftingEffectOutcome[0];
+	CraftingProperties properties = new CraftingProperties();
 
-    public boolean isApplicable(ResourceLocation[] unlocks, ItemStack upgradedStack, String slot, boolean isReplacing, Player player,
-            ItemStack[] materials, Map<ToolAction, Integer> tools, Level world, BlockPos pos, BlockState blockState) {
-        return Arrays.stream(requirements)
-                .allMatch(condition -> condition.test(unlocks, upgradedStack, slot, isReplacing, player, materials, tools, world, pos, blockState));
-    }
+	public static void copyFields(CraftingEffect from, CraftingEffect to) {
+		to.requirements = Stream.concat(Arrays.stream(to.requirements), Arrays.stream(from.requirements)).toArray(CraftingEffectCondition[]::new);
+		to.outcomes = Stream.concat(Arrays.stream(to.outcomes), Arrays.stream(from.outcomes)).toArray(CraftingEffectOutcome[]::new);
 
-    public boolean applyOutcomes(ItemStack upgradedStack, String slot, boolean isReplacing, Player player, ItemStack[] preMaterials,
-            ItemStack[] postMaterials, Map<ToolAction, Integer> tools, Level world, BlockPos pos, BlockState blockState, boolean consumeResources) {
-        boolean success = false;
-        for (CraftingEffectOutcome outcome: outcomes) {
-            if (outcome.apply(upgradedStack, slot, isReplacing, player, preMaterials, tools, world, pos, blockState, consumeResources, postMaterials)) {
-                success = true;
-            }
-        }
+		to.properties = CraftingProperties.merge(from.properties, to.properties);
+	}
 
-        return success;
-    }
+	public boolean isApplicable(ResourceLocation[] unlocks, ItemStack upgradedStack, String slot, boolean isReplacing, Player player,
+								ItemStack[] materials, Map<ToolAction, Integer> tools, Level world, BlockPos pos, BlockState blockState) {
+		return Arrays.stream(requirements)
+			.allMatch(condition -> condition.test(unlocks, upgradedStack, slot, isReplacing, player, materials, tools, world, pos, blockState));
+	}
 
-    public static void copyFields(CraftingEffect from, CraftingEffect to) {
-        to.requirements = Stream.concat(Arrays.stream(to.requirements), Arrays.stream(from.requirements)).toArray(CraftingEffectCondition[]::new);
-        to.outcomes = Stream.concat(Arrays.stream(to.outcomes), Arrays.stream(from.outcomes)).toArray(CraftingEffectOutcome[]::new);
+	public boolean applyOutcomes(ItemStack upgradedStack, String slot, boolean isReplacing, Player player, ItemStack[] preMaterials,
+								 ItemStack[] postMaterials, Map<ToolAction, Integer> tools, Level world, BlockPos pos, BlockState blockState, boolean consumeResources) {
+		boolean success = false;
+		for (CraftingEffectOutcome outcome : outcomes) {
+			if (outcome.apply(upgradedStack, slot, isReplacing, player, preMaterials, tools, world, pos, blockState, consumeResources, postMaterials)) {
+				success = true;
+			}
+		}
 
-        to.properties = CraftingProperties.merge(from.properties, to.properties);
-    }
+		return success;
+	}
 }

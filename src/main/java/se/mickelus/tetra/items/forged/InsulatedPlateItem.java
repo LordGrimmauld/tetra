@@ -18,22 +18,23 @@ import se.mickelus.tetra.items.TetraItemGroup;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class InsulatedPlateItem extends TetraItem {
-    private static final String unlocalizedName = "vent_plate";
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static InsulatedPlateItem instance;
+	private static final String unlocalizedName = "vent_plate";
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static InsulatedPlateItem instance;
 
-    public InsulatedPlateItem() {
-        super(new Properties().tab(TetraItemGroup.instance));
-        setRegistryName(unlocalizedName);
-    }
+	public InsulatedPlateItem() {
+		super(new Properties().tab(TetraItemGroup.instance));
+		setRegistryName(unlocalizedName);
+	}
 
-    @OnlyIn(Dist.CLIENT)
-    @Override
-    public void appendHoverText(ItemStack itemStack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(new TranslatableComponent("item.tetra.vent_plate.description").withStyle(ChatFormatting.GRAY));
-        tooltip.add(new TextComponent(" "));
-        tooltip.add(ForgedBlockCommon.locationTooltip);
-    }
+	@OnlyIn(Dist.CLIENT)
+	@Override
+	public void appendHoverText(ItemStack itemStack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
+		tooltip.add(new TranslatableComponent("item.tetra.vent_plate.description").withStyle(ChatFormatting.GRAY));
+		tooltip.add(new TextComponent(" "));
+		tooltip.add(ForgedBlockCommon.locationTooltip);
+	}
 }

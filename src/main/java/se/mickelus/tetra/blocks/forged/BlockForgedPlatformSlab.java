@@ -12,26 +12,27 @@ import se.mickelus.tetra.blocks.ITetraBlock;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class BlockForgedPlatformSlab extends SlabBlock implements ITetraBlock {
-    static final String unlocalizedName = "forged_platform_slab";
+	static final String unlocalizedName = "forged_platform_slab";
 
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static BlockForgedPlatformSlab instance;
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static BlockForgedPlatformSlab instance;
 
-    public BlockForgedPlatformSlab() {
-        super(ForgedBlockCommon.propertiesSolid);
+	public BlockForgedPlatformSlab() {
+		super(ForgedBlockCommon.propertiesSolid);
 
-        setRegistryName(unlocalizedName);
-    }
+		setRegistryName(unlocalizedName);
+	}
 
-    @Override
-    public void appendHoverText(ItemStack itemStack, @Nullable BlockGetter world, List<Component> tooltip, TooltipFlag advanced) {
-        tooltip.add(ForgedBlockCommon.locationTooltip);
-    }
+	@Override
+	public void appendHoverText(ItemStack itemStack, @Nullable BlockGetter world, List<Component> tooltip, TooltipFlag advanced) {
+		tooltip.add(ForgedBlockCommon.locationTooltip);
+	}
 
-    @Override
-    public boolean hasItem() {
-        return true;
-    }
+	@Override
+	public boolean hasItem() {
+		return true;
+	}
 }

@@ -4,19 +4,20 @@ import net.minecraft.client.Minecraft;
 import se.mickelus.mutil.gui.GuiRoot;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class OverlayGuiBooster extends GuiRoot {
 
-    private GuiBarBooster barElement;
+	private final GuiBarBooster barElement;
 
-    public OverlayGuiBooster(Minecraft mc) {
-        super(mc);
+	public OverlayGuiBooster(Minecraft mc) {
+		super(mc);
 
-        barElement = new GuiBarBooster(50, 100, 0, 0);
-        addChild(barElement);
-    }
+		barElement = new GuiBarBooster(50, 100, 0, 0);
+		addChild(barElement);
+	}
 
-    public void setFuel(float fuel) {
-        barElement.setFuel(fuel);
-    }
+	public void setFuel(float fuel) {
+		barElement.setFuel(fuel);
+	}
 }

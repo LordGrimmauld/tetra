@@ -20,64 +20,65 @@ import se.mickelus.tetra.util.CastOptional;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Optional;
+
 @ParametersAreNonnullByDefault
 public class SettleToast implements Toast {
-    private static final ResourceLocation texture = new ResourceLocation(TetraMod.MOD_ID,"textures/gui/toasts.png");
+	private static final ResourceLocation texture = new ResourceLocation(TetraMod.MOD_ID, "textures/gui/toasts.png");
 
-    private boolean hasPlayedSound = false;
-    private ItemStack itemStack;
-    private String moduleName;
-    private GuiModuleGlyph glyph;
+	private boolean hasPlayedSound = false;
+	private final ItemStack itemStack;
+	private final String moduleName;
+	private final GuiModuleGlyph glyph;
 
-    public SettleToast(ItemStack itemStack, String slot) {
-        this.itemStack = itemStack;
+	public SettleToast(ItemStack itemStack, String slot) {
+		this.itemStack = itemStack;
 
-        ItemModule itemModule = CastOptional.cast(itemStack.getItem(), IModularItem.class)
-                .map(item -> item.getModuleFromSlot(itemStack, slot))
-                .orElse(null);
+		ItemModule itemModule = CastOptional.cast(itemStack.getItem(), IModularItem.class)
+			.map(item -> item.getModuleFromSlot(itemStack, slot))
+			.orElse(null);
 
-        glyph = Optional.ofNullable(itemModule)
-                .map(module -> module.getVariantData(itemStack))
-                .map(data -> data.glyph)
-                .map(glyphData -> new GuiModuleGlyph(0, 0, 16, 16, glyphData).setShift(false))
-                .orElse(null);
+		glyph = Optional.ofNullable(itemModule)
+			.map(module -> module.getVariantData(itemStack))
+			.map(data -> data.glyph)
+			.map(glyphData -> new GuiModuleGlyph(0, 0, 16, 16, glyphData).setShift(false))
+			.orElse(null);
 
-        moduleName = Optional.ofNullable(itemModule)
-                .map(module -> module.getName(itemStack))
-                .orElse(slot);
-    }
+		moduleName = Optional.ofNullable(itemModule)
+			.map(module -> module.getName(itemStack))
+			.orElse(slot);
+	}
 
-    @Override
-    public Visibility render(PoseStack matrixStack, ToastComponent toastGui, long delta) {
-
-
-        if (itemStack != null) {
-            toastGui.getMinecraft().getTextureManager().bindForSetup(texture);
-            RenderSystem.color3f(1.0F, 1.0F, 1.0F);
-            toastGui.blit(matrixStack, 0, 0, 0, 0, 160, 32);
-
-            if (!this.hasPlayedSound && delta > 0L) {
-                this.hasPlayedSound = true;
-
-                toastGui.getMinecraft().getSoundManager()
-                        .play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 2F, 0.7F));
-            }
-
-            if (glyph != null) {
-                toastGui.blit(matrixStack, 20, 14, 160, 0, 15, 15);
-                glyph.draw(new PoseStack(), 19, 14, 260, 43, -1, -1, 1);
-            }
-
-            toastGui.getMinecraft().font.draw(matrixStack, I18n.get(TetraMod.MOD_ID + ".settled.toast"), 30, 7, SchematicRarity.hone.tint);
-            toastGui.getMinecraft().font.draw(matrixStack, toastGui.getMinecraft().font.plainSubstrByWidth(moduleName, 118), 37, 18, GuiColors.muted);
+	@Override
+	public Visibility render(PoseStack matrixStack, ToastComponent toastGui, long delta) {
 
 
-            Lighting.turnBackOn();
-            toastGui.getMinecraft().getItemRenderer().renderAndDecorateItem(null, itemStack, 8, 8);
+		if (itemStack != null) {
+			toastGui.getMinecraft().getTextureManager().bindForSetup(texture);
+			RenderSystem.color3f(1.0F, 1.0F, 1.0F);
+			toastGui.blit(matrixStack, 0, 0, 0, 0, 160, 32);
 
-            return delta > 5000 ? Visibility.HIDE : Visibility.SHOW;
-        }
+			if (!this.hasPlayedSound && delta > 0L) {
+				this.hasPlayedSound = true;
 
-        return Visibility.HIDE;
-    }
+				toastGui.getMinecraft().getSoundManager()
+					.play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 2F, 0.7F));
+			}
+
+			if (glyph != null) {
+				toastGui.blit(matrixStack, 20, 14, 160, 0, 15, 15);
+				glyph.draw(new PoseStack(), 19, 14, 260, 43, -1, -1, 1);
+			}
+
+			toastGui.getMinecraft().font.draw(matrixStack, I18n.get(TetraMod.MOD_ID + ".settled.toast"), 30, 7, SchematicRarity.hone.tint);
+			toastGui.getMinecraft().font.draw(matrixStack, toastGui.getMinecraft().font.plainSubstrByWidth(moduleName, 118), 37, 18, GuiColors.muted);
+
+
+			Lighting.turnBackOn();
+			toastGui.getMinecraft().getItemRenderer().renderAndDecorateItem(null, itemStack, 8, 8);
+
+			return delta > 5000 ? Visibility.HIDE : Visibility.SHOW;
+		}
+
+		return Visibility.HIDE;
+	}
 }

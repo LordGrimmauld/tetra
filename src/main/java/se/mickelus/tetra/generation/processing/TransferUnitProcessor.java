@@ -17,48 +17,50 @@ import se.mickelus.tetra.items.cell.ItemCellMagmatic;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Random;
+
 @ParametersAreNonnullByDefault
 public class TransferUnitProcessor extends StructureProcessor {
-    public TransferUnitProcessor() {}
+	public TransferUnitProcessor() {
+	}
 
-    @Nullable
-    @Override
-    public StructureTemplate.StructureBlockInfo process(LevelReader world, BlockPos pos, BlockPos pos2, StructureTemplate.StructureBlockInfo $, StructureTemplate.StructureBlockInfo blockInfo,
-            StructurePlaceSettings placementSettings, @Nullable StructureTemplate template) {
-        if (blockInfo.state.getBlock() instanceof TransferUnitBlock) {
-            Random random = placementSettings.getRandom(blockInfo.pos);
+	@Nullable
+	@Override
+	public StructureTemplate.StructureBlockInfo process(LevelReader world, BlockPos pos, BlockPos pos2, StructureTemplate.StructureBlockInfo $, StructureTemplate.StructureBlockInfo blockInfo,
+														StructurePlaceSettings placementSettings, @Nullable StructureTemplate template) {
+		if (blockInfo.state.getBlock() instanceof TransferUnitBlock) {
+			Random random = placementSettings.getRandom(blockInfo.pos);
 
-            CompoundTag newCompound = blockInfo.nbt.copy();
+			CompoundTag newCompound = blockInfo.nbt.copy();
 
-            int cellState = 0;
+			int cellState = 0;
 
-            // randomize cell
-            if (random.nextFloat() < 0.05) {
-                int charge = random.nextInt(ItemCellMagmatic.maxCharge);
-                ItemStack itemStack = new ItemStack(ItemCellMagmatic.instance);
-                ItemCellMagmatic.instance.recharge(itemStack, charge);
+			// randomize cell
+			if (random.nextFloat() < 0.05) {
+				int charge = random.nextInt(ItemCellMagmatic.maxCharge);
+				ItemStack itemStack = new ItemStack(ItemCellMagmatic.instance);
+				ItemCellMagmatic.instance.recharge(itemStack, charge);
 
-                cellState = charge > 0 ? 2 : 1;
+				cellState = charge > 0 ? 2 : 1;
 
-                TransferUnitTile.writeCell(newCompound, itemStack);
-            } else if (random.nextFloat() < 0.1) {
-                TransferUnitTile.writeCell(newCompound, new ItemStack(ItemCellMagmatic.instance));
-            }
+				TransferUnitTile.writeCell(newCompound, itemStack);
+			} else if (random.nextFloat() < 0.1) {
+				TransferUnitTile.writeCell(newCompound, new ItemStack(ItemCellMagmatic.instance));
+			}
 
-            // randomize configuration & plate
-            EnumTransferConfig[] configs = EnumTransferConfig.values();
-            BlockState newState = blockInfo.state
-                    .setValue(TransferUnitBlock.cellProp, cellState)
-                    .setValue(TransferUnitBlock.configProp, configs[random.nextInt(configs.length)])
-                    .setValue(TransferUnitBlock.plateProp, random.nextBoolean());
+			// randomize configuration & plate
+			EnumTransferConfig[] configs = EnumTransferConfig.values();
+			BlockState newState = blockInfo.state
+				.setValue(TransferUnitBlock.cellProp, cellState)
+				.setValue(TransferUnitBlock.configProp, configs[random.nextInt(configs.length)])
+				.setValue(TransferUnitBlock.plateProp, random.nextBoolean());
 
-            return new StructureTemplate.StructureBlockInfo(blockInfo.pos, newState, newCompound);
-        }
-        return blockInfo;
-    }
+			return new StructureTemplate.StructureBlockInfo(blockInfo.pos, newState, newCompound);
+		}
+		return blockInfo;
+	}
 
-    @Override
-    protected StructureProcessorType getType() {
-        return ProcessorTypes.transferUnit;
-    }
+	@Override
+	protected StructureProcessorType getType() {
+		return ProcessorTypes.transferUnit;
+	}
 }

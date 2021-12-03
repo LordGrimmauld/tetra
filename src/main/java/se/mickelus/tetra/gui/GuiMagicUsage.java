@@ -16,133 +16,134 @@ import se.mickelus.tetra.util.CastOptional;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Arrays;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class GuiMagicUsage extends GuiElement {
-    protected GuiString valueString;
-    protected GuiBar bar;
+	protected GuiString valueString;
+	protected GuiBar bar;
 
-    protected List<String> tooltip;
-    protected List<String> tooltipExtended;
+	protected List<String> tooltip;
+	protected List<String> tooltipExtended;
 
-    public GuiMagicUsage(int x, int y, int barLength) {
-        super(x, y, barLength, 12);
+	public GuiMagicUsage(int x, int y, int barLength) {
+		super(x, y, barLength, 12);
 
-        addChild(new GuiStringSmall(0, 0, I18n.get("item.tetra.modular.magic_capacity.label")));
+		addChild(new GuiStringSmall(0, 0, I18n.get("item.tetra.modular.magic_capacity.label")));
 
-        valueString = new GuiStringSmall(0, 0, "");
-        valueString.setAttachment(GuiAttachment.topRight);
-        addChild(valueString);
+		valueString = new GuiStringSmall(0, 0, "");
+		valueString.setAttachment(GuiAttachment.topRight);
+		addChild(valueString);
 
-        bar = new GuiBar(0, 0, barLength, 0, 0);
-        addChild(bar);
+		bar = new GuiBar(0, 0, barLength, 0, 0);
+		addChild(bar);
 
-    }
+	}
 
-    public void update(ItemStack itemStack, ItemStack previewStack, String slot) {
-        if (!previewStack.isEmpty()) {
-            int value = getCost(itemStack, slot);
-            int diffValue = getCost(previewStack, slot) - value;
+	private static int getGain(ItemStack itemStack, String slot) {
+		return CastOptional.cast(itemStack.getItem(), IModularItem.class)
+			.map(item -> item.getModuleFromSlot(itemStack, slot))
+			.map(module -> module.getMagicCapacityGain(itemStack))
+			.orElse(0);
+	}
 
-            int max = getGain(itemStack, slot);
-            int diffMax = getGain(previewStack, slot) - max;
+	private static int getCost(ItemStack itemStack, String slot) {
+		return CastOptional.cast(itemStack.getItem(), IModularItem.class)
+			.map(item -> item.getModuleFromSlot(itemStack, slot))
+			.map(module -> module.getMagicCapacityCost(itemStack))
+			.orElse(0);
+	}
 
-            int risk = Math.round(getDestabilizeChance(previewStack, slot) * 100);
-            int xpCost = getExperienceCost(previewStack, slot);
+	private static float getDestabilizeChance(ItemStack itemStack, String slot) {
+		return CastOptional.cast(itemStack.getItem(), IModularItem.class)
+			.map(item -> item.getModuleFromSlot(itemStack, slot))
+			.map(module -> module.getDestabilizationChance(itemStack, 1))
+			.orElse(0f);
+	}
 
-            bar.setMax(Math.max(max + diffMax, max));
+	private static int getExperienceCost(ItemStack itemStack, String slot) {
+		return CastOptional.cast(itemStack.getItem(), IModularItem.class)
+			.map(item -> item.getModuleFromSlot(itemStack, slot))
+			.map(module -> module.getRepairExperienceCost(itemStack))
+			.orElse(0);
+	}
 
-            tooltip = Arrays.asList(
-                    I18n.get("item.tetra.modular.magic_capacity.description", max, value + diffValue, xpCost, risk),
-                    " ",
-                    Tooltips.expand.getString());
+	public void update(ItemStack itemStack, ItemStack previewStack, String slot) {
+		if (!previewStack.isEmpty()) {
+			int value = getCost(itemStack, slot);
+			int diffValue = getCost(previewStack, slot) - value;
 
-            tooltipExtended = Arrays.asList(
-                    I18n.get("item.tetra.modular.magic_capacity.description", max, value + diffValue, xpCost, risk),
-                    " ",
-                    Tooltips.expanded.getString(),
-                    I18n.get("item.tetra.modular.magic_capacity.description_extended"));
+			int max = getGain(itemStack, slot);
+			int diffMax = getGain(previewStack, slot) - max;
 
-            if (diffMax != 0) {
-                bar.setValue(max, max + diffMax);
-                valueString.setString(String.format("%s(%+d)%s %d/%d", diffMax < 0 ? ChatFormatting.RED : ChatFormatting.GREEN,
-                        diffMax, ChatFormatting.RESET, max + diffMax, max + diffMax));
-            } else if (diffValue != 0) {
-                bar.setValue(max - value, max - value - diffValue);
-                valueString.setString(String.format("%s(%+d)%s %d/%d", diffValue > 0 ? ChatFormatting.RED : ChatFormatting.GREEN,
-                        -diffValue, ChatFormatting.RESET, max - value - diffValue, max));
-            } else {
-                bar.setValue(max - value, max - value);
-                valueString.setString(String.format("%d/%d", max - value, max));
-            }
-        } else {
-            int value = getCost(itemStack, slot);
-            int max = getGain(itemStack, slot);
+			int risk = Math.round(getDestabilizeChance(previewStack, slot) * 100);
+			int xpCost = getExperienceCost(previewStack, slot);
 
-            int risk = Math.round(getDestabilizeChance(itemStack, slot) * 100);
-            int xpCost = getExperienceCost(itemStack, slot);
+			bar.setMax(Math.max(max + diffMax, max));
 
-            tooltip = Arrays.asList(
-                    I18n.get("item.tetra.modular.magic_capacity.description", max, value, xpCost, risk),
-                    " ",
-                    Tooltips.expand.getString());
+			tooltip = Arrays.asList(
+				I18n.get("item.tetra.modular.magic_capacity.description", max, value + diffValue, xpCost, risk),
+				" ",
+				Tooltips.expand.getString());
 
-            tooltipExtended = Arrays.asList(
-                    I18n.get("item.tetra.modular.magic_capacity.description", max, value, xpCost, risk),
-                    " ",
-                    Tooltips.expanded.getString(),
-                    I18n.get("item.tetra.modular.magic_capacity.description_extended"));
-            valueString.setString(String.format("%d/%d", max - value, max));
+			tooltipExtended = Arrays.asList(
+				I18n.get("item.tetra.modular.magic_capacity.description", max, value + diffValue, xpCost, risk),
+				" ",
+				Tooltips.expanded.getString(),
+				I18n.get("item.tetra.modular.magic_capacity.description_extended"));
 
-            bar.setMax(max);
-            bar.setValue(max - value, max - value);
-        }
-    }
+			if (diffMax != 0) {
+				bar.setValue(max, max + diffMax);
+				valueString.setString(String.format("%s(%+d)%s %d/%d", diffMax < 0 ? ChatFormatting.RED : ChatFormatting.GREEN,
+					diffMax, ChatFormatting.RESET, max + diffMax, max + diffMax));
+			} else if (diffValue != 0) {
+				bar.setValue(max - value, max - value - diffValue);
+				valueString.setString(String.format("%s(%+d)%s %d/%d", diffValue > 0 ? ChatFormatting.RED : ChatFormatting.GREEN,
+					-diffValue, ChatFormatting.RESET, max - value - diffValue, max));
+			} else {
+				bar.setValue(max - value, max - value);
+				valueString.setString(String.format("%d/%d", max - value, max));
+			}
+		} else {
+			int value = getCost(itemStack, slot);
+			int max = getGain(itemStack, slot);
 
-    private static int getGain(ItemStack itemStack, String slot) {
-        return CastOptional.cast(itemStack.getItem(), IModularItem.class)
-                .map(item -> item.getModuleFromSlot(itemStack, slot))
-                .map(module -> module.getMagicCapacityGain(itemStack))
-                .orElse(0);
-    }
+			int risk = Math.round(getDestabilizeChance(itemStack, slot) * 100);
+			int xpCost = getExperienceCost(itemStack, slot);
 
-    private static int getCost(ItemStack itemStack, String slot) {
-        return CastOptional.cast(itemStack.getItem(), IModularItem.class)
-                .map(item -> item.getModuleFromSlot(itemStack, slot))
-                .map(module -> module.getMagicCapacityCost(itemStack))
-                .orElse(0);
-    }
+			tooltip = Arrays.asList(
+				I18n.get("item.tetra.modular.magic_capacity.description", max, value, xpCost, risk),
+				" ",
+				Tooltips.expand.getString());
 
-    private static float getDestabilizeChance(ItemStack itemStack, String slot) {
-        return CastOptional.cast(itemStack.getItem(), IModularItem.class)
-                .map(item -> item.getModuleFromSlot(itemStack, slot))
-                .map(module -> module.getDestabilizationChance(itemStack, 1))
-                .orElse(0f);
-    }
+			tooltipExtended = Arrays.asList(
+				I18n.get("item.tetra.modular.magic_capacity.description", max, value, xpCost, risk),
+				" ",
+				Tooltips.expanded.getString(),
+				I18n.get("item.tetra.modular.magic_capacity.description_extended"));
+			valueString.setString(String.format("%d/%d", max - value, max));
 
-    private static int getExperienceCost(ItemStack itemStack, String slot) {
-        return CastOptional.cast(itemStack.getItem(), IModularItem.class)
-                .map(item -> item.getModuleFromSlot(itemStack, slot))
-                .map(module -> module.getRepairExperienceCost(itemStack))
-                .orElse(0);
-    }
+			bar.setMax(max);
+			bar.setValue(max - value, max - value);
+		}
+	}
 
-    public boolean hasChanged(ItemStack itemStack, ItemStack previewStack, String slot) {
-        return !previewStack.isEmpty() && (getCost(itemStack, slot) != getCost(previewStack, slot) || getGain(itemStack, slot) != getGain(previewStack, slot));
-    }
+	public boolean hasChanged(ItemStack itemStack, ItemStack previewStack, String slot) {
+		return !previewStack.isEmpty() && (getCost(itemStack, slot) != getCost(previewStack, slot) || getGain(itemStack, slot) != getGain(previewStack, slot));
+	}
 
-    public boolean providesCapacity(ItemStack itemStack, ItemStack previewStack, String slot) {
-        return getGain(itemStack, slot) > 0 || getGain(previewStack, slot) > 0;
-    }
+	public boolean providesCapacity(ItemStack itemStack, ItemStack previewStack, String slot) {
+		return getGain(itemStack, slot) > 0 || getGain(previewStack, slot) > 0;
+	}
 
-    @Override
-    public List<String> getTooltipLines() {
-        if (hasFocus()) {
-            if (Screen.hasShiftDown()) {
-                return tooltipExtended;
-            }
+	@Override
+	public List<String> getTooltipLines() {
+		if (hasFocus()) {
+			if (Screen.hasShiftDown()) {
+				return tooltipExtended;
+			}
 
-            return tooltip;
-        }
-        return super.getTooltipLines();
-    }
+			return tooltip;
+		}
+		return super.getTooltipLines();
+	}
 }

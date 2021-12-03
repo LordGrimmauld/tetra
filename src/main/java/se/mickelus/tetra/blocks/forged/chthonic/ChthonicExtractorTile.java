@@ -11,54 +11,54 @@ import net.minecraftforge.registries.ObjectHolder;
 import se.mickelus.tetra.TetraMod;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class ChthonicExtractorTile extends BlockEntity {
-    @ObjectHolder(TetraMod.MOD_ID + ":" + ChthonicExtractorBlock.unlocalizedName)
-    public static BlockEntityType<ChthonicExtractorTile> type;
+	private static final String damageKey = "dmg";
+	@ObjectHolder(TetraMod.MOD_ID + ":" + ChthonicExtractorBlock.unlocalizedName)
+	public static BlockEntityType<ChthonicExtractorTile> type;
+	private int damage = 0;
 
-    private static final String damageKey = "dmg";
-    private int damage = 0;
+	public ChthonicExtractorTile(BlockPos p_155268_, BlockState p_155269_) {
+		super(type, p_155268_, p_155269_);
+	}
 
-    public ChthonicExtractorTile(BlockPos p_155268_, BlockState p_155269_) {
-        super(type, p_155268_, p_155269_);
-    }
+	public int getDamage() {
+		return damage;
+	}
 
-    public int getDamage() {
-        return damage;
-    }
+	public void setDamage(int damage) {
+		this.damage = damage;
+		setChanged();
+	}
 
-    public void setDamage(int damage) {
-        this.damage = damage;
-        setChanged();
-    }
+	public void damage(int amount) {
+		int newDamage = getDamage() + amount;
 
-    public void damage(int amount) {
-        int newDamage = getDamage() + amount;
-
-        if (newDamage < ChthonicExtractorBlock.maxDamage) {
-            setDamage(newDamage);
-        } else {
-            level.levelEvent(null, 2001, getBlockPos(), Block.getId(level.getBlockState(getBlockPos())));
-            level.setBlock(getBlockPos(), Blocks.AIR.defaultBlockState(), 2);
-        }
-    }
+		if (newDamage < ChthonicExtractorBlock.maxDamage) {
+			setDamage(newDamage);
+		} else {
+			level.levelEvent(null, 2001, getBlockPos(), Block.getId(level.getBlockState(getBlockPos())));
+			level.setBlock(getBlockPos(), Blocks.AIR.defaultBlockState(), 2);
+		}
+	}
 
 
-    @Override
-    public void load(CompoundTag compound) {
-        super.load(compound);
+	@Override
+	public void load(CompoundTag compound) {
+		super.load(compound);
 
-        if (compound.contains(damageKey)) {
-            damage = compound.getInt(damageKey);
-        }
-    }
+		if (compound.contains(damageKey)) {
+			damage = compound.getInt(damageKey);
+		}
+	}
 
-    @Override
-    public CompoundTag save(CompoundTag compound) {
-        super.save(compound);
+	@Override
+	public CompoundTag save(CompoundTag compound) {
+		super.save(compound);
 
-        compound.putInt(damageKey, damage);
+		compound.putInt(damageKey, damage);
 
-        return compound;
-    }
+		return compound;
+	}
 }

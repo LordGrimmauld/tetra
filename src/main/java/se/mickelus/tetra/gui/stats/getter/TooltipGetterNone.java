@@ -5,27 +5,28 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class TooltipGetterNone implements ITooltipGetter {
-    protected String localizationKey;
+	protected String localizationKey;
 
-    public TooltipGetterNone(String localizationKey) {
-        this.localizationKey = localizationKey;
-    }
+	public TooltipGetterNone(String localizationKey) {
+		this.localizationKey = localizationKey;
+	}
 
 
-    @Override
-    public String getTooltipBase(Player player, ItemStack itemStack) {
-        return I18n.get(localizationKey);
-    }
+	@Override
+	public String getTooltipBase(Player player, ItemStack itemStack) {
+		return I18n.get(localizationKey);
+	}
 
-    @Override
-    public boolean hasExtendedTooltip(Player player, ItemStack itemStack) {
-        return I18n.exists(localizationKey + "_extended");
-    }
+	@Override
+	public boolean hasExtendedTooltip(Player player, ItemStack itemStack) {
+		return I18n.exists(localizationKey + "_extended");
+	}
 
-    @Override
-    public String getTooltipExtension(Player player, ItemStack itemStack) {
-        return I18n.get(localizationKey + "_extended");
-    }
+	@Override
+	public String getTooltipExtension(Player player, ItemStack itemStack) {
+		return I18n.get(localizationKey + "_extended");
+	}
 }

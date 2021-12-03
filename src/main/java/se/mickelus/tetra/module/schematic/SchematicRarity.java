@@ -7,13 +7,13 @@ import se.mickelus.tetra.gui.GuiColors;
  */
 public enum SchematicRarity {
 
-    temporary(GuiColors.temporarySchematic),
-    hone(GuiColors.hone),
-    basic(GuiColors.normal);
+	temporary(GuiColors.temporarySchematic),
+	hone(GuiColors.hone),
+	basic(GuiColors.normal);
 
-    public int tint;
+	public int tint;
 
-    SchematicRarity(int tint) {
-        this.tint = tint;
-    }
+	SchematicRarity(int tint) {
+		this.tint = tint;
+	}
 }

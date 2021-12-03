@@ -9,37 +9,38 @@ import se.mickelus.tetra.module.schematic.UpgradeSchematic;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Collections;
 import java.util.Map;
+
 @ParametersAreNonnullByDefault
 public class ToolRequirementListGui extends GuiElement {
 
-    private Map<ToolAction, Integer> requiredTools = Collections.emptyMap();
+	private Map<ToolAction, Integer> requiredTools = Collections.emptyMap();
 
-    public ToolRequirementListGui(int x, int y) {
-        super(x, y, 54, 18);
-    }
+	public ToolRequirementListGui(int x, int y) {
+		super(x, y, 54, 18);
+	}
 
-    public void update(UpgradeSchematic schematic, ItemStack targetStack, String slot, ItemStack[] materials, Map<ToolAction, Integer> availableTools) {
-        boolean hasValidMaterials = schematic.isMaterialsValid(targetStack, slot, materials);
-        setVisible(hasValidMaterials);
+	public void update(UpgradeSchematic schematic, ItemStack targetStack, String slot, ItemStack[] materials, Map<ToolAction, Integer> availableTools) {
+		boolean hasValidMaterials = schematic.isMaterialsValid(targetStack, slot, materials);
+		setVisible(hasValidMaterials);
 
-        if (hasValidMaterials) {
-            clearChildren();
+		if (hasValidMaterials) {
+			clearChildren();
 
-            requiredTools = schematic.getRequiredToolLevels(targetStack, materials);
+			requiredTools = schematic.getRequiredToolLevels(targetStack, materials);
 
-            requiredTools.forEach((tool, level) -> {
-                ToolRequirementGui indicator = new ToolRequirementGui(getNumChildren() * GuiTool.width, 0, tool);
-                indicator.updateRequirement(level, availableTools.getOrDefault(tool, 0));
-                indicator.setAttachment(GuiAttachment.topRight);
-                addChild(indicator);
-            });
-        }
-    }
+			requiredTools.forEach((tool, level) -> {
+				ToolRequirementGui indicator = new ToolRequirementGui(getNumChildren() * GuiTool.width, 0, tool);
+				indicator.updateRequirement(level, availableTools.getOrDefault(tool, 0));
+				indicator.setAttachment(GuiAttachment.topRight);
+				addChild(indicator);
+			});
+		}
+	}
 
-    public void updateAvailableTools(Map<ToolAction, Integer> availableTools) {
-        getChildren(ToolRequirementGui.class).forEach(indicator ->
-                indicator.updateRequirement(
-                        requiredTools.getOrDefault(indicator.getToolAction(), 0),
-                        availableTools.getOrDefault(indicator.getToolAction(), 0)));
-    }
+	public void updateAvailableTools(Map<ToolAction, Integer> availableTools) {
+		getChildren(ToolRequirementGui.class).forEach(indicator ->
+			indicator.updateRequirement(
+				requiredTools.getOrDefault(indicator.getToolAction(), 0),
+				availableTools.getOrDefault(indicator.getToolAction(), 0)));
+	}
 }

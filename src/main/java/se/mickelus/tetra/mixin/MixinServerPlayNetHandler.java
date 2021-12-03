@@ -12,17 +12,17 @@ import se.mickelus.tetra.items.modular.impl.toolbelt.suspend.SuspendPotionEffect
 @Mixin(ServerGamePacketListenerImpl.class)
 public abstract class MixinServerPlayNetHandler {
 
-    @Inject(at = @At("TAIL"), method = "handleMovePlayer")
-    private void processPlayer(ServerboundMovePlayerPacket packet, CallbackInfo callback) {
-        if (getInstance().player.hasEffect(SuspendPotionEffect.instance)) {
+	@Inject(at = @At("TAIL"), method = "handleMovePlayer")
+	private void processPlayer(ServerboundMovePlayerPacket packet, CallbackInfo callback) {
+		if (getInstance().player.hasEffect(SuspendPotionEffect.instance)) {
 			setclientIsFloating(false);
-        }
-    }
+		}
+	}
 
-    private ServerGamePacketListenerImpl getInstance() {
-        return ((ServerGamePacketListenerImpl) (Object) this);
-    }
+	private ServerGamePacketListenerImpl getInstance() {
+		return ((ServerGamePacketListenerImpl) (Object) this);
+	}
 
-    @Accessor
-    public abstract void setclientIsFloating(boolean floating);
+	@Accessor
+	public abstract void setclientIsFloating(boolean floating);
 }

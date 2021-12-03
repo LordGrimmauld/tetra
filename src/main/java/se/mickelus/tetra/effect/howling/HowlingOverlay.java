@@ -8,24 +8,25 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Optional;
+
 @ParametersAreNonnullByDefault
 public class HowlingOverlay {
-    public static HowlingOverlay instance;
+	public static HowlingOverlay instance;
 
-    private final Minecraft mc;
+	private final Minecraft mc;
 
-    private HowlingProgressGui gui;
+	private final HowlingProgressGui gui;
 
-    public HowlingOverlay(Minecraft mc) {
-        this.mc = mc;
+	public HowlingOverlay(Minecraft mc) {
+		this.mc = mc;
 
-        gui = new HowlingProgressGui(mc);
+		gui = new HowlingProgressGui(mc);
 
-        instance = this;
-    }
+		instance = this;
+	}
 
-    @SubscribeEvent(priority = EventPriority.NORMAL)
-    public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
+	@SubscribeEvent(priority = EventPriority.NORMAL)
+	public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
         /*
         if (event.getType() != RenderGameOverlayEvent.ElementType.CROSSHAIRS) {
             return;
@@ -33,13 +34,13 @@ public class HowlingOverlay {
         FIXME: still required? then need to search for replacement
          */
 
-        int amplifier = Optional.ofNullable(mc.player)
-                .map(player -> player.getEffect(HowlingPotionEffect.instance))
-                .map(MobEffectInstance::getAmplifier)
-                .orElse(-1);
+		int amplifier = Optional.ofNullable(mc.player)
+			.map(player -> player.getEffect(HowlingPotionEffect.instance))
+			.map(MobEffectInstance::getAmplifier)
+			.orElse(-1);
 
-        gui.updateAmplifier(amplifier);
+		gui.updateAmplifier(amplifier);
 
-        gui.draw(event.getMatrixStack());
-    }
+		gui.draw(event.getMatrixStack());
+	}
 }

@@ -8,31 +8,32 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import se.mickelus.mutil.gui.GuiRoot;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class AbilityOverlays extends GuiRoot {
-    public static AbilityOverlays instance;
+	public static AbilityOverlays instance;
 
-    private ChargeBarGui chargeBar;
-    private ComboPointGui comboPoints;
-    private RevengeGui revengeIndicator;
+	private final ChargeBarGui chargeBar;
+	private final ComboPointGui comboPoints;
+	private final RevengeGui revengeIndicator;
 
-    public AbilityOverlays(Minecraft mc) {
-        super(mc);
+	public AbilityOverlays(Minecraft mc) {
+		super(mc);
 
-        chargeBar = new ChargeBarGui();
-        addChild(chargeBar);
+		chargeBar = new ChargeBarGui();
+		addChild(chargeBar);
 
-        comboPoints = new ComboPointGui();
-        addChild(comboPoints);
+		comboPoints = new ComboPointGui();
+		addChild(comboPoints);
 
-        revengeIndicator = new RevengeGui();
-        addChild(revengeIndicator);
+		revengeIndicator = new RevengeGui();
+		addChild(revengeIndicator);
 
-        instance = this;
-    }
+		instance = this;
+	}
 
-    @SubscribeEvent
-    public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
+	@SubscribeEvent
+	public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
         /*
         if (event.getType() != RenderGameOverlayEvent.ElementType.CROSSHAIRS) {
             return;
@@ -40,20 +41,20 @@ public class AbilityOverlays extends GuiRoot {
         FIXME: still required? then need to search for replacement
          */
 
-        chargeBar.update(mc.player);
-        comboPoints.update(mc.player);
-        revengeIndicator.update(mc.player, mc.hitResult);
+		chargeBar.update(mc.player);
+		comboPoints.update(mc.player);
+		revengeIndicator.update(mc.player, mc.hitResult);
 
-        draw(event.getMatrixStack());
-    }
+		draw(event.getMatrixStack());
+	}
 
-    public void draw(PoseStack matrixStack) {
-        if (isVisible()) {
-            Window window = mc.getWindow();
-            int width = window.getGuiScaledWidth();
-            int height = window.getGuiScaledHeight();
+	public void draw(PoseStack matrixStack) {
+		if (isVisible()) {
+			Window window = mc.getWindow();
+			int width = window.getGuiScaledWidth();
+			int height = window.getGuiScaledHeight();
 
-            this.drawChildren(matrixStack, width / 2, height / 2, 0, 0, 0, 0, 1.0F);
-        }
-    }
+			this.drawChildren(matrixStack, width / 2, height / 2, 0, 0, 0, 0, 1.0F);
+		}
+	}
 }

@@ -1,8 +1,8 @@
 package se.mickelus.tetra.effect;
 
 public enum AbilityUseResult {
-    fail,
-    hit,
-    crit,
-    magicCrit
+	fail,
+	hit,
+	crit,
+	magicCrit
 }

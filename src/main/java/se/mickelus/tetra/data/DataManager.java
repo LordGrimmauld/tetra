@@ -34,103 +34,101 @@ import se.mickelus.tetra.module.schematic.RepairDefinition;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Arrays;
 import java.util.Map;
+
 @ParametersAreNonnullByDefault
 public class DataManager {
 
-    private final Logger logger = LogManager.getLogger();
+	// todo: use the same naming for all deserializers?
+	public static final Gson gson = new GsonBuilder()
+		.registerTypeAdapter(ToolData.class, new ToolData.Deserializer())
+		.registerTypeAdapter(EffectData.class, new EffectData.Deserializer())
+		.registerTypeAdapter(GlyphData.class, new GlyphDeserializer())
+		.registerTypeAdapter(ModuleModel.class, new ModuleModelDeserializer())
+		.registerTypeAdapter(Priority.class, new Priority.Deserializer())
+		.registerTypeAdapter(ItemPredicate.class, new ItemPredicateDeserializer())
+		.registerTypeAdapter(PropertyMatcher.class, new PropertyMatcherDeserializer())
+		.registerTypeAdapter(OutcomeMaterial.class, new OutcomeMaterial.Deserializer())
+		.registerTypeAdapter(ReplacementDefinition.class, new ReplacementDeserializer())
+		.registerTypeAdapter(BlockPos.class, new BlockPosDeserializer())
+		.registerTypeAdapter(Block.class, new BlockDeserializer())
+		.registerTypeAdapter(AttributesDeserializer.typeToken.getRawType(), new AttributesDeserializer())
+		.registerTypeAdapter(VariantData.class, new VariantData.Deserializer())
+		.registerTypeAdapter(ImprovementData.class, new ImprovementData.Deserializer())
+		.registerTypeAdapter(OutcomeDefinition.class, new OutcomeDefinition.Deserializer())
+		.registerTypeAdapter(MaterialColors.class, new MaterialColors.Deserializer())
+		.registerTypeAdapter(CraftingEffectCondition.class, new CraftingEffectCondition.Deserializer())
+		.registerTypeAdapter(CraftingEffectOutcome.class, new CraftingEffectOutcome.Deserializer())
+		.registerTypeAdapter(Item.class, new ItemDeserializer())
+		.registerTypeAdapter(Enchantment.class, new EnchantmentDeserializer())
+		.registerTypeAdapter(ResourceLocation.class, new ResourceLocationDeserializer())
+		.create();
+	public static DataStore<TweakData[]> tweakData = new DataStore<>(gson, "tweaks", TweakData[].class);
+	public static DataStore<MaterialData> materialData = new MaterialStore(gson, "materials");
+	public static DataStore<ImprovementData[]> improvementData = new ImprovementStore(gson, "improvements");
+	public static DataStore<ModuleData> moduleData = new ModuleStore(gson, "modules");
+	public static DataStore<RepairDefinition> repairData = new DataStore<>(gson, "repairs", RepairDefinition.class);
+	public static DataStore<EnchantmentMapping[]> enchantmentData = new DataStore<>(gson, "enchantments",
+		EnchantmentMapping[].class);
+	public static DataStore<SynergyData[]> synergyData = new DataStore<>(gson, "synergies", SynergyData[].class);
+	public static DataStore<ReplacementDefinition[]> replacementData = new DataStore<>(gson, "replacements",
+		ReplacementDefinition[].class);
+	public static SchematicStore schematicData = new SchematicStore(gson, "schematics");
+	public static DataStore<CraftingEffect> craftingEffectData = new CraftingEffectStore(gson, "crafting_effects");
+	public static DataStore<ItemPredicate[]> predicateData = new DataStore<>(gson, "predicatus", ItemPredicate[].class);
+	public static DataStore<ConfigActionImpl[]> actionData = new DataStore<>(gson, "actions", ConfigActionImpl[].class);
+	public static DataStore<DestabilizationEffect[]> destabilizationData = new DataStore<>(gson, "destabilization",
+		DestabilizationEffect[].class);
+	public static DataStore<FeatureParameters> featureData = new FeatureStore(gson, "structures");
+	public static DataManager instance;
+	private final Logger logger = LogManager.getLogger();
+	private final DataStore[] dataStores = new DataStore[]{tweakData, materialData, improvementData, moduleData, enchantmentData, synergyData,
+		replacementData, schematicData, craftingEffectData, repairData, predicateData, actionData, destabilizationData, featureData};
 
-    // todo: use the same naming for all deserializers?
-    public static final Gson gson = new GsonBuilder()
-            .registerTypeAdapter(ToolData.class, new ToolData.Deserializer())
-            .registerTypeAdapter(EffectData.class, new EffectData.Deserializer())
-            .registerTypeAdapter(GlyphData.class, new GlyphDeserializer())
-            .registerTypeAdapter(ModuleModel.class, new ModuleModelDeserializer())
-            .registerTypeAdapter(Priority.class, new Priority.Deserializer())
-            .registerTypeAdapter(ItemPredicate.class, new ItemPredicateDeserializer())
-            .registerTypeAdapter(PropertyMatcher.class, new PropertyMatcherDeserializer())
-            .registerTypeAdapter(OutcomeMaterial.class, new OutcomeMaterial.Deserializer())
-            .registerTypeAdapter(ReplacementDefinition.class, new ReplacementDeserializer())
-            .registerTypeAdapter(BlockPos.class, new BlockPosDeserializer())
-            .registerTypeAdapter(Block.class, new BlockDeserializer())
-            .registerTypeAdapter(AttributesDeserializer.typeToken.getRawType(), new AttributesDeserializer())
-            .registerTypeAdapter(VariantData.class, new VariantData.Deserializer())
-            .registerTypeAdapter(ImprovementData.class, new ImprovementData.Deserializer())
-            .registerTypeAdapter(OutcomeDefinition.class, new OutcomeDefinition.Deserializer())
-            .registerTypeAdapter(MaterialColors.class, new MaterialColors.Deserializer())
-            .registerTypeAdapter(CraftingEffectCondition.class, new CraftingEffectCondition.Deserializer())
-            .registerTypeAdapter(CraftingEffectOutcome.class, new CraftingEffectOutcome.Deserializer())
-            .registerTypeAdapter(Item.class, new ItemDeserializer())
-            .registerTypeAdapter(Enchantment.class, new EnchantmentDeserializer())
-            .registerTypeAdapter(ResourceLocation.class, new ResourceLocationDeserializer())
-            .create();
+	public DataManager() {
+		instance = this;
+	}
 
-    public static DataStore<TweakData[]> tweakData = new DataStore<>(gson, "tweaks", TweakData[].class);
-    public static DataStore<MaterialData> materialData = new MaterialStore(gson, "materials");
-    public static DataStore<ImprovementData[]> improvementData = new ImprovementStore(gson, "improvements");
-    public static DataStore<ModuleData> moduleData = new ModuleStore(gson, "modules");
-    public static DataStore<RepairDefinition> repairData = new DataStore<>(gson, "repairs", RepairDefinition.class);
-    public static DataStore<EnchantmentMapping[]> enchantmentData = new DataStore<>(gson, "enchantments",
-            EnchantmentMapping[].class);
-    public static DataStore<SynergyData[]> synergyData = new DataStore<>(gson, "synergies", SynergyData[].class);
-    public static DataStore<ReplacementDefinition[]> replacementData = new DataStore<>(gson, "replacements",
-            ReplacementDefinition[].class);
-    public static SchematicStore schematicData = new SchematicStore(gson, "schematics");
-    public static DataStore<CraftingEffect> craftingEffectData = new CraftingEffectStore(gson, "crafting_effects");
-    public static DataStore<ItemPredicate[]> predicateData = new DataStore<>(gson, "predicatus", ItemPredicate[].class);
-    public static DataStore<ConfigActionImpl[]> actionData = new DataStore<>(gson, "actions", ConfigActionImpl[].class);
-    public static DataStore<DestabilizationEffect[]> destabilizationData = new DataStore<>(gson, "destabilization",
-            DestabilizationEffect[].class);
-    public static DataStore<FeatureParameters> featureData = new FeatureStore(gson, "structures");
+	@SubscribeEvent
+	public void addReloadListener(AddReloadListenerEvent event) {
+		logger.debug("Setting up datastore reload listeners");
+		Arrays.stream(dataStores).forEach(event::addListener);
+	}
 
-    private final DataStore[] dataStores = new DataStore[] { tweakData, materialData, improvementData, moduleData, enchantmentData, synergyData,
-            replacementData, schematicData, craftingEffectData, repairData, predicateData, actionData, destabilizationData, featureData };
+	@SubscribeEvent
+	public void tagsUpdated(TagsUpdatedEvent event) {
+		logger.debug("Reloaded tags");
+	}
 
-    public static DataManager instance;
+	@SubscribeEvent
+	public void playerConnected(PlayerEvent.PlayerLoggedInEvent event) {
+		// todo: stop this from sending to player in singleplayer (while still sending to others in lan worlds)
+		logger.info("Sending data to client: {}", event.getPlayer().getName().getContents());
+		for (DataStore dataStore : dataStores) {
+			dataStore.sendToPlayer((ServerPlayer) event.getPlayer());
+		}
+	}
 
-    public DataManager() {
-        instance = this;
-    }
+	public void onDataRecieved(String directory, Map<ResourceLocation, String> data) {
+		Arrays.stream(dataStores)
+			.filter(dataStore -> dataStore.getDirectory().equals(directory))
+			.forEach(dataStore -> dataStore.loadFromPacket(data));
+	}
 
-    @SubscribeEvent
-    public void addReloadListener(AddReloadListenerEvent event) {
-        logger.debug("Setting up datastore reload listeners");
-        Arrays.stream(dataStores).forEach(event::addListener);
-    }
-
-    @SubscribeEvent
-    public void tagsUpdated(TagsUpdatedEvent event) {
-        logger.debug("Reloaded tags");
-    }
-
-    @SubscribeEvent
-    public void playerConnected(PlayerEvent.PlayerLoggedInEvent event) {
-        // todo: stop this from sending to player in singleplayer (while still sending to others in lan worlds)
-        logger.info("Sending data to client: {}", event.getPlayer().getName().getContents());
-        for (DataStore dataStore : dataStores) {
-            dataStore.sendToPlayer((ServerPlayer) event.getPlayer());
-        }
-    }
-
-    public void onDataRecieved(String directory, Map<ResourceLocation, String> data) {
-        Arrays.stream(dataStores)
-                .filter(dataStore -> dataStore.getDirectory().equals(directory))
-                .forEach(dataStore -> dataStore.loadFromPacket(data));
-    }
-
-    /**
-     * Wrapped data getter for synergy data so that data may be ordered in such a way that it's efficiently compared. Skipping this step
-     * would cause items to incorrectly gain synergies.
-     * @param path The path to the synergy data
-     * @return An array of synergy data
-     */
-    public SynergyData[] getSynergyData(String path) {
-        SynergyData[] data = synergyData.getDataIn(new ResourceLocation(TetraMod.MOD_ID, path)).stream()
-                .flatMap(Arrays::stream)
-                .toArray(SynergyData[]::new);
-        for (SynergyData entry : data) {
-            Arrays.sort(entry.moduleVariants);
-            Arrays.sort(entry.modules);
-        }
-        return data;
-    }
+	/**
+	 * Wrapped data getter for synergy data so that data may be ordered in such a way that it's efficiently compared. Skipping this step
+	 * would cause items to incorrectly gain synergies.
+	 *
+	 * @param path The path to the synergy data
+	 * @return An array of synergy data
+	 */
+	public SynergyData[] getSynergyData(String path) {
+		SynergyData[] data = synergyData.getDataIn(new ResourceLocation(TetraMod.MOD_ID, path)).stream()
+			.flatMap(Arrays::stream)
+			.toArray(SynergyData[]::new);
+		for (SynergyData entry : data) {
+			Arrays.sort(entry.moduleVariants);
+			Arrays.sort(entry.modules);
+		}
+		return data;
+	}
 }

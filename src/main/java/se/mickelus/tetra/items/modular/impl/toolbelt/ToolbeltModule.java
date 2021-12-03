@@ -7,14 +7,15 @@ import se.mickelus.tetra.module.MultiSlotMajorModule;
 import se.mickelus.tetra.module.data.ModuleData;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class ToolbeltModule extends MultiSlotMajorModule {
-    public ToolbeltModule(ResourceLocation identifier, ModuleData data) {
-        super(identifier, data);
-    }
+	public ToolbeltModule(ResourceLocation identifier, ModuleData data) {
+		super(identifier, data);
+	}
 
-    @Override
-    public void postRemove(ItemStack targetStack, Player player) {
-        ToolbeltHelper.emptyOverflowSlots(targetStack, player);
-    }
+	@Override
+	public void postRemove(ItemStack targetStack, Player player) {
+		ToolbeltHelper.emptyOverflowSlots(targetStack, player);
+	}
 }

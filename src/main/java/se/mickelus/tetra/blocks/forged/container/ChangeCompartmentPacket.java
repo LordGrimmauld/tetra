@@ -6,30 +6,32 @@ import se.mickelus.tetra.network.AbstractPacket;
 import se.mickelus.tetra.util.CastOptional;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class ChangeCompartmentPacket extends AbstractPacket {
 
-    private int compartmentIndex;
+	private int compartmentIndex;
 
-    public ChangeCompartmentPacket() {}
+	public ChangeCompartmentPacket() {
+	}
 
-    public ChangeCompartmentPacket(int compartmentIndex) {
-        this.compartmentIndex = compartmentIndex;
-    }
+	public ChangeCompartmentPacket(int compartmentIndex) {
+		this.compartmentIndex = compartmentIndex;
+	}
 
-    @Override
-    public void toBytes(FriendlyByteBuf buffer) {
-        buffer.writeInt(compartmentIndex);
-    }
+	@Override
+	public void toBytes(FriendlyByteBuf buffer) {
+		buffer.writeInt(compartmentIndex);
+	}
 
-    @Override
-    public void fromBytes(FriendlyByteBuf buffer) {
-        compartmentIndex = buffer.readInt();
-    }
+	@Override
+	public void fromBytes(FriendlyByteBuf buffer) {
+		compartmentIndex = buffer.readInt();
+	}
 
-    @Override
-    public void handle(Player player) {
-        CastOptional.cast(player.containerMenu, ForgedContainerContainer.class)
-                .ifPresent(container -> container.changeCompartment(compartmentIndex));
-    }
+	@Override
+	public void handle(Player player) {
+		CastOptional.cast(player.containerMenu, ForgedContainerContainer.class)
+			.ifPresent(container -> container.changeCompartment(compartmentIndex));
+	}
 }

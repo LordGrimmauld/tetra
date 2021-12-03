@@ -17,80 +17,81 @@ import se.mickelus.tetra.network.PacketHandler;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class ModularSingleHeadedItem extends ItemModularHandheld {
 
-    public final static String headKey = "single/head";
-    public final static String handleKey = "single/handle";
+	public final static String headKey = "single/head";
+	public final static String handleKey = "single/handle";
 
-    public final static String bindingKey = "single/binding";
+	public final static String bindingKey = "single/binding";
 
-    private static final String unlocalizedName = "modular_single";
+	private static final String unlocalizedName = "modular_single";
 
-    private static final GuiModuleOffsets majorOffsets = new GuiModuleOffsets(1, -3, -11, 21);
-    private static final GuiModuleOffsets minorOffsets = new GuiModuleOffsets(-14, 0);
+	private static final GuiModuleOffsets majorOffsets = new GuiModuleOffsets(1, -3, -11, 21);
+	private static final GuiModuleOffsets minorOffsets = new GuiModuleOffsets(-14, 0);
 
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static ModularSingleHeadedItem instance;
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static ModularSingleHeadedItem instance;
 
-    public ModularSingleHeadedItem() {
-        super(new Properties().stacksTo(1).fireResistant());
-        setRegistryName(unlocalizedName);
+	public ModularSingleHeadedItem() {
+		super(new Properties().stacksTo(1).fireResistant());
+		setRegistryName(unlocalizedName);
 
-        entityHitDamage = 1;
+		entityHitDamage = 1;
 
-        majorModuleKeys = new String[] { headKey, handleKey };
-        minorModuleKeys = new String[] { bindingKey };
+		majorModuleKeys = new String[]{headKey, handleKey};
+		minorModuleKeys = new String[]{bindingKey};
 
-        requiredModules = new String[] { handleKey, headKey };
+		requiredModules = new String[]{handleKey, headKey};
 
-        updateConfig(ConfigHandler.honeSingleBase.get(), ConfigHandler.honeSingleIntegrityMultiplier.get());
+		updateConfig(ConfigHandler.honeSingleBase.get(), ConfigHandler.honeSingleIntegrityMultiplier.get());
 
 
-        SchematicRegistry.instance.registerSchematic(new RepairSchematic(this));
-        RemoveSchematic.registerRemoveSchematics(this);
-    }
+		SchematicRegistry.instance.registerSchematic(new RepairSchematic(this));
+		RemoveSchematic.registerRemoveSchematics(this);
+	}
 
-    @Override
-    public void init(PacketHandler packetHandler) {
-        DataManager.synergyData.onReload(() -> synergies = DataManager.instance.getSynergyData("single/"));
-    }
+	@Override
+	public void init(PacketHandler packetHandler) {
+		DataManager.synergyData.onReload(() -> synergies = DataManager.instance.getSynergyData("single/"));
+	}
 
-    public void updateConfig(int honeBase, int honeIntegrityMultiplier) {
-        this.honeBase = honeBase;
-        this.honeIntegrityMultiplier = honeIntegrityMultiplier;
-    }
+	public void updateConfig(int honeBase, int honeIntegrityMultiplier) {
+		this.honeBase = honeBase;
+		this.honeIntegrityMultiplier = honeIntegrityMultiplier;
+	}
 
-    @Override
-    public String getModelCacheKey(ItemStack itemStack, LivingEntity entity) {
-        if (isThrowing(itemStack, entity)) {
-            return super.getModelCacheKey(itemStack, entity) + ":throwing";
+	@Override
+	public String getModelCacheKey(ItemStack itemStack, LivingEntity entity) {
+		if (isThrowing(itemStack, entity)) {
+			return super.getModelCacheKey(itemStack, entity) + ":throwing";
 
-        }
+		}
 
-        return super.getModelCacheKey(itemStack, entity);
-    }
+		return super.getModelCacheKey(itemStack, entity);
+	}
 
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public String getTransformVariant(ItemStack itemStack, @Nullable LivingEntity entity) {
-        if (isThrowing(itemStack, entity)) {
-            return "throwing";
-        }
-        return null;
-    }
+	@Override
+	@OnlyIn(Dist.CLIENT)
+	public String getTransformVariant(ItemStack itemStack, @Nullable LivingEntity entity) {
+		if (isThrowing(itemStack, entity)) {
+			return "throwing";
+		}
+		return null;
+	}
 
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public GuiModuleOffsets getMajorGuiOffsets() {
-        return majorOffsets;
-    }
+	@Override
+	@OnlyIn(Dist.CLIENT)
+	public GuiModuleOffsets getMajorGuiOffsets() {
+		return majorOffsets;
+	}
 
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public GuiModuleOffsets getMinorGuiOffsets() {
-        return minorOffsets;
-    }
+	@Override
+	@OnlyIn(Dist.CLIENT)
+	public GuiModuleOffsets getMinorGuiOffsets() {
+		return minorOffsets;
+	}
 }
 
 

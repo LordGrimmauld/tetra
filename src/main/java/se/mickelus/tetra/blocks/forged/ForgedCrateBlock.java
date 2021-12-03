@@ -50,168 +50,165 @@ import static net.minecraft.world.level.material.Fluids.WATER;
 
 @ParametersAreNonnullByDefault
 public class ForgedCrateBlock extends FallingBlock implements ITetraBlock, IInteractiveBlock, SimpleWaterloggedBlock {
-    static final String unlocalizedName = "forged_crate";
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static ForgedCrateBlock instance;
+	public static final DirectionProperty propFacing = HorizontalDirectionalBlock.FACING;
+	public static final BooleanProperty propStacked = BooleanProperty.create("stacked");
+	public static final IntegerProperty propIntegrity = IntegerProperty.create("integrity", 0, 3);
+	public static final ResourceLocation interactionLootTable = new ResourceLocation(TetraMod.MOD_ID, "forged/crate_content");
+	static final String unlocalizedName = "forged_crate";
+	static final BlockInteraction[] interactions = new BlockInteraction[]{
+		new BlockInteraction(TetraToolActions.pry, 1, Direction.EAST, 6, 8, 6, 8,
+			BlockStatePredicate.ANY,
+			ForgedCrateBlock::attemptBreakPry),
+		new BlockInteraction(TetraToolActions.hammer, 3, Direction.EAST, 1, 4, 1, 4,
+			BlockStatePredicate.ANY,
+			ForgedCrateBlock::attemptBreakHammer),
+		new BlockInteraction(TetraToolActions.hammer, 3, Direction.EAST, 10, 13, 10, 13,
+			BlockStatePredicate.ANY,
+			ForgedCrateBlock::attemptBreakHammer),
+	};
+	private static final VoxelShape shape = box(1, 0, 1, 15, 14, 15);
+	private static final VoxelShape[] shapesNormal = new VoxelShape[4];
+	private static final VoxelShape[] shapesOffset = new VoxelShape[4];
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static ForgedCrateBlock instance;
 
-    public static final DirectionProperty propFacing = HorizontalDirectionalBlock.FACING;
-    public static final BooleanProperty propStacked = BooleanProperty.create("stacked");
-    public static final IntegerProperty propIntegrity = IntegerProperty.create("integrity", 0, 3);
+	static {
+		for (Direction dir : Direction.Plane.HORIZONTAL) {
+			shapesNormal[dir.get2DDataValue()] = shape.move(dir.getStepX() / 16f, dir.getStepY() / 16f, dir.getStepZ() / 16f);
+			shapesOffset[dir.get2DDataValue()] = shapesNormal[dir.get2DDataValue()].move(0, -1 / 8f, 0);
+		}
+	}
 
-    static final BlockInteraction[] interactions = new BlockInteraction[] {
-            new BlockInteraction(TetraToolActions.pry, 1, Direction.EAST, 6, 8, 6, 8,
-                    BlockStatePredicate.ANY,
-                    ForgedCrateBlock::attemptBreakPry),
-            new BlockInteraction(TetraToolActions.hammer, 3, Direction.EAST, 1, 4, 1, 4,
-                    BlockStatePredicate.ANY,
-                    ForgedCrateBlock::attemptBreakHammer),
-            new BlockInteraction(TetraToolActions.hammer, 3, Direction.EAST, 10, 13, 10, 13,
-                    BlockStatePredicate.ANY,
-                    ForgedCrateBlock::attemptBreakHammer),
-    };
+	public ForgedCrateBlock() {
+		super(Properties.of(ForgedBlockCommon.forgedMaterial)
+			.sound(SoundType.METAL)
+			.strength(5));
 
-    public static final ResourceLocation interactionLootTable = new ResourceLocation(TetraMod.MOD_ID, "forged/crate_content");
+		setRegistryName(unlocalizedName);
 
-    private static final VoxelShape shape = box(1, 0, 1, 15, 14, 15);
-    private static final VoxelShape[] shapesNormal = new VoxelShape[4];
-    private static final VoxelShape[] shapesOffset = new VoxelShape[4];
-    static {
-        for (Direction dir : Direction.Plane.HORIZONTAL) {
-            shapesNormal[dir.get2DDataValue()] = shape.move(dir.getStepX() / 16f, dir.getStepY() / 16f, dir.getStepZ() / 16f);
-            shapesOffset[dir.get2DDataValue()] = shapesNormal[dir.get2DDataValue()].move(0, -1 / 8f, 0);
-        }
-    }
+		this.registerDefaultState(defaultBlockState()
+			.setValue(propFacing, Direction.EAST)
+			.setValue(propStacked, false)
+			.setValue(propIntegrity, 3)
+			.setValue(WATERLOGGED, false));
+	}
 
-    public ForgedCrateBlock() {
-        super(Properties.of(ForgedBlockCommon.forgedMaterial)
-                .sound(SoundType.METAL)
-                .strength(5));
+	private static boolean attemptBreakHammer(Level world, BlockPos pos, BlockState blockState, Player player, InteractionHand hand, Direction facing) {
+		return attemptBreak(world, pos, blockState, player, hand, player.getItemInHand(hand), TetraToolActions.hammer, 2, 1);
+	}
 
-        setRegistryName(unlocalizedName);
+	private static boolean attemptBreakPry(Level world, BlockPos pos, BlockState blockState, Player player, InteractionHand hand, Direction facing) {
+		return attemptBreak(world, pos, blockState, player, hand, player.getItemInHand(hand), TetraToolActions.pry, 0, 2);
+	}
 
-        this.registerDefaultState(defaultBlockState()
-                .setValue(propFacing, Direction.EAST)
-                .setValue(propStacked, false)
-                .setValue(propIntegrity, 3)
-                .setValue(WATERLOGGED, false));
-    }
+	private static boolean attemptBreak(Level world, BlockPos pos, BlockState blockState, @Nullable Player player, @Nullable InteractionHand hand,
+										ItemStack itemStack, ToolAction toolAction, int min, int multiplier) {
 
-    @Override
-    public void appendHoverText(ItemStack stack, @Nullable BlockGetter worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-        tooltip.add(ForgedBlockCommon.locationTooltip);
-    }
+		if (player == null) {
+			return false;
+		}
 
-    private static boolean attemptBreakHammer(Level world, BlockPos pos, BlockState blockState, Player player, InteractionHand hand, Direction facing) {
-        return attemptBreak(world, pos, blockState, player, hand, player.getItemInHand(hand), TetraToolActions.hammer, 2, 1);
-    }
+		int integrity = blockState.getValue(propIntegrity);
 
-    private static boolean attemptBreakPry(Level world, BlockPos pos, BlockState blockState, Player player, InteractionHand hand, Direction facing) {
-        return attemptBreak(world, pos, blockState, player, hand, player.getItemInHand(hand), TetraToolActions.pry, 0, 2);
-    }
+		int progress = CastOptional.cast(itemStack.getItem(), IToolProvider.class)
+			.map(item -> item.getToolLevel(itemStack, toolAction))
+			.map(level -> (level - min) * multiplier)
+			.orElse(1);
 
-    private static boolean attemptBreak(Level world, BlockPos pos, BlockState blockState, @Nullable Player player, @Nullable InteractionHand hand,
-            ItemStack itemStack, ToolAction toolAction, int min, int multiplier) {
+		if (integrity - progress >= 0) {
+			if (TetraToolActions.hammer.equals(toolAction)) {
+				world.playSound(player, pos, SoundEvents.ZOMBIE_ATTACK_IRON_DOOR, SoundSource.PLAYERS, 1, 0.5f);
+			} else {
+				world.playSound(player, pos, SoundEvents.LADDER_STEP, SoundSource.PLAYERS, 0.7f, 2f);
+			}
 
-        if (player == null) {
-            return false;
-        }
+			world.setBlockAndUpdate(pos, blockState.setValue(propIntegrity, integrity - progress));
+		} else {
+			boolean didBreak = EffectHelper.breakBlock(world, player, itemStack, pos, blockState, false);
+			if (didBreak && world instanceof ServerLevel) {
+				BlockInteraction.getLoot(interactionLootTable, player, hand, (ServerLevel) world, blockState)
+					.forEach(lootStack -> popResource(world, pos, lootStack));
+			}
+		}
 
-        int integrity = blockState.getValue(propIntegrity);
+		return true;
+	}
 
-        int progress = CastOptional.cast(itemStack.getItem(), IToolProvider.class)
-                .map(item -> item.getToolLevel(itemStack, toolAction))
-                .map(level -> ( level - min ) * multiplier)
-                .orElse(1);
+	@Override
+	public void appendHoverText(ItemStack stack, @Nullable BlockGetter worldIn, List<Component> tooltip, TooltipFlag flagIn) {
+		tooltip.add(ForgedBlockCommon.locationTooltip);
+	}
 
-        if (integrity - progress >= 0) {
-            if (TetraToolActions.hammer.equals(toolAction)) {
-                world.playSound(player, pos, SoundEvents.ZOMBIE_ATTACK_IRON_DOOR, SoundSource.PLAYERS, 1, 0.5f);
-            } else {
-                world.playSound(player, pos, SoundEvents.LADDER_STEP, SoundSource.PLAYERS, 0.7f, 2f);
-            }
+	@Override
+	public BlockInteraction[] getPotentialInteractions(Level world, BlockPos pos, BlockState state, Direction face, Collection<ToolAction> tools) {
+		return interactions;
+	}
 
-            world.setBlockAndUpdate(pos, blockState.setValue(propIntegrity, integrity - progress));
-        } else {
-            boolean didBreak = EffectHelper.breakBlock(world, player, itemStack, pos, blockState, false);
-            if (didBreak && world instanceof ServerLevel) {
-                BlockInteraction.getLoot(interactionLootTable, player, hand, (ServerLevel) world, blockState)
-                        .forEach(lootStack -> popResource(world, pos, lootStack));
-            }
-        }
+	@Override
+	public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+		return BlockInteraction.attemptInteraction(world, state, pos, player, hand, hit);
+	}
 
-        return true;
-    }
+	@Override
+	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+		super.createBlockStateDefinition(builder);
+		builder.add(propFacing, propStacked, propIntegrity, WATERLOGGED);
+	}
 
-    @Override
-    public BlockInteraction[] getPotentialInteractions(Level world, BlockPos pos, BlockState state, Direction face, Collection<ToolAction> tools) {
-            return interactions;
-    }
+	@Override
+	public FluidState getFluidState(BlockState state) {
+		return state.getValue(WATERLOGGED) ? WATER.getSource(false) : super.getFluidState(state);
+	}
 
-    @Override
-    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-        return BlockInteraction.attemptInteraction(world, state, pos, player, hand, hit);
-    }
+	@Nullable
+	@Override
+	public BlockState getStateForPlacement(BlockPlaceContext context) {
+		return super.getStateForPlacement(context)
+			.setValue(propFacing, context.getHorizontalDirection())
+			.setValue(propStacked, equals(context.getLevel().getBlockState(context.getClickedPos().below()).getBlock()))
+			.setValue(WATERLOGGED, context.getLevel().getFluidState(context.getClickedPos()).getType() == WATER);
+	}
 
-    @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        super.createBlockStateDefinition(builder);
-        builder.add(propFacing, propStacked, propIntegrity, WATERLOGGED);
-    }
+	@Override
+	public BlockState updateShape(BlockState state, Direction facing, BlockState facingState, LevelAccessor world, BlockPos currentPos,
+								  BlockPos facingPos) {
+		if (state.getValue(WATERLOGGED)) {
+			world.scheduleTick(currentPos, WATER, WATER.getTickDelay(world));
+		}
 
-    @Override
-    public FluidState getFluidState(BlockState state) {
-        return state.getValue(WATERLOGGED) ? WATER.getSource(false) : super.getFluidState(state);
-    }
+		if (Direction.DOWN.equals(facing)) {
+			return super.updateShape(state, facing, facingState, world, currentPos, facingPos)
+				.setValue(propStacked, equals(facingState.getBlock()));
+		}
 
-    @Nullable
-    @Override
-    public BlockState getStateForPlacement(BlockPlaceContext context) {
-        return super.getStateForPlacement(context)
-                .setValue(propFacing, context.getHorizontalDirection())
-                .setValue(propStacked, equals(context.getLevel().getBlockState(context.getClickedPos().below()).getBlock()))
-                .setValue(WATERLOGGED, context.getLevel().getFluidState(context.getClickedPos()).getType() == WATER);
-    }
+		return super.updateShape(state, facing, facingState, world, currentPos, facingPos);
+	}
 
-    @Override
-    public BlockState updateShape(BlockState state, Direction facing, BlockState facingState, LevelAccessor world, BlockPos currentPos,
-            BlockPos facingPos) {
-        if (state.getValue(WATERLOGGED)) {
-            world.scheduleTick(currentPos, WATER, WATER.getTickDelay(world));
-        }
+	@Override
+	public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
+		if (!state.getValue(propStacked)) {
+			return shapesNormal[state.getValue(propFacing).get2DDataValue()];
+		}
+		return shapesOffset[state.getValue(propFacing).get2DDataValue()];
+	}
 
-        if (Direction.DOWN.equals(facing)) {
-            return super.updateShape(state, facing, facingState, world, currentPos, facingPos)
-                    .setValue(propStacked, equals(facingState.getBlock()));
-        }
+	@Override
+	public BlockState rotate(final BlockState state, final Rotation rotation) {
+		return state.setValue(propFacing, rotation.rotate(state.getValue(propFacing)));
+	}
 
-        return super.updateShape(state, facing, facingState, world, currentPos, facingPos);
-    }
+	@Override
+	public BlockState mirror(BlockState state, Mirror mirror) {
+		return state.rotate(mirror.getRotation(state.getValue(propFacing)));
+	}
 
-    @Override
-    public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
-        if (!state.getValue(propStacked)) {
-            return shapesNormal[state.getValue(propFacing).get2DDataValue()];
-        }
-        return shapesOffset[state.getValue(propFacing).get2DDataValue()];
-    }
+	@Override
+	public boolean hasItem() {
+		return true;
+	}
 
-    @Override
-    public BlockState rotate(final BlockState state, final Rotation rotation) {
-        return state.setValue(propFacing, rotation.rotate(state.getValue(propFacing)));
-    }
-
-    @Override
-    public BlockState mirror(BlockState state, Mirror mirror) {
-        return state.rotate(mirror.getRotation(state.getValue(propFacing)));
-    }
-
-    @Override
-    public boolean hasItem() {
-        return true;
-    }
-
-    @Override
-    public void registerItem(IForgeRegistry<Item> registry) {
-        registerItem(registry, this);
-    }
+	@Override
+	public void registerItem(IForgeRegistry<Item> registry) {
+		registerItem(registry, this);
+	}
 }

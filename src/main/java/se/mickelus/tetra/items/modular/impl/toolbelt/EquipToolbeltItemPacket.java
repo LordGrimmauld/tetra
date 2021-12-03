@@ -7,50 +7,52 @@ import se.mickelus.tetra.items.modular.impl.toolbelt.inventory.ToolbeltSlotType;
 import se.mickelus.tetra.network.AbstractPacket;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class EquipToolbeltItemPacket extends AbstractPacket {
 
-    private ToolbeltSlotType slotType;
-    private int toolbeltItemIndex;
+	private ToolbeltSlotType slotType;
+	private int toolbeltItemIndex;
 
-    private InteractionHand hand;
+	private InteractionHand hand;
 
-    public EquipToolbeltItemPacket() { }
+	public EquipToolbeltItemPacket() {
+	}
 
-    public EquipToolbeltItemPacket(ToolbeltSlotType inventoryType, int toolbeltSlot, InteractionHand hand) {
-        this.slotType = inventoryType;
-        this.toolbeltItemIndex = toolbeltSlot;
-        this.hand = hand;
-    }
+	public EquipToolbeltItemPacket(ToolbeltSlotType inventoryType, int toolbeltSlot, InteractionHand hand) {
+		this.slotType = inventoryType;
+		this.toolbeltItemIndex = toolbeltSlot;
+		this.hand = hand;
+	}
 
-    @Override
-    public void toBytes(FriendlyByteBuf buffer) {
-        buffer.writeInt(slotType.ordinal());
-        buffer.writeInt(hand.ordinal());
-        buffer.writeInt(toolbeltItemIndex);
-    }
+	@Override
+	public void toBytes(FriendlyByteBuf buffer) {
+		buffer.writeInt(slotType.ordinal());
+		buffer.writeInt(hand.ordinal());
+		buffer.writeInt(toolbeltItemIndex);
+	}
 
-    @Override
-    public void fromBytes(FriendlyByteBuf buffer) {
-        int typeOrdinal = buffer.readInt();
-        if (typeOrdinal < ToolbeltSlotType.values().length) {
-            slotType = ToolbeltSlotType.values()[typeOrdinal];
-        }
+	@Override
+	public void fromBytes(FriendlyByteBuf buffer) {
+		int typeOrdinal = buffer.readInt();
+		if (typeOrdinal < ToolbeltSlotType.values().length) {
+			slotType = ToolbeltSlotType.values()[typeOrdinal];
+		}
 
-        int handOrdinal = buffer.readInt();
-        if (handOrdinal < InteractionHand.values().length) {
-            hand = InteractionHand.values()[handOrdinal];
-        }
+		int handOrdinal = buffer.readInt();
+		if (handOrdinal < InteractionHand.values().length) {
+			hand = InteractionHand.values()[handOrdinal];
+		}
 
-        toolbeltItemIndex = buffer.readInt();
-    }
+		toolbeltItemIndex = buffer.readInt();
+	}
 
-    @Override
-    public void handle(Player player) {
-        if (toolbeltItemIndex > -1) {
-            ToolbeltHelper.equipItemFromToolbelt(player, slotType, toolbeltItemIndex, hand);
-        } else {
-            ToolbeltHelper.storeItemInToolbelt(player);
-        }
-    }
+	@Override
+	public void handle(Player player) {
+		if (toolbeltItemIndex > -1) {
+			ToolbeltHelper.equipItemFromToolbelt(player, slotType, toolbeltItemIndex, hand);
+		} else {
+			ToolbeltHelper.storeItemInToolbelt(player);
+		}
+	}
 }

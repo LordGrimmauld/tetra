@@ -17,70 +17,71 @@ import se.mickelus.tetra.network.PacketHandler;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class ModularBladedItem extends ItemModularHandheld {
 
-    public final static String bladeKey = "sword/blade";
-    public final static String hiltKey = "sword/hilt";
+	public final static String bladeKey = "sword/blade";
+	public final static String hiltKey = "sword/hilt";
 
-    public final static String guardKey = "sword/guard";
-    public final static String pommelKey = "sword/pommel";
-    public final static String fullerKey = "sword/fuller";
+	public final static String guardKey = "sword/guard";
+	public final static String pommelKey = "sword/pommel";
+	public final static String fullerKey = "sword/fuller";
 
-    public static final String unlocalizedName = "modular_sword";
+	public static final String unlocalizedName = "modular_sword";
 
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static ModularBladedItem instance;
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static ModularBladedItem instance;
 
-    public ModularBladedItem() {
-        super(new Item.Properties().stacksTo(1).fireResistant());
-        setRegistryName(unlocalizedName);
+	public ModularBladedItem() {
+		super(new Item.Properties().stacksTo(1).fireResistant());
+		setRegistryName(unlocalizedName);
 
-        blockDestroyDamage = 2;
+		blockDestroyDamage = 2;
 
-        majorModuleKeys = new String[] { bladeKey, hiltKey };
-        minorModuleKeys = new String[] { fullerKey, guardKey, pommelKey };
+		majorModuleKeys = new String[]{bladeKey, hiltKey};
+		minorModuleKeys = new String[]{fullerKey, guardKey, pommelKey};
 
-        requiredModules = new String[] { bladeKey, hiltKey };
+		requiredModules = new String[]{bladeKey, hiltKey};
 
-        updateConfig(ConfigHandler.honeSwordBase.get(), ConfigHandler.honeSwordIntegrityMultiplier.get());
+		updateConfig(ConfigHandler.honeSwordBase.get(), ConfigHandler.honeSwordIntegrityMultiplier.get());
 
-        SchematicRegistry.instance.registerSchematic(new RepairSchematic(this));
-        RemoveSchematic.registerRemoveSchematics(this);
-    }
+		SchematicRegistry.instance.registerSchematic(new RepairSchematic(this));
+		RemoveSchematic.registerRemoveSchematics(this);
+	}
 
-    @Override
-    public void init(PacketHandler packetHandler) {
-        DataManager.synergyData.onReload(() -> synergies = DataManager.instance.getSynergyData("sword/"));
-    }
+	@Override
+	public void init(PacketHandler packetHandler) {
+		DataManager.synergyData.onReload(() -> synergies = DataManager.instance.getSynergyData("sword/"));
+	}
 
-    public void updateConfig(int honeBase, int honeIntegrityMultiplier) {
-        this.honeBase = honeBase;
-        this.honeIntegrityMultiplier = honeIntegrityMultiplier;
-    }
+	public void updateConfig(int honeBase, int honeIntegrityMultiplier) {
+		this.honeBase = honeBase;
+		this.honeIntegrityMultiplier = honeIntegrityMultiplier;
+	}
 
-    @Override
-    public String getModelCacheKey(ItemStack itemStack, LivingEntity entity) {
-        if (isThrowing(itemStack, entity)) {
-            return super.getModelCacheKey(itemStack, entity) + ":throwing";
-        }
+	@Override
+	public String getModelCacheKey(ItemStack itemStack, LivingEntity entity) {
+		if (isThrowing(itemStack, entity)) {
+			return super.getModelCacheKey(itemStack, entity) + ":throwing";
+		}
 
-        if (isBlocking(itemStack, entity)) {
-            return super.getModelCacheKey(itemStack, entity) + ":blocking";
-        }
+		if (isBlocking(itemStack, entity)) {
+			return super.getModelCacheKey(itemStack, entity) + ":blocking";
+		}
 
-        return super.getModelCacheKey(itemStack, entity);
-    }
+		return super.getModelCacheKey(itemStack, entity);
+	}
 
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public String getTransformVariant(ItemStack itemStack, @Nullable LivingEntity entity) {
-        if (isThrowing(itemStack, entity)) {
-            return "throwing";
-        }
-        if (isBlocking(itemStack, entity)) {
-            return "blocking";
-        }
-        return null;
-    }
+	@Override
+	@OnlyIn(Dist.CLIENT)
+	public String getTransformVariant(ItemStack itemStack, @Nullable LivingEntity entity) {
+		if (isThrowing(itemStack, entity)) {
+			return "throwing";
+		}
+		if (isBlocking(itemStack, entity)) {
+			return "blocking";
+		}
+		return null;
+	}
 }

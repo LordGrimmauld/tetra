@@ -6,13 +6,13 @@ import se.mickelus.mutil.gui.GuiAlignment;
 import se.mickelus.mutil.gui.GuiElement;
 
 public abstract class GuiStatBase extends GuiElement {
-    public GuiStatBase(int x, int y, int width, int height) {
-        super(x, y, width, height);
-    }
+	public GuiStatBase(int x, int y, int width, int height) {
+		super(x, y, width, height);
+	}
 
-    public abstract void update(Player player, ItemStack currentStack, ItemStack previewStack, String slot, String improvement);
+	public abstract void update(Player player, ItemStack currentStack, ItemStack previewStack, String slot, String improvement);
 
-    public abstract boolean shouldShow(Player player, ItemStack currentStack, ItemStack previewStack, String slot, String improvement);
+	public abstract boolean shouldShow(Player player, ItemStack currentStack, ItemStack previewStack, String slot, String improvement);
 
-    public abstract void setAlignment(GuiAlignment alignment);
+	public abstract void setAlignment(GuiAlignment alignment);
 }

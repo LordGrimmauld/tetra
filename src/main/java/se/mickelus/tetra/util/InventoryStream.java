@@ -9,20 +9,21 @@ import java.util.Spliterators;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
 @ParametersAreNonnullByDefault
 public class InventoryStream {
-    public static Stream<ItemStack> of(Container inventory) {
-        return StreamSupport.stream(new Spliterators.AbstractSpliterator<ItemStack>(inventory.getContainerSize(), Spliterator.NONNULL | Spliterator.SIZED) {
-            int index = 0;
+	public static Stream<ItemStack> of(Container inventory) {
+		return StreamSupport.stream(new Spliterators.AbstractSpliterator<ItemStack>(inventory.getContainerSize(), Spliterator.NONNULL | Spliterator.SIZED) {
+			int index = 0;
 
-            public boolean tryAdvance(Consumer<? super ItemStack> consumer) {
-                if (index < inventory.getContainerSize()) {
-                    consumer.accept(inventory.getItem(index++));
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-        }, false);
-    }
+			public boolean tryAdvance(Consumer<? super ItemStack> consumer) {
+				if (index < inventory.getContainerSize()) {
+					consumer.accept(inventory.getItem(index++));
+					return true;
+				} else {
+					return false;
+				}
+			}
+		}, false);
+	}
 }

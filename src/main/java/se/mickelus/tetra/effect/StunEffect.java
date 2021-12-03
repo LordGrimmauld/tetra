@@ -10,18 +10,19 @@ import net.minecraft.world.item.ItemStack;
 import se.mickelus.tetra.effect.potion.StunPotionEffect;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class StunEffect {
-    public static void perform(ItemStack itemStack, int effectLevel, LivingEntity attacker, LivingEntity target) {
-        if (!attacker.level.isClientSide && attacker.getRandom().nextFloat() < effectLevel / 100f) {
-            int duration = (int) (EffectHelper.getEffectEfficiency(itemStack, ItemEffect.stun) * 20);
+	public static void perform(ItemStack itemStack, int effectLevel, LivingEntity attacker, LivingEntity target) {
+		if (!attacker.level.isClientSide && attacker.getRandom().nextFloat() < effectLevel / 100f) {
+			int duration = (int) (EffectHelper.getEffectEfficiency(itemStack, ItemEffect.stun) * 20);
 
-            target.addEffect(new MobEffectInstance(StunPotionEffect.instance, duration, 0, false, false));
-            target.getCommandSenderWorld().playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.PLAYER_ATTACK_STRONG,
-                    SoundSource.PLAYERS, 0.8f, 0.9f);
+			target.addEffect(new MobEffectInstance(StunPotionEffect.instance, duration, 0, false, false));
+			target.getCommandSenderWorld().playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.PLAYER_ATTACK_STRONG,
+				SoundSource.PLAYERS, 0.8f, 0.9f);
 
-            ((ServerLevel) target.getCommandSenderWorld()).sendParticles(ParticleTypes.ENTITY_EFFECT, target.getX(), target.getEyeY(), target.getZ(),
-                    5, 0, 0, 0, 0);
-        }
-    }
+			((ServerLevel) target.getCommandSenderWorld()).sendParticles(ParticleTypes.ENTITY_EFFECT, target.getX(), target.getEyeY(), target.getZ(),
+				5, 0, 0, 0, 0);
+		}
+	}
 }

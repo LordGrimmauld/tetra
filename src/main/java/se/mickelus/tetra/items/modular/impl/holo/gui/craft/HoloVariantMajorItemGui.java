@@ -11,58 +11,55 @@ import se.mickelus.tetra.module.schematic.OutcomePreview;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.function.Consumer;
+
 @ParametersAreNonnullByDefault
 public class HoloVariantMajorItemGui extends HoloVariantItemGui {
 
-    public HoloVariantMajorItemGui(int x, int y, OutcomePreview outcome, @Nullable String label,
-            Consumer<OutcomePreview> onHover, Consumer<OutcomePreview> onBlur, Consumer<OutcomePreview> onSelect) {
-        super(x, y, 16, 16, outcome, onHover, onBlur, onSelect);
+	public HoloVariantMajorItemGui(int x, int y, OutcomePreview outcome, @Nullable String label,
+								   Consumer<OutcomePreview> onHover, Consumer<OutcomePreview> onBlur, Consumer<OutcomePreview> onSelect) {
+		super(x, y, 16, 16, outcome, onHover, onBlur, onSelect);
 
-        backdrop = new GuiTexture(1, 0, 15, 15, 52,0, GuiTextures.workbench);
-        addChild(backdrop);
+		backdrop = new GuiTexture(1, 0, 15, 15, 52, 0, GuiTextures.workbench);
+		addChild(backdrop);
 
-        if (label != null) {
-            GuiString labelElement = new GuiStringOutline(label.startsWith("-") ? -2 : 1, 0, label);
-            labelElement.setColor(outcome.glyph.tint);
-            labelElement.setAttachment(GuiAttachment.middleCenter);
-            addChild(labelElement);
-        } else {
-            addChild(new GuiModuleGlyph(0, 0, 16, 16, outcome.glyph).setShift(false));
-        }
+		if (label != null) {
+			GuiString labelElement = new GuiStringOutline(label.startsWith("-") ? -2 : 1, 0, label);
+			labelElement.setColor(outcome.glyph.tint);
+			labelElement.setAttachment(GuiAttachment.middleCenter);
+			addChild(labelElement);
+		} else {
+			addChild(new GuiModuleGlyph(0, 0, 16, 16, outcome.glyph).setShift(false));
+		}
 
-        material.setX(1);
-        material.setY(0);
-    }
+		material.setX(1);
+		material.setY(0);
+	}
 
-    @Override
-    protected void calculateFocusState(int refX, int refY, int mouseX, int mouseY) {
-        mouseX -= refX + x;
-        mouseY -= refY + y;
-        boolean gainFocus = true;
+	@Override
+	protected void calculateFocusState(int refX, int refY, int mouseX, int mouseY) {
+		mouseX -= refX + x;
+		mouseY -= refY + y;
+		boolean gainFocus = mouseX + mouseY >= 8;
 
-        if (mouseX + mouseY < 8) {
-            gainFocus = false;
-        }
+		if (mouseX + mouseY > 24) {
+			gainFocus = false;
+		}
 
-        if (mouseX + mouseY > 24) {
-            gainFocus = false;
-        }
+		if (mouseX - mouseY > 8) {
+			gainFocus = false;
+		}
 
-        if (mouseX - mouseY > 8) {
-            gainFocus = false;
-        }
+		if (mouseY - mouseX > 8) {
+			gainFocus = false;
+		}
 
-        if (mouseY - mouseX > 8) {
-            gainFocus = false;
-        }
-
-        if (gainFocus != hasFocus) {
-            hasFocus = gainFocus;
-            if (hasFocus) {
-                onFocus();
-            } else {
-                onBlur();
-            }
-        }
-    }
+		if (gainFocus != hasFocus) {
+			hasFocus = gainFocus;
+			if (hasFocus) {
+				onFocus();
+			} else {
+				onBlur();
+			}
+		}
+	}
 }

@@ -14,78 +14,79 @@ import se.mickelus.tetra.module.schematic.UpgradeSchematic;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Collections;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class GuiSchematicListItem extends GuiClickable {
 
-    private GuiTexture border;
-    private GuiTexture glyph;
-    private GuiString label;
+	private GuiTexture border;
+	private GuiTexture glyph;
+	private final GuiString label;
 
-    private SchematicRarity rarity;
+	private final SchematicRarity rarity;
 
-    public GuiSchematicListItem(int x, int y, UpgradeSchematic schematic, Runnable onClickHandler) {
-        this(x, y, 109, schematic, onClickHandler);
-    }
+	public GuiSchematicListItem(int x, int y, UpgradeSchematic schematic, Runnable onClickHandler) {
+		this(x, y, 109, schematic, onClickHandler);
+	}
 
-    public GuiSchematicListItem(int x, int y, int width, UpgradeSchematic schematic, Runnable onClickHandler) {
-        super(x, y, width, 14, onClickHandler);
+	public GuiSchematicListItem(int x, int y, int width, UpgradeSchematic schematic, Runnable onClickHandler) {
+		super(x, y, width, 14, onClickHandler);
 
-        rarity = schematic.getRarity();
+		rarity = schematic.getRarity();
 
-        label = new GuiString(16, 3, width - 16, schematic.getName());
-        label.setColor(rarity.tint);
-        addChild(label);
+		label = new GuiString(16, 3, width - 16, schematic.getName());
+		label.setColor(rarity.tint);
+		addChild(label);
 
-        GlyphData glyphData = schematic.getGlyph();
-        if (schematic.getType() == SchematicType.major) {
-            border = new GuiTexture(0, 2, 16, 9, 52, 3, GuiTextures.workbench);
-            glyph = new GuiTexture(-1, -1, 16, 16, glyphData.textureX, glyphData.textureY, glyphData.textureLocation);
-        } else if (schematic.getType() == SchematicType.minor) {
-            border = new GuiTexture(2, 1, 11, 11, 68, 0, GuiTextures.workbench);
-            glyph = new GuiTexture(4, 3, 8, 8, glyphData.textureX, glyphData.textureY, glyphData.textureLocation);
-        } else if (schematic.getType() == SchematicType.improvement) {
-            border = new GuiTexture(0, 2, 16, 9, 52, 3, GuiTextures.workbench);
-            glyph = new GuiTexture(-1, -1, 16, 16, glyphData.textureX, glyphData.textureY, glyphData.textureLocation);
-        } else if (schematic.getType() == SchematicType.other) {
-            glyph = new GuiTexture(-1, -1, 16, 16, glyphData.textureX, glyphData.textureY, glyphData.textureLocation);
-        }
+		GlyphData glyphData = schematic.getGlyph();
+		if (schematic.getType() == SchematicType.major) {
+			border = new GuiTexture(0, 2, 16, 9, 52, 3, GuiTextures.workbench);
+			glyph = new GuiTexture(-1, -1, 16, 16, glyphData.textureX, glyphData.textureY, glyphData.textureLocation);
+		} else if (schematic.getType() == SchematicType.minor) {
+			border = new GuiTexture(2, 1, 11, 11, 68, 0, GuiTextures.workbench);
+			glyph = new GuiTexture(4, 3, 8, 8, glyphData.textureX, glyphData.textureY, glyphData.textureLocation);
+		} else if (schematic.getType() == SchematicType.improvement) {
+			border = new GuiTexture(0, 2, 16, 9, 52, 3, GuiTextures.workbench);
+			glyph = new GuiTexture(-1, -1, 16, 16, glyphData.textureX, glyphData.textureY, glyphData.textureLocation);
+		} else if (schematic.getType() == SchematicType.other) {
+			glyph = new GuiTexture(-1, -1, 16, 16, glyphData.textureX, glyphData.textureY, glyphData.textureLocation);
+		}
 
-        if (border != null) {
-            border.setOpacity(0.3f);
-            border.setColor(rarity.tint);
-            addChild(border);
-        }
+		if (border != null) {
+			border.setOpacity(0.3f);
+			border.setColor(rarity.tint);
+			addChild(border);
+		}
 
-        glyph.setColor(rarity.tint);
-        addChild(glyph);
+		glyph.setColor(rarity.tint);
+		addChild(glyph);
 
-        if (schematic.getType() == SchematicType.improvement) {
-            addChild(new GuiTexture(7, 7, 7, 7, 68, 16, GuiTextures.workbench).setColor(GuiColors.muted));
-        }
-    }
+		if (schematic.getType() == SchematicType.improvement) {
+			addChild(new GuiTexture(7, 7, 7, 7, 68, 16, GuiTextures.workbench).setColor(GuiColors.muted));
+		}
+	}
 
-    @Override
-    protected void onFocus() {
-        if (border != null) {
-            border.setOpacity(0.6f);
-        }
-        label.setColor(GuiColors.hover);
-    }
+	@Override
+	protected void onFocus() {
+		if (border != null) {
+			border.setOpacity(0.6f);
+		}
+		label.setColor(GuiColors.hover);
+	}
 
-    @Override
-    protected void onBlur() {
-        if (border != null) {
-            border.setOpacity(0.3f);
-        }
-        label.setColor(rarity.tint);
-    }
+	@Override
+	protected void onBlur() {
+		if (border != null) {
+			border.setOpacity(0.3f);
+		}
+		label.setColor(rarity.tint);
+	}
 
-    @Override
-    public List<String> getTooltipLines() {
-        if (hasFocus() && rarity.equals(SchematicRarity.temporary)) {
-            return Collections.singletonList(I18n.get("tetra.workbench.schematic_list.temporary"));
-        }
+	@Override
+	public List<String> getTooltipLines() {
+		if (hasFocus() && rarity.equals(SchematicRarity.temporary)) {
+			return Collections.singletonList(I18n.get("tetra.workbench.schematic_list.temporary"));
+		}
 
-        return null;
-    }
+		return null;
+	}
 }

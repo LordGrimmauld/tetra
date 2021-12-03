@@ -13,56 +13,54 @@ import net.minecraftforge.client.event.DrawSelectionEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class InteractiveBlockOverlay {
 
-    private Minecraft mc;
+	private static boolean isDirty = false;
+	private final Minecraft mc;
+	private final InteractiveBlockOverlayGui gui;
+	private BlockPos previousPos;
+	private Direction previousFace;
+	private BlockState previousState;
 
-    private InteractiveBlockOverlayGui gui;
+	public InteractiveBlockOverlay() {
+		gui = new InteractiveBlockOverlayGui();
 
-    private BlockPos previousPos;
-    private Direction previousFace;
-    private BlockState previousState;
+		mc = Minecraft.getInstance();
+	}
 
-    private static boolean isDirty = false;
+	public static void markDirty() {
+		isDirty = true;
+	}
 
-    public InteractiveBlockOverlay() {
-        gui = new InteractiveBlockOverlayGui();
+	@SubscribeEvent
+	public void renderOverlay(DrawSelectionEvent.HighlightBlock event) {
+		if (event.getTarget().getType().equals(HitResult.Type.BLOCK)) {
+			BlockHitResult rayTrace = event.getTarget();
 
-        mc = Minecraft.getInstance();
-    }
+			Level world = Minecraft.getInstance().level;
+			VoxelShape shape = world.getBlockState(rayTrace.getBlockPos()).getShape(Minecraft.getInstance().level, rayTrace.getBlockPos(), CollisionContext.of(mc.player));
 
-    public static void markDirty() {
-        isDirty = true;
-    }
+			BlockPos blockPos = rayTrace.getBlockPos();
+			Direction face = rayTrace.getDirection();
 
-    @SubscribeEvent
-    public void renderOverlay(DrawSelectionEvent.HighlightBlock event) {
-        if (event.getTarget().getType().equals(HitResult.Type.BLOCK)) {
-            BlockHitResult rayTrace = event.getTarget();
+			BlockState blockState = world.getBlockState(blockPos);
 
-            Level world = Minecraft.getInstance().level;
-            VoxelShape shape = world.getBlockState(rayTrace.getBlockPos()).getShape(Minecraft.getInstance().level, rayTrace.getBlockPos(), CollisionContext.of(mc.player));
+			if (!shape.isEmpty()) {
+				if (isDirty || !blockState.equals(previousState) || !blockPos.equals(previousPos) || !face.equals(previousFace)) {
+					gui.update(world, blockPos, blockState, face, Minecraft.getInstance().player,
+						blockPos.equals(previousPos) && face.equals(previousFace));
 
-            BlockPos blockPos = rayTrace.getBlockPos();
-            Direction face = rayTrace.getDirection();
+					previousPos = blockPos;
+					previousFace = face;
+					previousState = blockState;
 
-            BlockState blockState = world.getBlockState(blockPos);
+					isDirty = false;
+				}
 
-            if (!shape.isEmpty()) {
-                if (isDirty || !blockState.equals(previousState) || !blockPos.equals(previousPos) || !face.equals(previousFace)) {
-                    gui.update(world, blockPos, blockState, face, Minecraft.getInstance().player,
-                            blockPos.equals(previousPos) && face.equals(previousFace));
-
-                    previousPos = blockPos;
-                    previousFace = face;
-                    previousState = blockState;
-
-                    isDirty = false;
-                }
-
-                gui.draw(event.getPoseStack(), event.getCamera().getPosition(), rayTrace, shape);
-            }
-        }
-    }
+				gui.draw(event.getPoseStack(), event.getCamera().getPosition(), rayTrace, shape);
+			}
+		}
+	}
 }

@@ -21,45 +21,46 @@ import se.mickelus.tetra.blocks.forged.ForgedBlockCommon;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class SeepingBedrockBlock extends TetraBlock {
-    public static final IntegerProperty activeProp = IntegerProperty.create("active", 0, 1);
+	public static final IntegerProperty activeProp = IntegerProperty.create("active", 0, 1);
 
-    public static final String unlocalizedName = "seeping_bedrock";
+	public static final String unlocalizedName = "seeping_bedrock";
 
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static SeepingBedrockBlock instance;
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static SeepingBedrockBlock instance;
 
-    public SeepingBedrockBlock() {
-        super(BlockBehaviour.Properties.of(Material.STONE).strength(-1.0F, 3600000.0F).noDrops());
-        setRegistryName(unlocalizedName);
+	public SeepingBedrockBlock() {
+		super(BlockBehaviour.Properties.of(Material.STONE).strength(-1.0F, 3600000.0F).noDrops());
+		setRegistryName(unlocalizedName);
 
-        hasItem = true;
+		hasItem = true;
 
-        registerDefaultState(defaultBlockState().setValue(activeProp, 1));
-    }
+		registerDefaultState(defaultBlockState().setValue(activeProp, 1));
+	}
 
-    public static boolean isActive(Level world, BlockPos pos) {
-        return isActive(world.getBlockState(pos));
-    }
+	public static boolean isActive(Level world, BlockPos pos) {
+		return isActive(world.getBlockState(pos));
+	}
 
-    public static boolean isActive(BlockState blockState) {
-        return instance.equals(blockState.getBlock()) && blockState.getValue(activeProp) > 0;
-    }
+	public static boolean isActive(BlockState blockState) {
+		return instance.equals(blockState.getBlock()) && blockState.getValue(activeProp) > 0;
+	}
 
-    @Override
-    public void appendHoverText(ItemStack stack, @Nullable BlockGetter worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-        tooltip.add(ForgedBlockCommon.locationTooltip);
-    }
+	@Override
+	public void appendHoverText(ItemStack stack, @Nullable BlockGetter worldIn, List<Component> tooltip, TooltipFlag flagIn) {
+		tooltip.add(ForgedBlockCommon.locationTooltip);
+	}
 
-    @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(activeProp);
-    }
+	@Override
+	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+		builder.add(activeProp);
+	}
 
-    @Nullable
-    @Override
-    public BlockState getStateForPlacement(BlockPlaceContext context) {
-        return defaultBlockState().setValue(activeProp, context.getPlayer().isCrouching() ? 0 : 1);
-    }
+	@Nullable
+	@Override
+	public BlockState getStateForPlacement(BlockPlaceContext context) {
+		return defaultBlockState().setValue(activeProp, context.getPlayer().isCrouching() ? 0 : 1);
+	}
 }

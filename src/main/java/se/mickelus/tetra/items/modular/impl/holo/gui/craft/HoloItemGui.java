@@ -14,231 +14,222 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+
 @ParametersAreNonnullByDefault
 public class HoloItemGui extends GuiClickable {
 
-    GuiElement slotGroup;
+	private final GuiTexture backdrop;
+	private final GuiTexture icon;
+	GuiElement slotGroup;
+	private final List<GuiAnimation> selectAnimations;
+	private final List<GuiAnimation> deselectAnimations;
+	private final List<GuiAnimation> hoverAnimations;
+	private final List<GuiAnimation> blurAnimations;
+	private final KeyframeAnimation itemShow;
+	private final KeyframeAnimation itemHide;
+	private boolean isSelected = false;
+	private final IModularItem item;
 
-    private List<GuiAnimation> selectAnimations;
-    private List<GuiAnimation> deselectAnimations;
+	public HoloItemGui(int x, int y, IModularItem item, int textureIndex, Runnable onSelect, Consumer<String> onSlotSelect) {
+		super(x, y, 64, 64, onSelect);
 
-    private List<GuiAnimation> hoverAnimations;
-    private List<GuiAnimation> blurAnimations;
+		selectAnimations = new ArrayList<>();
+		deselectAnimations = new ArrayList<>();
 
-    private KeyframeAnimation itemShow;
-    private KeyframeAnimation itemHide;
+		hoverAnimations = new ArrayList<>();
+		blurAnimations = new ArrayList<>();
 
-    private boolean isSelected = false;
-    private final GuiTexture backdrop;
+		backdrop = new GuiTexture(0, 0, 52, 52, GuiTextures.workbench);
+		backdrop.setAttachment(GuiAttachment.middleCenter);
+		addChild(backdrop);
 
-    private final GuiTexture icon;
+		icon = new GuiTexture(0, 0, 38, 38, 38 * (textureIndex % 6), 218 - 38 * (textureIndex / 6), GuiTextures.workbench);
+		icon.setAttachment(GuiAttachment.middleCenter);
+		addChild(icon);
 
-    private IModularItem item;
+		GuiElement labelGroup = new GuiElement(0, 0, 0, 0);
+		String[] labelStrings = I18n.get("tetra.holo.craft." + item.getItem().getRegistryName().getPath()).split(" ");
 
-    public HoloItemGui(int x, int y, IModularItem item, int textureIndex, Runnable onSelect, Consumer<String> onSlotSelect) {
-        super(x, y, 64, 64, onSelect);
+		for (int i = 0; i < labelStrings.length; i++) {
+			GuiString labelLine = new GuiStringOutline(0, i * 10, labelStrings[i]);
+			labelLine.setAttachment(GuiAttachment.topCenter);
+			labelLine.setColor(GuiColors.hover);
 
-        selectAnimations = new ArrayList<>();
-        deselectAnimations = new ArrayList<>();
+			labelGroup.addChild(labelLine);
+		}
 
-        hoverAnimations = new ArrayList<>();
-        blurAnimations = new ArrayList<>();
+		labelGroup.setAttachment(GuiAttachment.middleCenter);
+		labelGroup.setHeight(10 * labelStrings.length);
+		labelGroup.setOpacity(0);
+		addChild(labelGroup);
 
-        backdrop = new GuiTexture(0, 0, 52, 52, GuiTextures.workbench);
-        backdrop.setAttachment(GuiAttachment.middleCenter);
-        addChild(backdrop);
+		slotGroup = new GuiElement(37, 15, 0, 0);
+		setupSlots(item, onSlotSelect);
+		slotGroup.setVisible(false);
+		addChild(slotGroup);
 
-        icon = new GuiTexture(0, 0, 38, 38, 38 * (textureIndex % 6), 218 - 38 * (textureIndex / 6), GuiTextures.workbench);
-        icon.setAttachment(GuiAttachment.middleCenter);
-        addChild(icon);
+		// slot animations
+		selectAnimations.add(new KeyframeAnimation(80, slotGroup)
+			.applyTo(new Applier.Opacity(1)));
+		deselectAnimations.add(new KeyframeAnimation(80, slotGroup)
+			.applyTo(new Applier.Opacity(0))
+			.onStop(complete -> {
+				if (complete) slotGroup.setVisible(false);
+			}));
 
-        GuiElement labelGroup = new GuiElement(0, 0, 0, 0);
-        String[] labelStrings = I18n.get("tetra.holo.craft." + item.getItem().getRegistryName().getPath()).split(" ");
+		// item animations
+		selectAnimations.add(new KeyframeAnimation(80, this)
+			.applyTo(new Applier.TranslateX(0), new Applier.TranslateY(0)));
+		deselectAnimations.add(new KeyframeAnimation(80, this)
+			.applyTo(new Applier.TranslateX(x), new Applier.TranslateY(y)));
 
-        for (int i = 0; i < labelStrings.length; i++) {
-            GuiString labelLine = new GuiStringOutline(0, i * 10, labelStrings[i]);
-            labelLine.setAttachment(GuiAttachment.topCenter);
-            labelLine.setColor(GuiColors.hover);
+		itemShow = new KeyframeAnimation(80, this)
+			.applyTo(new Applier.Opacity(1));
 
-            labelGroup.addChild(labelLine);
-        }
+		itemHide = new KeyframeAnimation(80, this)
+			.applyTo(new Applier.Opacity(0))
+			.onStop(complete -> this.isVisible = false);
 
-        labelGroup.setAttachment(GuiAttachment.middleCenter);
-        labelGroup.setHeight(10 * labelStrings.length);
-        labelGroup.setOpacity(0);
-        addChild(labelGroup);
+		// hover/blur animations
+		hoverAnimations.add(new KeyframeAnimation(80, labelGroup)
+			.applyTo(new Applier.Opacity(1), new Applier.TranslateY(-2, 0)));
 
-        slotGroup = new GuiElement(37, 15, 0, 0);
-        setupSlots(item, onSlotSelect);
-        slotGroup.setVisible(false);
-        addChild(slotGroup);
+		blurAnimations.add(new KeyframeAnimation(120, labelGroup)
+			.applyTo(new Applier.Opacity(0), new Applier.TranslateY(0, 2)));
 
-        // slot animations
-        selectAnimations.add(new KeyframeAnimation(80, slotGroup)
-                .applyTo(new Applier.Opacity(1)));
-        deselectAnimations.add(new KeyframeAnimation(80, slotGroup)
-                .applyTo(new Applier.Opacity(0))
-                .onStop(complete -> {
-                    if (complete) slotGroup.setVisible(false);
-                }));
+		this.item = item;
+	}
 
-        // item animations
-        selectAnimations.add(new KeyframeAnimation(80, this)
-                .applyTo(new Applier.TranslateX(0), new Applier.TranslateY(0)));
-        deselectAnimations.add(new KeyframeAnimation(80, this)
-                .applyTo(new Applier.TranslateX(x), new Applier.TranslateY(y)));
+	@Override
+	public boolean onMouseClick(int x, int y, int button) {
+		for (int i = elements.size() - 1; i >= 0; i--) {
+			if (elements.get(i).isVisible()) {
+				if (elements.get(i).onMouseClick(x, y, button)) {
+					return true;
+				}
+			}
+		}
 
-        itemShow = new KeyframeAnimation(80, this)
-                .applyTo(new Applier.Opacity(1));
+		return super.onMouseClick(x, y, button);
+	}
 
-        itemHide = new KeyframeAnimation(80, this)
-                .applyTo(new Applier.Opacity(0))
-                .onStop(complete -> this.isVisible = false);
+	public void onItemSelected(IModularItem item) {
+		if (this.item.equals(item)) {
+			setVisible(true);
+			setSelected(true);
+		} else if (item == null) {
+			setVisible(true);
+			setSelected(false);
+		} else {
+			setVisible(false);
+			setSelected(false);
+		}
+	}
 
-        // hover/blur animations
-        hoverAnimations.add(new KeyframeAnimation(80, labelGroup)
-                .applyTo(new Applier.Opacity(1), new Applier.TranslateY(-2, 0)));
+	public void setSelected(boolean selected) {
+		if (selected) {
+			deselectAnimations.forEach(GuiAnimation::stop);
 
-        blurAnimations.add(new KeyframeAnimation(120, labelGroup)
-                .applyTo(new Applier.Opacity(0), new Applier.TranslateY(0, 2)));
+			slotGroup.setVisible(true);
+			selectAnimations.forEach(GuiAnimation::start);
 
-        this.item = item;
-    }
+			icon.setColor(GuiColors.normal);
+			hoverAnimations.forEach(GuiAnimation::stop);
+			blurAnimations.forEach(GuiAnimation::start);
+		} else {
+			selectAnimations.forEach(GuiAnimation::stop);
+			deselectAnimations.forEach(GuiAnimation::start);
+		}
 
-    @Override
-    public boolean onMouseClick(int x, int y, int button) {
-        for (int i = elements.size() - 1; i >= 0; i--) {
-            if (elements.get(i).isVisible()) {
-                if (elements.get(i).onMouseClick(x, y, button)) {
-                    return true;
-                }
-            }
-        }
+		backdrop.setColor(GuiColors.normal);
+		isSelected = selected;
+	}
 
-        return super.onMouseClick(x, y, button);
-    }
+	@Override
+	protected void onShow() {
+		super.onShow();
+		itemHide.stop();
+		itemShow.start();
+	}
 
-    public void onItemSelected(IModularItem item) {
-        if (this.item.equals(item)) {
-            setVisible(true);
-            setSelected(true);
-        } else if (item == null) {
-            setVisible(true);
-            setSelected(false);
-        } else {
-            setVisible(false);
-            setSelected(false);
-        }
-    }
+	@Override
+	protected boolean onHide() {
+		super.onHide();
+		itemShow.stop();
+		itemHide.start();
 
-    public void setSelected(boolean selected) {
-        if (selected) {
-            deselectAnimations.forEach(GuiAnimation::stop);
+		return false;
+	}
 
-            slotGroup.setVisible(true);
-            selectAnimations.forEach(GuiAnimation::start);
+	@Override
+	protected void calculateFocusState(int refX, int refY, int mouseX, int mouseY) {
+		mouseX -= refX + x;
+		mouseY -= refY + y;
+		boolean gainFocus = mouseX + mouseY >= 44;
 
-            icon.setColor(GuiColors.normal);
-            hoverAnimations.forEach(GuiAnimation::stop);
-            blurAnimations.forEach(GuiAnimation::start);
-        } else {
-            selectAnimations.forEach(GuiAnimation::stop);
-            deselectAnimations.forEach(GuiAnimation::start);
-        }
+		if (mouseX + mouseY > 84) {
+			gainFocus = false;
+		}
 
-        backdrop.setColor(GuiColors.normal);
-        isSelected = selected;
-    }
+		if (mouseX - mouseY > 16) {
+			gainFocus = false;
+		}
 
-    @Override
-    protected void onShow() {
-        super.onShow();
-        itemHide.stop();
-        itemShow.start();
-    }
+		if (mouseY - mouseX > 19) {
+			gainFocus = false;
+		}
 
-    @Override
-    protected boolean onHide() {
-        super.onHide();
-        itemShow.stop();
-        itemHide.start();
+		if (gainFocus != hasFocus) {
+			hasFocus = gainFocus;
+			if (hasFocus) {
+				onFocus();
+			} else {
+				onBlur();
+			}
+		}
+	}
 
-        return false;
-    }
+	@Override
+	protected void onFocus() {
+		if (!isSelected) {
+			backdrop.setColor(GuiColors.hover);
 
-    @Override
-    protected void calculateFocusState(int refX, int refY, int mouseX, int mouseY) {
-        mouseX -= refX + x;
-        mouseY -= refY + y;
-        boolean gainFocus = true;
+			icon.setColor(GuiColors.muted);
+			blurAnimations.forEach(GuiAnimation::stop);
+			hoverAnimations.forEach(GuiAnimation::start);
+		}
+	}
 
-        if (mouseX + mouseY < 44) {
-            gainFocus = false;
-        }
+	@Override
+	protected void onBlur() {
+		backdrop.setColor(GuiColors.normal);
 
-        if (mouseX + mouseY > 84) {
-            gainFocus = false;
-        }
+		icon.setColor(GuiColors.normal);
+		hoverAnimations.forEach(GuiAnimation::stop);
+		blurAnimations.forEach(GuiAnimation::start);
+	}
 
-        if (mouseX - mouseY > 16) {
-            gainFocus = false;
-        }
+	private void setupSlots(IModularItem item, Consumer<String> onSlotSelect) {
+		String[] majorModuleNames = item.getMajorModuleNames();
+		String[] majorModuleKeys = item.getMajorModuleKeys();
+		GuiModuleOffsets majorOffsets = item.getMajorGuiOffsets();
 
-        if (mouseY - mouseX > 19) {
-            gainFocus = false;
-        }
+		String[] minorModuleNames = item.getMinorModuleNames();
+		String[] minorModuleKeys = item.getMinorModuleKeys();
+		GuiModuleOffsets minorOffsets = item.getMinorGuiOffsets();
 
-        if (gainFocus != hasFocus) {
-            hasFocus = gainFocus;
-            if (hasFocus) {
-                onFocus();
-            } else {
-                onBlur();
-            }
-        }
-    }
+		for (int i = 0; i < majorModuleNames.length; i++) {
+			final int x = majorOffsets.getX(i);
+			GuiAttachment attachment = x > 0 ? GuiAttachment.topLeft : GuiAttachment.topRight;
+			slotGroup.addChild(new HoloSlotMajorGui(x, majorOffsets.getY(i), attachment,
+				majorModuleKeys[i], majorModuleNames[i], onSlotSelect));
+		}
 
-    @Override
-    protected void onFocus() {
-        if (!isSelected) {
-            backdrop.setColor(GuiColors.hover);
-
-            icon.setColor(GuiColors.muted);
-            blurAnimations.forEach(GuiAnimation::stop);
-            hoverAnimations.forEach(GuiAnimation::start);
-        }
-    }
-
-    @Override
-    protected void onBlur() {
-        backdrop.setColor(GuiColors.normal);
-
-        icon.setColor(GuiColors.normal);
-        hoverAnimations.forEach(GuiAnimation::stop);
-        blurAnimations.forEach(GuiAnimation::start);
-    }
-
-    private void setupSlots(IModularItem item, Consumer<String> onSlotSelect) {
-        String[] majorModuleNames = item.getMajorModuleNames();
-        String[] majorModuleKeys = item.getMajorModuleKeys();
-        GuiModuleOffsets majorOffsets = item.getMajorGuiOffsets();
-
-        String[] minorModuleNames = item.getMinorModuleNames();
-        String[] minorModuleKeys = item.getMinorModuleKeys();
-        GuiModuleOffsets minorOffsets = item.getMinorGuiOffsets();
-
-        for (int i = 0; i < majorModuleNames.length; i++) {
-            final int x = majorOffsets.getX(i);
-            GuiAttachment attachment = x > 0 ? GuiAttachment.topLeft : GuiAttachment.topRight;
-            slotGroup.addChild(new HoloSlotMajorGui(x, majorOffsets.getY(i), attachment,
-                    majorModuleKeys[i], majorModuleNames[i], onSlotSelect));
-        }
-
-        for (int i = 0; i < minorModuleNames.length; i++) {
-            final int x = minorOffsets.getX(i);
-            GuiAttachment attachment = x > 0 ? GuiAttachment.topLeft : GuiAttachment.topRight;
-            slotGroup.addChild(new HoloSlotGui(x, minorOffsets.getY(i), attachment,
-                    minorModuleKeys[i], minorModuleNames[i], onSlotSelect));
-        }
-    }
+		for (int i = 0; i < minorModuleNames.length; i++) {
+			final int x = minorOffsets.getX(i);
+			GuiAttachment attachment = x > 0 ? GuiAttachment.topLeft : GuiAttachment.topRight;
+			slotGroup.addChild(new HoloSlotGui(x, minorOffsets.getY(i), attachment,
+				minorModuleKeys[i], minorModuleNames[i], onSlotSelect));
+		}
+	}
 }

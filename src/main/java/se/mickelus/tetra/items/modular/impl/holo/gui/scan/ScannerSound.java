@@ -8,48 +8,49 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import se.mickelus.tetra.TetraSounds;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 @OnlyIn(Dist.CLIENT)
 public class ScannerSound extends AbstractTickableSoundInstance {
-    private int activeCounter;
-    private Minecraft mc;
-    private boolean hasStarted;
+	private int activeCounter;
+	private final Minecraft mc;
+	private boolean hasStarted;
 
-    public ScannerSound(Minecraft mc) {
-        super(TetraSounds.scannerLoop, SoundSource.BLOCKS);
+	public ScannerSound(Minecraft mc) {
+		super(TetraSounds.scannerLoop, SoundSource.BLOCKS);
 
-        this.mc = mc;
+		this.mc = mc;
 
-        // priority = true;
-        looping = true;
-        attenuation = Attenuation.NONE;
+		// priority = true;
+		looping = true;
+		attenuation = Attenuation.NONE;
 
-        volume = 0;
-        pitch = 0.5f;
-    }
+		volume = 0;
+		pitch = 0.5f;
+	}
 
-    public void activate() {
-        if (!hasStarted) {
-            mc.getSoundManager().play(this);
-            hasStarted = true;
-        }
+	public void activate() {
+		if (!hasStarted) {
+			mc.getSoundManager().play(this);
+			hasStarted = true;
+		}
 
-        activeCounter = 2;
-    }
+		activeCounter = 2;
+	}
 
-    @Override
-    public boolean canStartSilent() {
-        return true;
-    }
+	@Override
+	public boolean canStartSilent() {
+		return true;
+	}
 
-    @Override
-    public void tick() {
-        if (activeCounter > 0) {
-            volume = Math.min(volume + 0.03f, 0.5f);
+	@Override
+	public void tick() {
+		if (activeCounter > 0) {
+			volume = Math.min(volume + 0.03f, 0.5f);
 
-            activeCounter--;
-        } else {
-            volume = Math.max(volume - 0.027f, 0);
-        }
-    }
+			activeCounter--;
+		} else {
+			volume = Math.max(volume - 0.027f, 0);
+		}
+	}
 }

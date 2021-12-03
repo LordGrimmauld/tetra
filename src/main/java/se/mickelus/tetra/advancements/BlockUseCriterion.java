@@ -18,73 +18,69 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 @ParametersAreNonnullByDefault
 public class BlockUseCriterion extends AbstractCriterionTriggerInstance {
-    private final PropertyMatcher before;
-    private final PropertyMatcher after;
+	public static final GenericTrigger<BlockUseCriterion> trigger = new GenericTrigger<>("tetra:block_use", BlockUseCriterion::deserialize);
+	private final PropertyMatcher before;
+	private final PropertyMatcher after;
+	private final ItemPredicate item;
+	private final Map<String, String> data;
 
-    private final ItemPredicate item;
+	public BlockUseCriterion(EntityPredicate.Composite playerCondition, PropertyMatcher before, PropertyMatcher after, ItemPredicate item, Map<String, String> data) {
+		super(trigger.getId(), playerCondition);
+		this.before = before;
+		this.after = after;
+		this.item = item;
+		this.data = data;
+	}
 
-    private final Map<String, String> data;
+	public static void trigger(ServerPlayer player, BlockState state, ItemStack usedItem, Map<String, String> data) {
+		trigger.fulfillCriterion(player, criterion -> criterion.test(state, usedItem, data));
+	}
 
-    public static final GenericTrigger<BlockUseCriterion> trigger = new GenericTrigger<>("tetra:block_use", BlockUseCriterion::deserialize);
+	public static void trigger(ServerPlayer player, BlockState state, ItemStack usedItem) {
+		trigger(player, state, usedItem, Collections.emptyMap());
+	}
 
-    public BlockUseCriterion(EntityPredicate.Composite playerCondition, PropertyMatcher before, PropertyMatcher after, ItemPredicate item, Map<String, String> data) {
-        super(trigger.getId(), playerCondition);
-        this.before = before;
-        this.after = after;
-        this.item = item;
-        this.data = data;
-    }
+	private static BlockUseCriterion deserialize(JsonObject json, EntityPredicate.Composite entityPredicate, DeserializationContext conditionsParser) {
+		return new BlockUseCriterion(entityPredicate,
+			JsonOptional.field(json, "before")
+				.map(PropertyMatcher::deserialize)
+				.orElse(null),
+			JsonOptional.field(json, "after")
+				.map(PropertyMatcher::deserialize)
+				.orElse(null),
+			JsonOptional.field(json, "item")
+				.map(ItemPredicate::fromJson)
+				.orElse(null),
+			JsonOptional.field(json, "data")
+				.map(JsonElement::getAsJsonObject)
+				.map(JsonObject::entrySet)
+				.map(Collection::stream)
+				.orElseGet(Stream::empty)
+				.collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getAsString())));
+	}
 
-    public static void trigger(ServerPlayer player, BlockState state, ItemStack usedItem, Map<String, String> data) {
-        trigger.fulfillCriterion(player, criterion -> criterion.test(state, usedItem, data));
-    }
+	public boolean test(BlockState state, ItemStack usedItem, Map<String, String> data) {
+		if (before != null && !before.test(state)) {
+			return false;
+		}
 
-    public static void trigger(ServerPlayer player, BlockState state, ItemStack usedItem) {
-        trigger(player, state, usedItem, Collections.emptyMap());
-    }
+		if (after != null && !after.test(state)) {
+			return false;
+		}
 
-    public boolean test(BlockState state, ItemStack usedItem, Map<String, String> data) {
-        if (before != null && !before.test(state)) {
-            return false;
-        }
+		if (item != null && !item.matches(usedItem)) {
+			return false;
+		}
 
-        if (after != null && !after.test(state)) {
-            return false;
-        }
+		if (this.data != null) {
+			boolean hasUnmatched = this.data.entrySet().stream()
+				.anyMatch(entry -> !data.containsKey(entry.getKey()) || !entry.getValue().equals(data.get(entry.getKey())));
+			return !hasUnmatched;
+		}
 
-        if (item != null && !item.matches(usedItem)) {
-            return false;
-        }
-
-        if (this.data != null) {
-            boolean hasUnmatched = this.data.entrySet().stream()
-                    .anyMatch(entry -> !data.containsKey(entry.getKey()) || !entry.getValue().equals(data.get(entry.getKey())));
-            if (hasUnmatched) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static BlockUseCriterion deserialize(JsonObject json, EntityPredicate.Composite entityPredicate, DeserializationContext conditionsParser) {
-        return new BlockUseCriterion(entityPredicate,
-                JsonOptional.field(json, "before")
-                        .map(PropertyMatcher::deserialize)
-                        .orElse(null),
-                JsonOptional.field(json, "after")
-                        .map(PropertyMatcher::deserialize)
-                        .orElse(null),
-                JsonOptional.field(json, "item")
-                        .map(ItemPredicate::fromJson)
-                        .orElse(null),
-                JsonOptional.field(json, "data")
-                        .map(JsonElement::getAsJsonObject)
-                        .map(JsonObject::entrySet)
-                        .map(Collection::stream)
-                        .orElseGet(Stream::empty)
-                        .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getAsString())));
-    }
+		return true;
+	}
 }

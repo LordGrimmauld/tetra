@@ -11,13 +11,14 @@ import net.minecraftforge.common.ToolAction;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Arrays;
 import java.util.Map;
+
 @ParametersAreNonnullByDefault
 public class LockedCondition implements CraftingEffectCondition {
-    ResourceLocation key;
+	ResourceLocation key;
 
-    @Override
-    public boolean test(ResourceLocation[] unlocks, ItemStack upgradedStack, String slot, boolean isReplacing, Player player,
-            ItemStack[] materials, Map<ToolAction, Integer> tools, Level world, BlockPos pos, BlockState blockState) {
-        return key != null && Arrays.stream(unlocks).anyMatch(key::equals);
-    }
+	@Override
+	public boolean test(ResourceLocation[] unlocks, ItemStack upgradedStack, String slot, boolean isReplacing, Player player,
+						ItemStack[] materials, Map<ToolAction, Integer> tools, Level world, BlockPos pos, BlockState blockState) {
+		return key != null && Arrays.stream(unlocks).anyMatch(key::equals);
+	}
 }

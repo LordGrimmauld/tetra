@@ -39,279 +39,283 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
 @ParametersAreNonnullByDefault
 public class BlockInteraction {
-    public ToolAction requiredTool;
-    public int requiredLevel;
+	public ToolAction requiredTool;
+	public int requiredLevel;
 
-    // if false the player needs to have an item that provides the required tool in their inventory for the interaction to be visible
-    public boolean alwaysReveal = true;
+	// if false the player needs to have an item that provides the required tool in their inventory for the interaction to be visible
+	public boolean alwaysReveal = true;
 
-    public Direction face;
-    public float minX;
-    public float minY;
-    public float maxX;
-    public float maxY;
+	public Direction face;
+	public float minX;
+	public float minY;
+	public float maxX;
+	public float maxY;
 
-    public Predicate<BlockState> predicate;
+	public Predicate<BlockState> predicate;
 
-    public InteractionOutcome outcome;
+	public InteractionOutcome outcome;
 
-    // if this interaction should apply tool usage effects (honing, reverb, self fiery etc)
-    protected boolean applyUsageEffects = true;
+	// if this interaction should apply tool usage effects (honing, reverb, self fiery etc)
+	protected boolean applyUsageEffects = true;
 
-    public <V extends Comparable<V>> BlockInteraction(ToolAction requiredTool, int requiredLevel, Direction face,
-            float minX, float maxX, float minY, float maxY, InteractionOutcome outcome) {
+	public <V extends Comparable<V>> BlockInteraction(ToolAction requiredTool, int requiredLevel, Direction face,
+													  float minX, float maxX, float minY, float maxY, InteractionOutcome outcome) {
 
-        this.requiredTool = requiredTool;
-        this.requiredLevel = requiredLevel;
-        this.face = face;
-        this.minX = minX;
-        this.minY = minY;
-        this.maxX = maxX;
-        this.maxY = maxY;
+		this.requiredTool = requiredTool;
+		this.requiredLevel = requiredLevel;
+		this.face = face;
+		this.minX = minX;
+		this.minY = minY;
+		this.maxX = maxX;
+		this.maxY = maxY;
 
-        this.outcome = outcome;
-    }
+		this.outcome = outcome;
+	}
 
-    public BlockInteraction(ToolAction requiredTool, int requiredLevel, Direction face, float minX, float maxX, float minY,
-            float maxY, Predicate<BlockState> predicate, InteractionOutcome outcome) {
-        this(requiredTool, requiredLevel, face, minX, maxX, minY, maxY, outcome);
+	public BlockInteraction(ToolAction requiredTool, int requiredLevel, Direction face, float minX, float maxX, float minY,
+							float maxY, Predicate<BlockState> predicate, InteractionOutcome outcome) {
+		this(requiredTool, requiredLevel, face, minX, maxX, minY, maxY, outcome);
 
-        this.predicate = predicate;
-    }
+		this.predicate = predicate;
+	}
 
-    public <V extends Comparable<V>> BlockInteraction(ToolAction requiredTool, int requiredLevel, Direction face,
-            float minX, float maxX, float minY, float maxY, Property<V> property, V propertyValue, InteractionOutcome outcome) {
-        this(requiredTool, requiredLevel, face, minX, maxX, minY, maxY, new PropertyMatcher().where(property, Predicates.equalTo(propertyValue)),
-                outcome);
-    }
+	public <V extends Comparable<V>> BlockInteraction(ToolAction requiredTool, int requiredLevel, Direction face,
+													  float minX, float maxX, float minY, float maxY, Property<V> property, V propertyValue, InteractionOutcome outcome) {
+		this(requiredTool, requiredLevel, face, minX, maxX, minY, maxY, new PropertyMatcher().where(property, Predicates.equalTo(propertyValue)),
+			outcome);
+	}
 
-    public boolean applicableForBlock(Level world, BlockPos pos, BlockState blockState) {
-        return predicate.test(blockState);
-    }
+	public static InteractionResult attemptInteraction(Level world, BlockState blockState, BlockPos pos, Player player, InteractionHand hand,
+													   BlockHitResult rayTrace) {
+		ItemStack heldStack = player.getItemInHand(hand);
+		Collection<ToolAction> availableTools = PropertyHelper.getItemTools(heldStack);
 
-    public boolean isWithinBounds(double x, double y) {
-        return minX <= x && x <= maxX && minY <= y && y <= maxY;
-    }
+		AABB boundingBox = blockState.getShape(world, pos, CollisionContext.of(player)).bounds();
+		double hitU = 16 * getHitU(rayTrace.getDirection(), boundingBox,
+			rayTrace.getLocation().x - pos.getX(),
+			rayTrace.getLocation().y - pos.getY(),
+			rayTrace.getLocation().z - pos.getZ());
+		double hitV = 16 * getHitV(rayTrace.getDirection(), boundingBox,
+			rayTrace.getLocation().x - pos.getX(),
+			rayTrace.getLocation().y - pos.getY(),
+			rayTrace.getLocation().z - pos.getZ());
 
-    public boolean isPotentialInteraction(Level world, BlockPos pos, BlockState blockState, Direction hitFace, Collection<ToolAction> availableTools) {
-        return isPotentialInteraction(world, pos, blockState, Direction.NORTH, hitFace, availableTools);
-    }
+		BlockInteraction possibleInteraction = CastOptional.cast(blockState.getBlock(), IInteractiveBlock.class)
+			.map(block -> block.getPotentialInteractions(world, pos, blockState, rayTrace.getDirection(), availableTools))
+			.map(Arrays::stream).orElseGet(Stream::empty)
+			.filter(interaction -> interaction.isWithinBounds(hitU, hitV))
+			.filter(interaction -> PropertyHelper.getItemToolLevel(heldStack, interaction.requiredTool) >= interaction.requiredLevel)
+			.findFirst()
+			.orElse(null);
 
-    public boolean isPotentialInteraction(Level world, BlockPos pos, BlockState blockState, Direction blockFacing, Direction hitFace,
-            Collection<ToolAction> availableTools) {
-        return applicableForBlock(world, pos, blockState)
-                && RotationHelper.rotationFromFacing(blockFacing).rotate(face).equals(hitFace)
-                && (alwaysReveal || availableTools.contains(requiredTool));
-    }
+		if (possibleInteraction != null) {
+			if (InteractionHand.MAIN_HAND == hand) {
+				if (player.getAttackStrengthScale(0) < 0.8) {
+					if (player.getOffhandItem().isEmpty()) {
+						player.resetAttackStrengthTicker();
+						return InteractionResult.FAIL;
+					}
+					return InteractionResult.PASS;
+				}
+			} else {
+				if (player.getCooldowns().isOnCooldown(heldStack.getItem())) {
+					return InteractionResult.FAIL;
+				}
+			}
 
-    public void applyOutcome(Level world, BlockPos pos, BlockState blockState, @Nullable Player player, @Nullable InteractionHand hand, Direction hitFace) {
-        outcome.apply(world, pos, blockState, player, hand, hitFace);
-    }
+			possibleInteraction.applyOutcome(world, pos, blockState, player, hand, rayTrace.getDirection());
 
-    public static InteractionResult attemptInteraction(Level world, BlockState blockState, BlockPos pos, Player player, InteractionHand hand,
-            BlockHitResult rayTrace) {
-        ItemStack heldStack = player.getItemInHand(hand);
-        Collection<ToolAction> availableTools = PropertyHelper.getItemTools(heldStack);
+			if (availableTools.contains(possibleInteraction.requiredTool) && heldStack.isDamageableItem()) {
+				if (heldStack.getItem() instanceof IModularItem) {
+					IModularItem item = (IModularItem) heldStack.getItem();
 
-        AABB boundingBox = blockState.getShape(world, pos, CollisionContext.of(player)).bounds();
-        double hitU = 16 * getHitU(rayTrace.getDirection(), boundingBox,
-                rayTrace.getLocation().x - pos.getX(),
-                rayTrace.getLocation().y - pos.getY(),
-                rayTrace.getLocation().z - pos.getZ());
-        double hitV = 16 * getHitV(rayTrace.getDirection(), boundingBox,
-                rayTrace.getLocation().x - pos.getX(),
-                rayTrace.getLocation().y - pos.getY(),
-                rayTrace.getLocation().z - pos.getZ());
+					item.applyDamage(2, heldStack, player);
+					if (possibleInteraction.applyUsageEffects) {
+						item.applyUsageEffects(player, heldStack, possibleInteraction.requiredLevel * 2);
+					}
+				} else {
+					heldStack.hurtAndBreak(2, player, breaker -> breaker.broadcastBreakEvent(breaker.getUsedItemHand()));
+				}
+			}
 
-        BlockInteraction possibleInteraction = CastOptional.cast(blockState.getBlock(), IInteractiveBlock.class)
-                .map(block -> block.getPotentialInteractions(world, pos, blockState, rayTrace.getDirection(), availableTools))
-                .map(Arrays::stream).orElseGet(Stream::empty)
-                .filter(interaction -> interaction.isWithinBounds(hitU, hitV))
-                .filter(interaction -> PropertyHelper.getItemToolLevel(heldStack, interaction.requiredTool) >= interaction.requiredLevel)
-                .findFirst()
-                .orElse(null);
+			if (player instanceof ServerPlayer) {
+				BlockState newState = world.getBlockState(pos);
 
-        if (possibleInteraction != null) {
-            if (InteractionHand.MAIN_HAND == hand) {
-                if (player.getAttackStrengthScale(0) < 0.8) {
-                    if (player.getOffhandItem().isEmpty()) {
-                        player.resetAttackStrengthTicker();
-                        return InteractionResult.FAIL;
-                    }
-                    return InteractionResult.PASS;
-                }
-            } else {
-                if (player.getCooldowns().isOnCooldown(heldStack.getItem())) {
-                    return InteractionResult.FAIL;
-                }
-            }
+				BlockInteractionCriterion.trigger((ServerPlayer) player, newState, possibleInteraction.requiredTool,
+					possibleInteraction.requiredLevel);
+			}
 
-            possibleInteraction.applyOutcome(world, pos, blockState, player, hand, rayTrace.getDirection());
+			if (InteractionHand.MAIN_HAND == hand) {
+				player.resetAttackStrengthTicker();
+			} else {
+				int cooldown = CastOptional.cast(heldStack.getItem(), ItemModularHandheld.class)
+					.map(item -> (int) (20 * item.getCooldownBase(heldStack)))
+					.orElse(10);
+				player.getCooldowns().addCooldown(heldStack.getItem(), cooldown);
+			}
 
-            if (availableTools.contains(possibleInteraction.requiredTool) && heldStack.isDamageableItem()) {
-                if (heldStack.getItem() instanceof IModularItem) {
-                    IModularItem item = (IModularItem) heldStack.getItem();
+			if (player.level.isClientSide) {
+				InteractiveBlockOverlay.markDirty();
+			}
 
-                    item.applyDamage(2, heldStack, player);
-                    if (possibleInteraction.applyUsageEffects) {
-                        item.applyUsageEffects(player, heldStack, possibleInteraction.requiredLevel * 2);
-                    }
-                } else {
-                    heldStack.hurtAndBreak(2, player, breaker -> breaker.broadcastBreakEvent(breaker.getUsedItemHand()));
-                }
-            }
+			return InteractionResult.sidedSuccess(player.level.isClientSide);
+		}
+		return InteractionResult.PASS;
+	}
 
-            if (player instanceof ServerPlayer) {
-                BlockState newState = world.getBlockState(pos);
+	public static BlockInteraction getInteractionAtPoint(Player player, BlockState blockState, BlockPos pos, Direction hitFace,
+														 double hitX, double hitY, double hitZ) {
+		AABB boundingBox = blockState.getShape(player.level, pos).bounds();
+		double hitU = getHitU(hitFace, boundingBox, hitX, hitY, hitZ);
+		double hitV = getHitV(hitFace, boundingBox, hitX, hitY, hitZ);
 
-                BlockInteractionCriterion.trigger((ServerPlayer) player, newState, possibleInteraction.requiredTool,
-                        possibleInteraction.requiredLevel);
-            }
+		return CastOptional.cast(blockState.getBlock(), IInteractiveBlock.class)
+			.map(block -> block.getPotentialInteractions(player.level, pos, blockState, hitFace, PropertyHelper.getPlayerTools(player)))
+			.map(Arrays::stream).orElseGet(Stream::empty)
+			.filter(interaction -> interaction.isWithinBounds(hitU * 16, hitV * 16))
+			.findFirst()
+			.orElse(null);
+	}
 
-            if (InteractionHand.MAIN_HAND == hand) {
-                player.resetAttackStrengthTicker();
-            } else {
-                int cooldown = CastOptional.cast(heldStack.getItem(), ItemModularHandheld.class)
-                        .map(item -> (int) (20 * item.getCooldownBase(heldStack)))
-                        .orElse(10);
-                player.getCooldowns().addCooldown(heldStack.getItem(), cooldown);
-            }
+	/**
+	 * Returns the horizontal coordinate for where the face was clicked, between 0-1.
+	 *
+	 * @param facing
+	 * @param boundingBox
+	 * @param hitX
+	 * @param hitY
+	 * @param hitZ
+	 * @return
+	 */
+	private static double getHitU(Direction facing, AABB boundingBox, double hitX, double hitY, double hitZ) {
+		switch (facing) {
+			case DOWN:
+				return boundingBox.maxX - hitX;
+			case UP:
+				return boundingBox.maxX - hitX;
+			case NORTH:
+				return boundingBox.maxX - hitX;
+			case SOUTH:
+				return hitX - boundingBox.minX;
+			case WEST:
+				return hitZ - boundingBox.minZ;
+			case EAST:
+				return boundingBox.maxZ - hitZ;
+		}
+		return 0;
+	}
 
-            if (player.level.isClientSide) {
-                InteractiveBlockOverlay.markDirty();
-            }
+	/**
+	 * Returns the vertical coordinate for where the face was clicked, between 0-1.
+	 *
+	 * @param facing
+	 * @param boundingBox
+	 * @param hitX
+	 * @param hitY
+	 * @param hitZ
+	 * @return
+	 */
+	private static double getHitV(Direction facing, AABB boundingBox, double hitX, double hitY, double hitZ) {
+		switch (facing) {
+			case DOWN:
+				return boundingBox.maxZ - hitZ;
+			case UP:
+				return boundingBox.maxZ - hitZ;
+			case NORTH:
+				return boundingBox.maxY - hitY;
+			case SOUTH:
+				return boundingBox.maxY - hitY;
+			case WEST:
+				return boundingBox.maxY - hitY;
+			case EAST:
+				return boundingBox.maxY - hitY;
+		}
+		return 0;
+	}
 
-            return InteractionResult.sidedSuccess(player.level.isClientSide);
-        }
-        return InteractionResult.PASS;
-    }
+	public static List<ItemStack> getLoot(ResourceLocation lootTable, Player player, InteractionHand hand, ServerLevel world,
+										  BlockState blockState) {
+		LootTable table = world.getServer().getLootTables().get(lootTable);
 
-    public static BlockInteraction getInteractionAtPoint(Player player, BlockState blockState, BlockPos pos, Direction hitFace,
-            double hitX, double hitY, double hitZ) {
-        AABB boundingBox = blockState.getShape(player.level, pos).bounds();
-        double hitU = getHitU(hitFace, boundingBox, hitX, hitY, hitZ);
-        double hitV = getHitV(hitFace, boundingBox, hitX, hitY, hitZ);
+		LootContext context = new LootContext.Builder(world)
+			.withLuck(player.getLuck())
+			.withParameter(LootContextParams.THIS_ENTITY, player)
+			.withParameter(LootContextParams.BLOCK_STATE, blockState)
+			.withParameter(LootContextParams.TOOL, player.getItemInHand(hand))
+			.withParameter(LootContextParams.ORIGIN, player.position())
+			.create(LootContextParamSets.BLOCK);
 
-        return CastOptional.cast(blockState.getBlock(), IInteractiveBlock.class)
-                .map(block -> block.getPotentialInteractions(player.level, pos, blockState, hitFace, PropertyHelper.getPlayerTools(player)))
-                .map(Arrays::stream).orElseGet(Stream::empty)
-                .filter(interaction -> interaction.isWithinBounds(hitU * 16, hitV * 16))
-                .findFirst()
-                .orElse(null);
-    }
+		return table.getRandomItems(context);
+	}
 
-    /**
-     * Returns the horizontal coordinate for where the face was clicked, between 0-1.
-     * @param facing
-     * @param boundingBox
-     * @param hitX
-     * @param hitY
-     * @param hitZ
-     * @return
-     */
-    private static double getHitU(Direction facing, AABB boundingBox, double hitX, double hitY, double hitZ) {
-        switch (facing) {
-            case DOWN:
-                return boundingBox.maxX - hitX;
-            case UP:
-                return boundingBox.maxX - hitX;
-            case NORTH:
-                return boundingBox.maxX - hitX;
-            case SOUTH:
-                return hitX - boundingBox.minX;
-            case WEST:
-                return hitZ - boundingBox.minZ;
-            case EAST:
-                return boundingBox.maxZ - hitZ;
-        }
-        return 0;
-    }
+	public static List<ItemStack> getLoot(ResourceLocation lootTable, ServerLevel world, BlockPos pos, BlockState blockState) {
+		LootTable table = world.getServer().getLootTables().get(lootTable);
 
-    /**
-     * Returns the vertical coordinate for where the face was clicked, between 0-1.
-     * @param facing
-     * @param boundingBox
-     * @param hitX
-     * @param hitY
-     * @param hitZ
-     * @return
-     */
-    private static double getHitV(Direction facing, AABB boundingBox, double hitX, double hitY, double hitZ) {
-        switch (facing) {
-            case DOWN:
-                return boundingBox.maxZ - hitZ;
-            case UP:
-                return boundingBox.maxZ - hitZ;
-            case NORTH:
-                return boundingBox.maxY - hitY;
-            case SOUTH:
-                return boundingBox.maxY - hitY;
-            case WEST:
-                return boundingBox.maxY - hitY;
-            case EAST:
-                return boundingBox.maxY - hitY;
-        }
-        return 0;
-    }
+		LootContext context = new LootContext.Builder(world)
+			.withParameter(LootContextParams.BLOCK_STATE, blockState)
+			.withParameter(LootContextParams.TOOL, ItemStack.EMPTY)
+			.withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(pos))
+			.create(LootContextParamSets.BLOCK);
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        BlockInteraction that = (BlockInteraction) o;
-        return requiredLevel == that.requiredLevel &&
-                Float.compare(that.minX, minX) == 0 &&
-                Float.compare(that.minY, minY) == 0 &&
-                Float.compare(that.maxX, maxX) == 0 &&
-                Float.compare(that.maxY, maxY) == 0 &&
-                Objects.equals(requiredTool, that.requiredTool) &&
-                face == that.face;
-    }
+		return table.getRandomItems(context);
+	}
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(requiredTool, requiredLevel, face, minX, minY, maxX, maxY);
-    }
+	public static void dropLoot(ResourceLocation lootTable, @Nullable Player player, @Nullable InteractionHand hand, ServerLevel world, BlockState blockState) {
+		getLoot(lootTable, player, hand, world, blockState).forEach(itemStack -> {
+			if (!player.getInventory().add(itemStack)) {
+				player.drop(itemStack, false);
+			}
+		});
+	}
 
-    public static List<ItemStack> getLoot(ResourceLocation lootTable, Player player, InteractionHand hand, ServerLevel world,
-            BlockState blockState) {
-        LootTable table = world.getServer().getLootTables().get(lootTable);
+	public static void dropLoot(ResourceLocation lootTable, ServerLevel world, BlockPos pos, BlockState blockState) {
+		getLoot(lootTable, world, pos, blockState).forEach(itemStack -> {
+			Block.popResource(world, pos, itemStack);
+		});
+	}
 
-        LootContext context = new LootContext.Builder(world)
-                .withLuck(player.getLuck())
-                .withParameter(LootContextParams.THIS_ENTITY, player)
-                .withParameter(LootContextParams.BLOCK_STATE, blockState)
-                .withParameter(LootContextParams.TOOL, player.getItemInHand(hand))
-                .withParameter(LootContextParams.ORIGIN, player.position())
-                .create(LootContextParamSets.BLOCK);
+	public boolean applicableForBlock(Level world, BlockPos pos, BlockState blockState) {
+		return predicate.test(blockState);
+	}
 
-        return table.getRandomItems(context);
-    }
+	public boolean isWithinBounds(double x, double y) {
+		return minX <= x && x <= maxX && minY <= y && y <= maxY;
+	}
 
-    public static List<ItemStack> getLoot(ResourceLocation lootTable, ServerLevel world, BlockPos pos, BlockState blockState) {
-        LootTable table = world.getServer().getLootTables().get(lootTable);
+	public boolean isPotentialInteraction(Level world, BlockPos pos, BlockState blockState, Direction hitFace, Collection<ToolAction> availableTools) {
+		return isPotentialInteraction(world, pos, blockState, Direction.NORTH, hitFace, availableTools);
+	}
 
-        LootContext context = new LootContext.Builder(world)
-                .withParameter(LootContextParams.BLOCK_STATE, blockState)
-                .withParameter(LootContextParams.TOOL, ItemStack.EMPTY)
-                .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(pos))
-                .create(LootContextParamSets.BLOCK);
+	public boolean isPotentialInteraction(Level world, BlockPos pos, BlockState blockState, Direction blockFacing, Direction hitFace,
+										  Collection<ToolAction> availableTools) {
+		return applicableForBlock(world, pos, blockState)
+			&& RotationHelper.rotationFromFacing(blockFacing).rotate(face).equals(hitFace)
+			&& (alwaysReveal || availableTools.contains(requiredTool));
+	}
 
-        return table.getRandomItems(context);
-    }
+	public void applyOutcome(Level world, BlockPos pos, BlockState blockState, @Nullable Player player, @Nullable InteractionHand hand, Direction hitFace) {
+		outcome.apply(world, pos, blockState, player, hand, hitFace);
+	}
 
-    public static void dropLoot(ResourceLocation lootTable, @Nullable Player player, @Nullable InteractionHand hand, ServerLevel world, BlockState blockState) {
-        getLoot(lootTable, player, hand, world, blockState).forEach(itemStack -> {
-            if (!player.getInventory().add(itemStack)) {
-                player.drop(itemStack, false);
-            }
-        });
-    }
-    public static void dropLoot(ResourceLocation lootTable, ServerLevel world, BlockPos pos, BlockState blockState) {
-        getLoot(lootTable, world, pos, blockState).forEach(itemStack -> {
-            Block.popResource(world, pos, itemStack);
-        });
-    }
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		BlockInteraction that = (BlockInteraction) o;
+		return requiredLevel == that.requiredLevel &&
+			Float.compare(that.minX, minX) == 0 &&
+			Float.compare(that.minY, minY) == 0 &&
+			Float.compare(that.maxX, maxX) == 0 &&
+			Float.compare(that.maxY, maxY) == 0 &&
+			Objects.equals(requiredTool, that.requiredTool) &&
+			face == that.face;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(requiredTool, requiredLevel, face, minX, minY, maxX, maxY);
+	}
 }

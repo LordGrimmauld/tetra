@@ -18,22 +18,23 @@ import se.mickelus.tetra.items.TetraItemGroup;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class ItemMetalScrap extends TetraItem {
-    private static final String unlocalizedName = "metal_scrap";
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static ItemMetalScrap instance;
+	private static final String unlocalizedName = "metal_scrap";
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static ItemMetalScrap instance;
 
-    public ItemMetalScrap() {
-        super(new Properties().tab(TetraItemGroup.instance));
-        setRegistryName(unlocalizedName);
-    }
+	public ItemMetalScrap() {
+		super(new Properties().tab(TetraItemGroup.instance));
+		setRegistryName(unlocalizedName);
+	}
 
-    @OnlyIn(Dist.CLIENT)
-    @Override
-    public void appendHoverText(ItemStack itemStack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(new TranslatableComponent("item.tetra.metal_scrap.description").withStyle(ChatFormatting.GRAY));
-        tooltip.add(new TextComponent(" "));
-        tooltip.add(ForgedBlockCommon.locationTooltip);
-    }
+	@OnlyIn(Dist.CLIENT)
+	@Override
+	public void appendHoverText(ItemStack itemStack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
+		tooltip.add(new TranslatableComponent("item.tetra.metal_scrap.description").withStyle(ChatFormatting.GRAY));
+		tooltip.add(new TextComponent(" "));
+		tooltip.add(ForgedBlockCommon.locationTooltip);
+	}
 }

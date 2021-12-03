@@ -19,58 +19,59 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
+
 @ParametersAreNonnullByDefault
 public class BakedWrapper implements BakedModel {
 
-    private TextureAtlasSprite particleAtlas;
-    private ItemOverrides itemOverrideList;
+	private final TextureAtlasSprite particleAtlas;
+	private final ItemOverrides itemOverrideList;
 
-    public BakedWrapper(ModularItemModel model, IModelConfiguration owner, ModelBakery bakery,
-            Function<Material, TextureAtlasSprite> spriteGetter, ModelState modelTransform, ResourceLocation modelLocation,
-            ItemOverrides itemOverrideList) {
+	public BakedWrapper(ModularItemModel model, IModelConfiguration owner, ModelBakery bakery,
+						Function<Material, TextureAtlasSprite> spriteGetter, ModelState modelTransform, ResourceLocation modelLocation,
+						ItemOverrides itemOverrideList) {
 
-        particleAtlas = spriteGetter.apply(owner.resolveTexture("particle"));
-        this.itemOverrideList = itemOverrideList;
-    }
+		particleAtlas = spriteGetter.apply(owner.resolveTexture("particle"));
+		this.itemOverrideList = itemOverrideList;
+	}
 
-    @Override
-    public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, Random rand) {
-        return Collections.emptyList();
-    }
+	@Override
+	public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, Random rand) {
+		return Collections.emptyList();
+	}
 
-    @Override
-    public boolean useAmbientOcclusion() {
-        return false;
-    }
+	@Override
+	public boolean useAmbientOcclusion() {
+		return false;
+	}
 
-    @Override
-    public boolean isGui3d() {
-        return false;
-    }
+	@Override
+	public boolean isGui3d() {
+		return false;
+	}
 
-    @Override
-    public boolean usesBlockLight() {
-        return false;
-    }
+	@Override
+	public boolean usesBlockLight() {
+		return false;
+	}
 
-    @Override
-    public boolean isCustomRenderer() {
-        return false;
-    }
+	@Override
+	public boolean isCustomRenderer() {
+		return false;
+	}
 
-    @Override
-    public TextureAtlasSprite getParticleIcon() {
-        return particleAtlas;
-    }
+	@Override
+	public TextureAtlasSprite getParticleIcon() {
+		return particleAtlas;
+	}
 
-    @Nonnull
-    @Override
-    public ItemOverrides getOverrides() {
-        return itemOverrideList;
-    }
+	@Nonnull
+	@Override
+	public ItemOverrides getOverrides() {
+		return itemOverrideList;
+	}
 
-    @Override
-    public boolean doesHandlePerspectives() {
-        return false;
-    }
+	@Override
+	public boolean doesHandlePerspectives() {
+		return false;
+	}
 }

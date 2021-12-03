@@ -12,79 +12,78 @@ import se.mickelus.tetra.TetraMod;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class HammerHeadTile extends BlockEntity {
-    @ObjectHolder(TetraMod.MOD_ID + ":" + HammerHeadBlock.unlocalizedName)
-    public static BlockEntityType<HammerHeadTile> type;
+	private static final String jamKey = "jam";
+	@ObjectHolder(TetraMod.MOD_ID + ":" + HammerHeadBlock.unlocalizedName)
+	public static BlockEntityType<HammerHeadTile> type;
+	private long activationTime = -1;
+	private long unjamTime = -1;
+	private boolean jammed;
 
-    private long activationTime = -1;
-    private long unjamTime = -1;
+	public HammerHeadTile(BlockPos p_155268_, BlockState p_155269_) {
+		super(type, p_155268_, p_155269_);
+	}
 
-    private boolean jammed;
-    private static final String jamKey = "jam";
+	public void activate() {
+		activationTime = System.currentTimeMillis();
+	}
 
-    public HammerHeadTile(BlockPos p_155268_, BlockState p_155269_) {
-        super(type, p_155268_, p_155269_);
-    }
+	public long getActivationTime() {
+		return activationTime;
+	}
 
-    public void activate() {
-        activationTime = System.currentTimeMillis();
-    }
+	public long getUnjamTime() {
+		return unjamTime;
+	}
 
-    public long getActivationTime() {
-        return activationTime;
-    }
+	public boolean isJammed() {
+		return jammed;
+	}
 
-    public long getUnjamTime() {
-        return unjamTime;
-    }
+	public void setJammed(boolean jammed) {
+		this.jammed = jammed;
 
-    public boolean isJammed() {
-        return jammed;
-    }
+		if (!jammed) {
+			unjamTime = System.currentTimeMillis();
+		}
 
-    public void setJammed(boolean jammed) {
-        this.jammed = jammed;
-
-        if (!jammed) {
-            unjamTime = System.currentTimeMillis();
-        }
-
-        level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
-        setChanged();
-    }
+		level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+		setChanged();
+	}
 
 
-    @Nullable
-    @Override
-    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-        return ClientboundBlockEntityDataPacket.create(this);
-    }
+	@Nullable
+	@Override
+	public ClientboundBlockEntityDataPacket getUpdatePacket() {
+		return ClientboundBlockEntityDataPacket.create(this);
+	}
 
-    @Override
-    public CompoundTag getUpdateTag() {
-        return save(super.getUpdateTag());
-    }
+	@Override
+	public CompoundTag getUpdateTag() {
+		return save(super.getUpdateTag());
+	}
 
-    @Override
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
-        this.load(pkt.getTag());
-    }
+	@Override
+	public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
+		this.load(pkt.getTag());
+	}
 
-    @Override
-    public void load(CompoundTag compound) {
-        super.load(compound);
-        this.jammed = compound.contains(jamKey) && compound.getBoolean(jamKey);
-    }
+	@Override
+	public void load(CompoundTag compound) {
+		super.load(compound);
+		this.jammed = compound.contains(jamKey) && compound.getBoolean(jamKey);
+	}
 
-    @Override
-    public CompoundTag save(CompoundTag compound) {
-        super.save(compound);
+	@Override
+	public CompoundTag save(CompoundTag compound) {
+		super.save(compound);
 
-        if (isJammed()) {
-            compound.putBoolean(jamKey, true);
-        }
+		if (isJammed()) {
+			compound.putBoolean(jamKey, true);
+		}
 
-        return compound;
-    }
+		return compound;
+	}
 }

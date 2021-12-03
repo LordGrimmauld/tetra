@@ -12,41 +12,41 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import se.mickelus.tetra.items.modular.IModularItem;
 import se.mickelus.tetra.module.ItemUpgradeRegistry;
 
-
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 @Mixin(ItemStack.class)
 public class MixinItemStack {
 
-    @Inject(at = @At("HEAD"), method = "enchant(Lnet/minecraft/world/item/enchantment/Enchantment;I)V", cancellable = true)
-    private void addEnchantment(Enchantment enchantment, int level, CallbackInfo callback) {
-        if (getItem() instanceof IModularItem) {
-            ItemStack itemStack = getInstance();
-            IModularItem item = (IModularItem) getItem();
-            ItemUpgradeRegistry.applyEnchantment(item, itemStack, enchantment, level);
-            item.assemble(itemStack, null, 0);
+	@Inject(at = @At("HEAD"), method = "enchant(Lnet/minecraft/world/item/enchantment/Enchantment;I)V", cancellable = true)
+	private void addEnchantment(Enchantment enchantment, int level, CallbackInfo callback) {
+		if (getItem() instanceof IModularItem) {
+			ItemStack itemStack = getInstance();
+			IModularItem item = (IModularItem) getItem();
+			ItemUpgradeRegistry.applyEnchantment(item, itemStack, enchantment, level);
+			item.assemble(itemStack, null, 0);
 
-            callback.cancel();
-        }
-    }
+			callback.cancel();
+		}
+	}
 
-    @Inject(at = @At("HEAD"), method = "isEnchanted()Z", cancellable = true)
-    private void isEnchanted(CallbackInfoReturnable<Boolean> callback) {
-        if (getItem() instanceof IModularItem) {
-            ItemStack itemStack = getInstance();
-            callback.setReturnValue(itemStack.hasTag()
-                    && (itemStack.getTag().contains("Enchantments", 9) || ((IModularItem) getItem()).hasEnchantments(itemStack)));
+	@Inject(at = @At("HEAD"), method = "isEnchanted()Z", cancellable = true)
+	private void isEnchanted(CallbackInfoReturnable<Boolean> callback) {
+		if (getItem() instanceof IModularItem) {
+			ItemStack itemStack = getInstance();
+			callback.setReturnValue(itemStack.hasTag()
+				&& (itemStack.getTag().contains("Enchantments", 9) || ((IModularItem) getItem()).hasEnchantments(itemStack)));
 
-            callback.cancel();
-        }
-    }
+			callback.cancel();
+		}
+	}
 
-    @Shadow
-    public Item getItem() {
-        throw new IllegalStateException("Mixin failed to shadow getItem()");
-    }
+	@Shadow
+	public Item getItem() {
+		throw new IllegalStateException("Mixin failed to shadow getItem()");
+	}
 
-    private ItemStack getInstance() {
-        return ((ItemStack) (Object) this);
-    }
+	private ItemStack getInstance() {
+		return ((ItemStack) (Object) this);
+	}
 }

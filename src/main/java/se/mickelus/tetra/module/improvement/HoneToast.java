@@ -13,40 +13,41 @@ import se.mickelus.tetra.gui.GuiColors;
 import se.mickelus.tetra.module.schematic.SchematicRarity;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class HoneToast implements Toast {
-    private static final ResourceLocation texture = new ResourceLocation(TetraMod.MOD_ID,"textures/gui/toasts.png");
+	private static final ResourceLocation texture = new ResourceLocation(TetraMod.MOD_ID, "textures/gui/toasts.png");
 
-    private boolean hasPlayedSound = false;
-    private ItemStack itemStack;
+	private boolean hasPlayedSound = false;
+	private final ItemStack itemStack;
 
-    public HoneToast(ItemStack itemStack) {
-        this.itemStack = itemStack;
-    }
+	public HoneToast(ItemStack itemStack) {
+		this.itemStack = itemStack;
+	}
 
-    @Override
-    public Visibility render(PoseStack matrixStack, ToastComponent toastGui, long delta) {
-        if (itemStack != null) {
-            toastGui.getMinecraft().getTextureManager().bindForSetup(texture);
-            // RenderSystem.color3f(1.0F, 1.0F, 1.0F);
-            toastGui.blit(matrixStack, 0, 0, 0, 0, 160, 32);
+	@Override
+	public Visibility render(PoseStack matrixStack, ToastComponent toastGui, long delta) {
+		if (itemStack != null) {
+			toastGui.getMinecraft().getTextureManager().bindForSetup(texture);
+			// RenderSystem.color3f(1.0F, 1.0F, 1.0F);
+			toastGui.blit(matrixStack, 0, 0, 0, 0, 160, 32);
 
-            String itemName = toastGui.getMinecraft().font.plainSubstrByWidth(itemStack.getHoverName().getString(), 125);
-            toastGui.getMinecraft().font.draw(matrixStack, I18n.get("tetra.hone.available"), 30, 7, SchematicRarity.hone.tint);
-            toastGui.getMinecraft().font.draw(matrixStack, itemName, 30, 18, GuiColors.muted);
+			String itemName = toastGui.getMinecraft().font.plainSubstrByWidth(itemStack.getHoverName().getString(), 125);
+			toastGui.getMinecraft().font.draw(matrixStack, I18n.get("tetra.hone.available"), 30, 7, SchematicRarity.hone.tint);
+			toastGui.getMinecraft().font.draw(matrixStack, itemName, 30, 18, GuiColors.muted);
 
-            if (!this.hasPlayedSound && delta > 0L) {
-                this.hasPlayedSound = true;
-                toastGui.getMinecraft().getSoundManager()
-                        .play(SimpleSoundInstance.forUI(SoundEvents.PLAYER_LEVELUP, 0.6F, 0.7F));
-            }
+			if (!this.hasPlayedSound && delta > 0L) {
+				this.hasPlayedSound = true;
+				toastGui.getMinecraft().getSoundManager()
+					.play(SimpleSoundInstance.forUI(SoundEvents.PLAYER_LEVELUP, 0.6F, 0.7F));
+			}
 
-            // Lighting.turnBackOn();
-            toastGui.getMinecraft().getItemRenderer().renderAndDecorateItem(itemStack, 8, 8);
+			// Lighting.turnBackOn();
+			toastGui.getMinecraft().getItemRenderer().renderAndDecorateItem(itemStack, 8, 8);
 
-            return delta > 5000 ? Toast.Visibility.HIDE : Toast.Visibility.SHOW;
-        }
+			return delta > 5000 ? Toast.Visibility.HIDE : Toast.Visibility.SHOW;
+		}
 
-        return Toast.Visibility.HIDE;
-    }
+		return Toast.Visibility.HIDE;
+	}
 }

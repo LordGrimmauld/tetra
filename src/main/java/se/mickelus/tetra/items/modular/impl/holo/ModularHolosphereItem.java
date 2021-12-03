@@ -36,119 +36,118 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
+
 @ParametersAreNonnullByDefault
 public class ModularHolosphereItem extends ModularItem {
-    private static final String unlocalizedName = "holo";
+	public final static String coreKey = "holo/core";
+	public final static String frameKey = "holo/frame";
+	public final static String attachmentAKey = "holo/attachment_0";
+	public final static String attachmentBKey = "holo/attachment_1";
+	private static final String unlocalizedName = "holo";
+	private static final GuiModuleOffsets majorOffsets = new GuiModuleOffsets(-14, 0, -14, 18, 4, 0, 4, 18);
 
-    public final static String coreKey = "holo/core";
-    public final static String frameKey = "holo/frame";
-    public final static String attachmentAKey = "holo/attachment_0";
-    public final static String attachmentBKey = "holo/attachment_1";
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static ModularHolosphereItem instance;
 
-    private static final GuiModuleOffsets majorOffsets = new GuiModuleOffsets(-14, 0, -14, 18, 4, 0, 4, 18);
+	public ModularHolosphereItem() {
+		super(new Properties()
+			.stacksTo(1)
+			.tab(TetraItemGroup.instance)
+			.fireResistant());
 
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static ModularHolosphereItem instance;
+		canHone = false;
 
-    public ModularHolosphereItem() {
-        super(new Properties()
-                .stacksTo(1)
-                .tab(TetraItemGroup.instance)
-                .fireResistant());
+		setRegistryName(unlocalizedName);
 
-        canHone = false;
+		majorModuleKeys = new String[]{coreKey, frameKey, attachmentAKey, attachmentBKey};
+		minorModuleKeys = new String[0];
 
-        setRegistryName(unlocalizedName);
+		requiredModules = new String[]{coreKey, frameKey};
+	}
 
-        majorModuleKeys = new String[] { coreKey, frameKey, attachmentAKey, attachmentBKey };
-        minorModuleKeys = new String[0];
+	public static ItemStack findHolosphere(Player player) {
+		return Stream.of(
+				player.getInventory().offhand.stream(),
+				player.getInventory().items.stream(),
+				ToolbeltHelper.getToolbeltItems(player).stream())
+			.flatMap(Function.identity())
+			.filter(stack -> stack.getItem() instanceof ModularHolosphereItem)
+			.findFirst()
+			.orElse(ItemStack.EMPTY);
+	}
 
-        requiredModules = new String[] { coreKey, frameKey };
-    }
+	@Override
+	public void init(PacketHandler packetHandler) {
+		super.init(packetHandler);
 
-    @Override
-    public void init(PacketHandler packetHandler) {
-        super.init(packetHandler);
+		DataManager.synergyData.onReload(() -> synergies = DataManager.instance.getSynergyData("holo/"));
+		RemoveSchematic.registerRemoveSchematics(this);
+	}
 
-        DataManager.synergyData.onReload(() -> synergies = DataManager.instance.getSynergyData("holo/"));
-        RemoveSchematic.registerRemoveSchematics(this);
-    }
+	@Override
+	public void clientInit() {
+		super.clientInit();
 
-    @Override
-    public void clientInit() {
-        super.clientInit();
+		MinecraftForge.EVENT_BUS.register(new ScannerOverlayGui());
+	}
 
-        MinecraftForge.EVENT_BUS.register(new ScannerOverlayGui());
-    }
+	@Override
+	public void fillItemCategory(CreativeModeTab group, NonNullList<ItemStack> items) {
+		if (allowdedIn(group)) {
+			ItemStack itemStack = new ItemStack(this);
 
-    @Override
-    public void fillItemCategory(CreativeModeTab group, NonNullList<ItemStack> items) {
-        if (allowdedIn(group)) {
-            ItemStack itemStack = new ItemStack(this);
+			IModularItem.putModuleInSlot(itemStack, coreKey, "holo/core", "frame/dim");
+			IModularItem.putModuleInSlot(itemStack, frameKey, "holo/frame", "core/ancient");
 
-            IModularItem.putModuleInSlot(itemStack, coreKey, "holo/core", "frame/dim");
-            IModularItem.putModuleInSlot(itemStack, frameKey, "holo/frame", "core/ancient");
+			items.add(itemStack);
+		}
+	}
 
-            items.add(itemStack);
-        }
-    }
+	@Override
+	public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
+		tooltip.add(new TranslatableComponent("item.tetra.holo.tooltip1").withStyle(ChatFormatting.GRAY));
+		tooltip.add(new TextComponent(" "));
 
-    @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-        tooltip.add(new TranslatableComponent("item.tetra.holo.tooltip1").withStyle(ChatFormatting.GRAY));
-        tooltip.add(new TextComponent(" "));
+		if (ScannerOverlayGui.instance != null && ScannerOverlayGui.instance.isAvailable()) {
+			tooltip.add(new TranslatableComponent("tetra.holo.scan.status", ScannerOverlayGui.instance.getStatus())
+				.withStyle(ChatFormatting.GRAY));
 
-        if (ScannerOverlayGui.instance != null && ScannerOverlayGui.instance.isAvailable()) {
-            tooltip.add(new TranslatableComponent("tetra.holo.scan.status", ScannerOverlayGui.instance.getStatus())
-                    .withStyle(ChatFormatting.GRAY));
+			tooltip.add(new TextComponent(" "));
+			tooltip.add(new TranslatableComponent("tetra.holo.scan.snooze"));
+		}
 
-            tooltip.add(new TextComponent(" "));
-            tooltip.add(new TranslatableComponent("tetra.holo.scan.snooze"));
-        }
+		tooltip.add(new TranslatableComponent("item.tetra.holo.tooltip2"));
 
-        tooltip.add(new TranslatableComponent("item.tetra.holo.tooltip2"));
+		super.appendHoverText(stack, worldIn, tooltip, flagIn);
+	}
 
-        super.appendHoverText(stack, worldIn, tooltip, flagIn);
-    }
+	@Override
+	public InteractionResultHolder<ItemStack> use(Level world, Player player, InteractionHand hand) {
+		if (world.isClientSide) {
+			if (player.isCrouching() && ScannerOverlayGui.instance.isAvailable()) {
+				ScannerOverlayGui.instance.toggleSnooze();
+			} else {
+				showGui();
+			}
+		}
 
-    @Override
-    public InteractionResultHolder<ItemStack> use(Level world, Player player, InteractionHand hand) {
-        if (world.isClientSide) {
-            if (player.isCrouching() && ScannerOverlayGui.instance.isAvailable()) {
-                ScannerOverlayGui.instance.toggleSnooze();
-            } else {
-                showGui();
-            }
-        }
+		return new InteractionResultHolder<>(InteractionResult.SUCCESS, player.getItemInHand(hand));
+	}
 
-        return new InteractionResultHolder<>(InteractionResult.SUCCESS, player.getItemInHand(hand));
-    }
+	@OnlyIn(Dist.CLIENT)
+	private void showGui() {
+		HoloGui gui = HoloGui.getInstance();
 
-    @OnlyIn(Dist.CLIENT)
-    private void showGui() {
-        HoloGui gui = HoloGui.getInstance();
+		Minecraft.getInstance().setScreen(gui);
+		gui.onShow();
+	}
 
-        Minecraft.getInstance().setScreen(gui);
-        gui.onShow();
-    }
+	@Override
+	public GuiModuleOffsets getMajorGuiOffsets() {
+		return majorOffsets;
+	}
 
-    @Override
-    public GuiModuleOffsets getMajorGuiOffsets() {
-        return majorOffsets;
-    }
-
-    public double getCooldownBase(ItemStack itemStack) {
-        return Math.max(0, getAttributeValue(itemStack, TetraAttributes.abilityCooldown.get()));
-    }
-
-    public static ItemStack findHolosphere(Player player) {
-        return Stream.of(
-                player.getInventory().offhand.stream(),
-                player.getInventory().items.stream(),
-                ToolbeltHelper.getToolbeltItems(player).stream())
-                .flatMap(Function.identity())
-                .filter(stack -> stack.getItem() instanceof ModularHolosphereItem)
-                .findFirst()
-                .orElse(ItemStack.EMPTY);
-    }
+	public double getCooldownBase(ItemStack itemStack) {
+		return Math.max(0, getAttributeValue(itemStack, TetraAttributes.abilityCooldown.get()));
+	}
 }

@@ -10,56 +10,55 @@ import se.mickelus.tetra.module.data.MaterialData;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.function.Consumer;
+
 @ParametersAreNonnullByDefault
 public class HoloMaterialItemGui extends GuiClickable {
-    protected GuiTexture backdrop;
+	protected GuiTexture backdrop;
 
-    protected MaterialData material;
-    protected Consumer<MaterialData> onHover;
-    protected Consumer<MaterialData> onBlur;
+	protected MaterialData material;
+	protected Consumer<MaterialData> onHover;
+	protected Consumer<MaterialData> onBlur;
+	protected boolean isMuted = false;
+	GuiItemRolling icon;
 
-    GuiItemRolling icon;
+	public HoloMaterialItemGui(int x, int y, MaterialData material,
+							   Consumer<MaterialData> onHover, Consumer<MaterialData> onBlur, Consumer<MaterialData> onSelect) {
+		super(x, y, 16, 16, () -> onSelect.accept(material));
 
-    protected boolean isMuted = false;
+		this.material = material;
+		this.onHover = onHover;
+		this.onBlur = onBlur;
 
-    public HoloMaterialItemGui(int x, int y, MaterialData material,
-            Consumer<MaterialData> onHover, Consumer<MaterialData> onBlur, Consumer<MaterialData> onSelect) {
-        super(x, y, 16, 16, () -> onSelect.accept(material));
+		backdrop = new GuiTexture(0, 0, 16, 16, 52, 16, GuiTextures.workbench);
+		addChild(backdrop);
 
-        this.material = material;
-        this.onHover = onHover;
-        this.onBlur = onBlur;
+		icon = new GuiItemRolling(0, 0)
+			.setTooltip(false)
+			.setCountVisibility(GuiItem.CountMode.never)
+			.setItems(material.material.getApplicableItemStacks());
+		addChild(icon);
+	}
 
-        backdrop = new GuiTexture(0, 0, 16, 16, 52, 16, GuiTextures.workbench);
-        addChild(backdrop);
+	public void updateSelection(MaterialData material) {
+		isMuted = material != null && !this.material.equals(material);
+		backdrop.setColor(isMuted ? GuiColors.muted : GuiColors.normal);
+	}
 
-        icon = new GuiItemRolling(0, 0)
-                .setTooltip(false)
-                .setCountVisibility(GuiItem.CountMode.never)
-                .setItems(material.material.getApplicableItemStacks());
-        addChild(icon);
-    }
+	@Override
+	protected void onFocus() {
+		super.onFocus();
 
-    public void updateSelection(MaterialData material) {
-        isMuted = material != null && !this.material.equals(material);
-        backdrop.setColor(isMuted ? GuiColors.muted : GuiColors.normal);
-    }
+		onHover.accept(material);
 
-    @Override
-    protected void onFocus() {
-        super.onFocus();
+		backdrop.setColor(GuiColors.hover);
+	}
 
-        onHover.accept(material);
+	@Override
+	protected void onBlur() {
+		super.onBlur();
 
-        backdrop.setColor(GuiColors.hover);
-    }
+		onBlur.accept(material);
 
-    @Override
-    protected void onBlur() {
-        super.onBlur();
-
-        onBlur.accept(material);
-
-        backdrop.setColor(isMuted ? GuiColors.muted : GuiColors.normal);
-    }
+		backdrop.setColor(isMuted ? GuiColors.muted : GuiColors.normal);
+	}
 }

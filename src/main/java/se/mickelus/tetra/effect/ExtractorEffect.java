@@ -27,98 +27,99 @@ import se.mickelus.tetra.util.RotationHelper;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Optional;
+
 @ParametersAreNonnullByDefault
 public class ExtractorEffect {
-    public static void breakBlocks(ItemModularHandheld item, ItemStack itemStack, int effectLevel, ServerLevel world, BlockState state, BlockPos pos, LivingEntity entity) {
-        Player player = CastOptional.cast(entity, Player.class).orElse(null);
+	public static void breakBlocks(ItemModularHandheld item, ItemStack itemStack, int effectLevel, ServerLevel world, BlockState state, BlockPos pos, LivingEntity entity) {
+		Player player = CastOptional.cast(entity, Player.class).orElse(null);
 
-        if (effectLevel > 0) {
-            Vec3 entityPosition = entity.getEyePosition(0);
-            double lookDistance = Optional.ofNullable(entity.getAttribute(ForgeMod.REACH_DISTANCE.get()))
-                    .map(AttributeInstance::getValue)
-                    .orElse(5d);
+		if (effectLevel > 0) {
+			Vec3 entityPosition = entity.getEyePosition(0);
+			double lookDistance = Optional.ofNullable(entity.getAttribute(ForgeMod.REACH_DISTANCE.get()))
+				.map(AttributeInstance::getValue)
+				.orElse(5d);
 
-            Vec3 lookingPosition = entity.getLookAngle().scale(lookDistance).add(entityPosition);
-            BlockHitResult rayTrace = world.clip(new ClipContext(entityPosition, lookingPosition,
-                    ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, entity));
+			Vec3 lookingPosition = entity.getLookAngle().scale(lookDistance).add(entityPosition);
+			BlockHitResult rayTrace = world.clip(new ClipContext(entityPosition, lookingPosition,
+				ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, entity));
 
-            Direction direction = rayTrace.getType() == HitResult.Type.BLOCK
-                    ? rayTrace.getDirection().getOpposite()
-                    : Direction.orderedByNearest(entity)[0];
+			Direction direction = rayTrace.getType() == HitResult.Type.BLOCK
+				? rayTrace.getDirection().getOpposite()
+				: Direction.orderedByNearest(entity)[0];
 
-            float refHardness = state.getDestroySpeed(world, pos);
-            ToolAction refTool = ItemModularHandheld.getEffectiveTool(state);
+			float refHardness = state.getDestroySpeed(world, pos);
+			ToolAction refTool = ItemModularHandheld.getEffectiveTool(state);
 
-            double critMultiplier = CritEffect.rollMultiplier(entity.getRandom(), item, itemStack);
-            if (critMultiplier != 1) {
-                effectLevel *= critMultiplier;
-                world.sendParticles(ParticleTypes.ENCHANTED_HIT, pos.getX() + .5f, pos.getY() + .5f, pos.getZ() + .5f, 15, 0.2D, 0.2D, 0.2D, 0.0D);
-            }
-
-
-            if (refTool != null && item.getToolLevel(itemStack, refTool) > 0) {
-                breakRecursive(world, player, item, itemStack, direction, pos, refHardness, refTool, effectLevel);
-                item.applyDamage(effectLevel, itemStack, entity);
-                item.tickProgression(entity, itemStack, Mth.ceil(effectLevel / 2d));
-            }
-        }
-    }
-
-    private static void breakRecursive(Level world, Player player, ItemModularHandheld item, ItemStack itemStack, Direction direction, BlockPos pos, float refHardness, ToolAction refTool, int remaining) {
-        if (remaining > 0) {
-            ServerScheduler.schedule(2, () -> breakInner(world, player, item, itemStack, direction, pos, refHardness, refTool));
-        }
-        if (remaining > 1) {
-            ServerScheduler.schedule(4, () -> breakOuter(world, player, item, itemStack, direction, pos, refHardness, refTool));
-        }
-        if (remaining > 2) {
-            ServerScheduler.schedule(6, () -> {
-                BlockPos offsetPos = pos.relative(direction);
-                if (breakBlock(world, player, item, itemStack, offsetPos, refHardness, refTool)) {
-                    breakRecursive(world, player, item, itemStack, direction, offsetPos, refHardness, refTool, remaining - 2);
-                }
-            });
-        }
-    }
-
-    private static void breakInner(Level world, Player player, ItemModularHandheld item, ItemStack itemStack, Direction direction, BlockPos pos, float refHardness, ToolAction refTool) {
-        Vec3i axis1 = RotationHelper.shiftAxis(direction.getNormal());
-        Vec3i axis2 = RotationHelper.shiftAxis(axis1);
-        breakBlock(world, player, item, itemStack, pos.offset(axis1), refHardness, refTool);
-        breakBlock(world, player, item, itemStack, pos.subtract(axis1), refHardness, refTool);
-        breakBlock(world, player, item, itemStack, pos.offset(axis2), refHardness, refTool);
-        breakBlock(world, player, item, itemStack, pos.subtract(axis2), refHardness, refTool);
-    }
-
-    private static void breakOuter(Level world, Player player, ItemModularHandheld item, ItemStack itemStack, Direction direction, BlockPos pos, float refHardness, ToolAction refTool) {
-        Vec3i axis1 = RotationHelper.shiftAxis(direction.getNormal());
-        Vec3i axis2 = RotationHelper.shiftAxis(axis1);
-        breakBlock(world, player, item, itemStack, pos.offset(axis1).offset(axis2), refHardness, refTool);
-        breakBlock(world, player, item, itemStack, pos.subtract(axis1).subtract(axis2), refHardness, refTool);
-        breakBlock(world, player, item, itemStack, pos.offset(axis1).subtract(axis2), refHardness, refTool);
-        breakBlock(world, player, item, itemStack, pos.subtract(axis1).offset(axis2), refHardness, refTool);
-    }
+			double critMultiplier = CritEffect.rollMultiplier(entity.getRandom(), item, itemStack);
+			if (critMultiplier != 1) {
+				effectLevel *= critMultiplier;
+				world.sendParticles(ParticleTypes.ENCHANTED_HIT, pos.getX() + .5f, pos.getY() + .5f, pos.getZ() + .5f, 15, 0.2D, 0.2D, 0.2D, 0.0D);
+			}
 
 
-    private static boolean breakBlock(Level world, Player player, ItemModularHandheld item, ItemStack itemStack, BlockPos pos, float refHardness, ToolAction refTool) {
-        BlockState offsetState = world.getBlockState(pos);
-        ToolAction effectiveTool = ItemModularHandheld.getEffectiveTool(offsetState);
+			if (refTool != null && item.getToolLevel(itemStack, refTool) > 0) {
+				breakRecursive(world, player, item, itemStack, direction, pos, refHardness, refTool, effectLevel);
+				item.applyDamage(effectLevel, itemStack, entity);
+				item.tickProgression(entity, itemStack, Mth.ceil(effectLevel / 2d));
+			}
+		}
+	}
 
-        float blockHardness = offsetState.getDestroySpeed(world, pos);
-        int toolLevel = itemStack.getItem().getHarvestLevel(itemStack, effectiveTool, player, offsetState);
-        if (((toolLevel >= 0 && toolLevel >= offsetState.getBlock().getHarvestLevel(offsetState)) || itemStack.isCorrectToolForDrops(offsetState))
-                && blockHardness != -1
-                && blockHardness <= refHardness
-                && ItemModularHandheld.isToolEffective(refTool, offsetState)) {
-            if (EffectHelper.breakBlock(world, player, itemStack, pos, offsetState, true)) {
-                EffectHelper.sendEventToPlayer((ServerPlayer) player, 2001, pos, Block.getId(offsetState));
+	private static void breakRecursive(Level world, Player player, ItemModularHandheld item, ItemStack itemStack, Direction direction, BlockPos pos, float refHardness, ToolAction refTool, int remaining) {
+		if (remaining > 0) {
+			ServerScheduler.schedule(2, () -> breakInner(world, player, item, itemStack, direction, pos, refHardness, refTool));
+		}
+		if (remaining > 1) {
+			ServerScheduler.schedule(4, () -> breakOuter(world, player, item, itemStack, direction, pos, refHardness, refTool));
+		}
+		if (remaining > 2) {
+			ServerScheduler.schedule(6, () -> {
+				BlockPos offsetPos = pos.relative(direction);
+				if (breakBlock(world, player, item, itemStack, offsetPos, refHardness, refTool)) {
+					breakRecursive(world, player, item, itemStack, direction, offsetPos, refHardness, refTool, remaining - 2);
+				}
+			});
+		}
+	}
 
-                item.applyBreakEffects(itemStack, world, offsetState, pos, player);
+	private static void breakInner(Level world, Player player, ItemModularHandheld item, ItemStack itemStack, Direction direction, BlockPos pos, float refHardness, ToolAction refTool) {
+		Vec3i axis1 = RotationHelper.shiftAxis(direction.getNormal());
+		Vec3i axis2 = RotationHelper.shiftAxis(axis1);
+		breakBlock(world, player, item, itemStack, pos.offset(axis1), refHardness, refTool);
+		breakBlock(world, player, item, itemStack, pos.subtract(axis1), refHardness, refTool);
+		breakBlock(world, player, item, itemStack, pos.offset(axis2), refHardness, refTool);
+		breakBlock(world, player, item, itemStack, pos.subtract(axis2), refHardness, refTool);
+	}
 
-                return true;
-            }
-        }
+	private static void breakOuter(Level world, Player player, ItemModularHandheld item, ItemStack itemStack, Direction direction, BlockPos pos, float refHardness, ToolAction refTool) {
+		Vec3i axis1 = RotationHelper.shiftAxis(direction.getNormal());
+		Vec3i axis2 = RotationHelper.shiftAxis(axis1);
+		breakBlock(world, player, item, itemStack, pos.offset(axis1).offset(axis2), refHardness, refTool);
+		breakBlock(world, player, item, itemStack, pos.subtract(axis1).subtract(axis2), refHardness, refTool);
+		breakBlock(world, player, item, itemStack, pos.offset(axis1).subtract(axis2), refHardness, refTool);
+		breakBlock(world, player, item, itemStack, pos.subtract(axis1).offset(axis2), refHardness, refTool);
+	}
 
-        return false;
-    }
+
+	private static boolean breakBlock(Level world, Player player, ItemModularHandheld item, ItemStack itemStack, BlockPos pos, float refHardness, ToolAction refTool) {
+		BlockState offsetState = world.getBlockState(pos);
+		ToolAction effectiveTool = ItemModularHandheld.getEffectiveTool(offsetState);
+
+		float blockHardness = offsetState.getDestroySpeed(world, pos);
+		int toolLevel = itemStack.getItem().getHarvestLevel(itemStack, effectiveTool, player, offsetState);
+		if (((toolLevel >= 0 && toolLevel >= offsetState.getBlock().getHarvestLevel(offsetState)) || itemStack.isCorrectToolForDrops(offsetState))
+			&& blockHardness != -1
+			&& blockHardness <= refHardness
+			&& ItemModularHandheld.isToolEffective(refTool, offsetState)) {
+			if (EffectHelper.breakBlock(world, player, itemStack, pos, offsetState, true)) {
+				EffectHelper.sendEventToPlayer((ServerPlayer) player, 2001, pos, Block.getId(offsetState));
+
+				item.applyBreakEffects(itemStack, world, offsetState, pos, player);
+
+				return true;
+			}
+		}
+
+		return false;
+	}
 }

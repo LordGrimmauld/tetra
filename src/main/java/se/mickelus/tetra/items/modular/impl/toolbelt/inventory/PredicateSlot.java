@@ -7,19 +7,20 @@ import net.minecraft.world.item.ItemStack;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.function.Predicate;
+
 @ParametersAreNonnullByDefault
 public class PredicateSlot extends Slot {
 
-    protected Predicate<ItemStack> predicate;
+	protected Predicate<ItemStack> predicate;
 
-    public PredicateSlot(Container inventory, int index, int x, int y, Predicate<ItemStack> predicate) {
-        super(inventory, index, x, y);
+	public PredicateSlot(Container inventory, int index, int x, int y, Predicate<ItemStack> predicate) {
+		super(inventory, index, x, y);
 
-        this.predicate = predicate;
-    }
+		this.predicate = predicate;
+	}
 
-    @Override
-    public boolean mayPlace(@Nullable ItemStack itemStack) {
-        return itemStack != null && predicate.test(itemStack);
-    }
+	@Override
+	public boolean mayPlace(@Nullable ItemStack itemStack) {
+		return itemStack != null && predicate.test(itemStack);
+	}
 }

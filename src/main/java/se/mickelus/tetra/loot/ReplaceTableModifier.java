@@ -12,42 +12,43 @@ import net.minecraftforge.common.loot.LootModifier;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class ReplaceTableModifier extends LootModifier {
-    ResourceLocation table;
+	ResourceLocation table;
 
-    protected ReplaceTableModifier(LootItemCondition[] conditions, ResourceLocation table) {
-        super(conditions);
+	protected ReplaceTableModifier(LootItemCondition[] conditions, ResourceLocation table) {
+		super(conditions);
 
-        this.table = table;
-    }
+		this.table = table;
+	}
 
-    @Nonnull
-    @Override
-    protected List<ItemStack> doApply(List<ItemStack> generatedLoot, LootContext context) {
-        LootContext newContext = new LootContext.Builder(context.getLevel())
-                .withRandom(context.getRandom())
-                .withLuck(context.getLuck())
-                .create(LootContextParamSets.EMPTY);
-        newContext.setQueriedLootTableId(table);
+	@Nonnull
+	@Override
+	protected List<ItemStack> doApply(List<ItemStack> generatedLoot, LootContext context) {
+		LootContext newContext = new LootContext.Builder(context.getLevel())
+			.withRandom(context.getRandom())
+			.withLuck(context.getLuck())
+			.create(LootContextParamSets.EMPTY);
+		newContext.setQueriedLootTableId(table);
 
-        return context.getLevel()
-                .getServer()
-                .getLootTables()
-                .get(table)
-                .getRandomItems(newContext);
-    }
+		return context.getLevel()
+			.getServer()
+			.getLootTables()
+			.get(table)
+			.getRandomItems(newContext);
+	}
 
-    public static class Serializer extends GlobalLootModifierSerializer<ReplaceTableModifier> {
-        public ReplaceTableModifier read(ResourceLocation location, JsonObject object, LootItemCondition[] conditions) {
-            return new ReplaceTableModifier(conditions, new ResourceLocation(object.get("table").getAsString()));
-        }
+	public static class Serializer extends GlobalLootModifierSerializer<ReplaceTableModifier> {
+		public ReplaceTableModifier read(ResourceLocation location, JsonObject object, LootItemCondition[] conditions) {
+			return new ReplaceTableModifier(conditions, new ResourceLocation(object.get("table").getAsString()));
+		}
 
-        public JsonObject write(ReplaceTableModifier instance) {
-            JsonObject result = makeConditions(instance.conditions);
-            result.addProperty("table", instance.table.toString());
+		public JsonObject write(ReplaceTableModifier instance) {
+			JsonObject result = makeConditions(instance.conditions);
+			result.addProperty("table", instance.table.toString());
 
-            return result;
-        }
-    }
+			return result;
+		}
+	}
 }

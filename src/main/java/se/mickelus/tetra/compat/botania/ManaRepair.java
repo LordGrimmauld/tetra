@@ -15,22 +15,23 @@ import se.mickelus.tetra.gui.stats.getter.TooltipGetterInteger;
 import se.mickelus.tetra.items.modular.impl.holo.gui.craft.HoloStatsGui;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class ManaRepair {
-    public static ItemEffect effect = ItemEffect.get("manaRepair");
+	public static ItemEffect effect = ItemEffect.get("manaRepair");
 
-    @OnlyIn(Dist.CLIENT)
-    public static void clientInit() {
-        IStatGetter statGetter = new ManaRepairStatGetter();
-        GuiStatBar statBar = new GuiStatBar(0, 0, StatsHelper.barLength, "tetra.stats.manaRepair",
-                0, 400, false, false, true, statGetter, LabelGetterBasic.integerLabelInverted,
-                new TooltipGetterInteger("tetra.stats.manaRepair.tooltip", statGetter));
+	@OnlyIn(Dist.CLIENT)
+	public static void clientInit() {
+		IStatGetter statGetter = new ManaRepairStatGetter();
+		GuiStatBar statBar = new GuiStatBar(0, 0, StatsHelper.barLength, "tetra.stats.manaRepair",
+			0, 400, false, false, true, statGetter, LabelGetterBasic.integerLabelInverted,
+			new TooltipGetterInteger("tetra.stats.manaRepair.tooltip", statGetter));
 
-        WorkbenchStatsGui.addBar(statBar);
-        HoloStatsGui.addBar(statBar);
-    }
+		WorkbenchStatsGui.addBar(statBar);
+		HoloStatsGui.addBar(statBar);
+	}
 
-    public static void itemInventoryTick(ItemStack itemStack, Level world, Entity entity) {
+	public static void itemInventoryTick(ItemStack itemStack, Level world, Entity entity) {
         /*
         if (!world.isClientSide && world.getGameTime() % 20 == 0 && BotaniaCompat.isLoaded) {
             int manaRepairLevel = EffectHelper.getEffectLevel(itemStack, effect);
@@ -41,5 +42,5 @@ public class ManaRepair {
             }
         }
          */
-    }
+	}
 }

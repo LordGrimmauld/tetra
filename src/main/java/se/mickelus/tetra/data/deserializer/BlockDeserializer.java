@@ -10,18 +10,19 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.lang.reflect.Type;
+
 @ParametersAreNonnullByDefault
 public class BlockDeserializer implements JsonDeserializer<Block> {
-    @Override
-    public Block deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-        String string = json.getAsString();
-        if (string != null) {
-            ResourceLocation resourceLocation = new ResourceLocation(string);
-            if (ForgeRegistries.BLOCKS.containsKey(resourceLocation)) {
-                return ForgeRegistries.BLOCKS.getValue(resourceLocation);
-            }
-        }
+	@Override
+	public Block deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+		String string = json.getAsString();
+		if (string != null) {
+			ResourceLocation resourceLocation = new ResourceLocation(string);
+			if (ForgeRegistries.BLOCKS.containsKey(resourceLocation)) {
+				return ForgeRegistries.BLOCKS.getValue(resourceLocation);
+			}
+		}
 
-        return null;
-    }
+		return null;
+	}
 }

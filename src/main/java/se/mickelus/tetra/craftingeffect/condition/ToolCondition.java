@@ -11,18 +11,19 @@ import se.mickelus.tetra.module.data.ToolData;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Map;
+
 @ParametersAreNonnullByDefault
 public class ToolCondition implements CraftingEffectCondition {
-    ToolData tools;
+	ToolData tools;
 
-    @Override
-    public boolean test(ResourceLocation[] unlocks, ItemStack upgradedStack, String slot, boolean isReplacing, Player player,
-            ItemStack[] materials, Map<ToolAction, Integer> tools, Level world, BlockPos pos, BlockState blockState) {
-        for (Map.Entry<ToolAction, Float> req: this.tools.levelMap.entrySet()) {
-            if (!tools.containsKey(req.getKey()) || tools.get(req.getKey()) < req.getValue()) {
-                return false;
-            }
-        }
-        return true;
-    }
+	@Override
+	public boolean test(ResourceLocation[] unlocks, ItemStack upgradedStack, String slot, boolean isReplacing, Player player,
+						ItemStack[] materials, Map<ToolAction, Integer> tools, Level world, BlockPos pos, BlockState blockState) {
+		for (Map.Entry<ToolAction, Float> req : this.tools.levelMap.entrySet()) {
+			if (!tools.containsKey(req.getKey()) || tools.get(req.getKey()) < req.getValue()) {
+				return false;
+			}
+		}
+		return true;
+	}
 }

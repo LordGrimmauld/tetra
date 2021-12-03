@@ -12,110 +12,107 @@ import se.mickelus.tetra.items.modular.impl.toolbelt.inventory.QuiverInventory;
 import se.mickelus.tetra.items.modular.impl.toolbelt.inventory.ToolbeltSlotType;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class OverlayGuiToolbelt extends GuiRoot {
 
-    private OverlayGuiQuickslotGroup quickslotGroup;
-    private OverlayGuiPotionGroup potionGroup;
-    private OverlayGuiQuiverGroup quiverGroup;
+	private final OverlayGuiQuickslotGroup quickslotGroup;
+	private final OverlayGuiPotionGroup potionGroup;
+	private final OverlayGuiQuiverGroup quiverGroup;
 
-    public OverlayGuiToolbelt(Minecraft mc) {
-        super(mc);
+	public OverlayGuiToolbelt(Minecraft mc) {
+		super(mc);
 
-        quickslotGroup = new OverlayGuiQuickslotGroup(42, 0);
-        addChild(quickslotGroup);
+		quickslotGroup = new OverlayGuiQuickslotGroup(42, 0);
+		addChild(quickslotGroup);
 
-        potionGroup = new OverlayGuiPotionGroup(0, 30);
-        addChild(potionGroup);
+		potionGroup = new OverlayGuiPotionGroup(0, 30);
+		addChild(potionGroup);
 
-        quiverGroup = new OverlayGuiQuiverGroup(-30, -30);
-        addChild(quiverGroup);
+		quiverGroup = new OverlayGuiQuiverGroup(-30, -30);
+		addChild(quiverGroup);
 
-    }
+	}
 
-    public void setInventories(ItemStack itemStack) {
-        quickslotGroup.setInventory(new QuickslotInventory(itemStack));
-        potionGroup.setInventory(new PotionsInventory(itemStack));
-        quiverGroup.setInventory(new QuiverInventory(itemStack));
-    }
+	public void setInventories(ItemStack itemStack) {
+		quickslotGroup.setInventory(new QuickslotInventory(itemStack));
+		potionGroup.setInventory(new PotionsInventory(itemStack));
+		quiverGroup.setInventory(new QuiverInventory(itemStack));
+	}
 
-    public void setVisible(boolean visible) {
-        if (visible) {
-            quickslotGroup.setVisible(true);
-            potionGroup.setVisible(true);
-            quiverGroup.setVisible(true);
-        } else {
-            quickslotGroup.setVisible(false);
-            potionGroup.setVisible(false);
-            quiverGroup.setVisible(false);
-        }
-    }
+	public void setVisible(boolean visible) {
+		if (visible) {
+			quickslotGroup.setVisible(true);
+			potionGroup.setVisible(true);
+			quiverGroup.setVisible(true);
+		} else {
+			quickslotGroup.setVisible(false);
+			potionGroup.setVisible(false);
+			quiverGroup.setVisible(false);
+		}
+	}
 
-    @Override
-    public void draw() {
-        if (isVisible()) {
-            Window window = mc.getWindow();
-            int width = window.getGuiScaledWidth();
-            int height = window.getGuiScaledHeight();
+	@Override
+	public void draw() {
+		if (isVisible()) {
+			Window window = mc.getWindow();
+			int width = window.getGuiScaledWidth();
+			int height = window.getGuiScaledHeight();
 
-            int mouseX = (int)(mc.mouseHandler.xpos() * window.getGuiScaledWidth() / window.getScreenWidth());
-            int mouseY = (int)(mc.mouseHandler.ypos() * window.getGuiScaledHeight() / window.getScreenHeight());
+			int mouseX = (int) (mc.mouseHandler.xpos() * window.getGuiScaledWidth() / window.getScreenWidth());
+			int mouseY = (int) (mc.mouseHandler.ypos() * window.getGuiScaledHeight() / window.getScreenHeight());
 
-            this.drawChildren(new PoseStack(), width / 2, height / 2, 0, 0, mouseX, mouseY, 1.0F);
-        }
-    }
+			this.drawChildren(new PoseStack(), width / 2, height / 2, 0, 0, mouseX, mouseY, 1.0F);
+		}
+	}
 
-    public ToolbeltSlotType getFocusType() {
-        if (quickslotGroup.getFocus() != -1) {
-            return ToolbeltSlotType.quickslot;
-        }
+	public ToolbeltSlotType getFocusType() {
+		if (quickslotGroup.getFocus() != -1) {
+			return ToolbeltSlotType.quickslot;
+		}
 
-        if (potionGroup.getFocus() != -1) {
-            return ToolbeltSlotType.potion;
-        }
+		if (potionGroup.getFocus() != -1) {
+			return ToolbeltSlotType.potion;
+		}
 
-        if (quiverGroup.getFocus() != -1) {
-            return ToolbeltSlotType.quiver;
-        }
+		if (quiverGroup.getFocus() != -1) {
+			return ToolbeltSlotType.quiver;
+		}
 
-        return ToolbeltSlotType.quickslot;
-    }
+		return ToolbeltSlotType.quickslot;
+	}
 
-    public int getFocusIndex() {
-        int quickslotFocus = quickslotGroup.getFocus();
-        if (quickslotFocus != -1) {
-            return quickslotFocus;
-        }
+	public int getFocusIndex() {
+		int quickslotFocus = quickslotGroup.getFocus();
+		if (quickslotFocus != -1) {
+			return quickslotFocus;
+		}
 
-        int potionFocus = potionGroup.getFocus();
-        if (potionFocus != -1) {
-            return potionFocus;
-        }
+		int potionFocus = potionGroup.getFocus();
+		if (potionFocus != -1) {
+			return potionFocus;
+		}
 
-        int quiverFocus = quiverGroup.getFocus();
-        if (quiverFocus != -1) {
-            return quiverFocus;
-        }
+		int quiverFocus = quiverGroup.getFocus();
+		return quiverFocus;
+	}
 
-        return -1;
-    }
+	public InteractionHand getFocusHand() {
+		InteractionHand quickslotHand = quickslotGroup.getHand();
+		if (quickslotHand != null) {
+			return quickslotHand;
+		}
 
-    public InteractionHand getFocusHand() {
-        InteractionHand quickslotHand = quickslotGroup.getHand();
-        if (quickslotHand != null) {
-            return quickslotHand;
-        }
+		InteractionHand potionHand = potionGroup.getHand();
+		if (potionHand != null) {
+			return potionHand;
+		}
 
-        InteractionHand potionHand = potionGroup.getHand();
-        if (potionHand != null) {
-            return potionHand;
-        }
+		InteractionHand quiverHand = quiverGroup.getHand();
+		if (quiverHand != null) {
+			return quiverHand;
+		}
 
-        InteractionHand quiverHand = quiverGroup.getHand();
-        if (quiverHand != null) {
-            return quiverHand;
-        }
-
-        return InteractionHand.OFF_HAND;
-    }
+		return InteractionHand.OFF_HAND;
+	}
 }

@@ -14,20 +14,21 @@ import se.mickelus.tetra.items.TetraItemGroup;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class GeodeItem extends TetraItem {
-    private static final String unlocalizedName = "geode";
+	private static final String unlocalizedName = "geode";
 
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static GeodeItem instance;
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static GeodeItem instance;
 
-    public GeodeItem() {
-        super(new Properties().tab(TetraItemGroup.instance));
-        setRegistryName(unlocalizedName);
-    }
+	public GeodeItem() {
+		super(new Properties().tab(TetraItemGroup.instance));
+		setRegistryName(unlocalizedName);
+	}
 
-    @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-        tooltip.add(new TranslatableComponent("item.tetra.geode.tooltip").withStyle(ChatFormatting.GRAY));
-    }
+	@Override
+	public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
+		tooltip.add(new TranslatableComponent("item.tetra.geode.tooltip").withStyle(ChatFormatting.GRAY));
+	}
 }

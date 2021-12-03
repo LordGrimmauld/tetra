@@ -10,43 +10,44 @@ import se.mickelus.tetra.items.modular.IModularItem;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class HoloMaterialImprovementGui extends GuiElement {
-    protected GuiTexture backdrop;
+	protected GuiTexture backdrop;
 
-    protected GuiString label;
-    protected GuiString value;
+	protected GuiString label;
+	protected GuiString value;
 
-    List<String> tooltip;
+	List<String> tooltip;
 
-    public HoloMaterialImprovementGui(int x, int y, String key, boolean current, boolean preview) {
-        super(x, y, 29, 29);
+	public HoloMaterialImprovementGui(int x, int y, String key, boolean current, boolean preview) {
+		super(x, y, 29, 29);
 
-        String improvementName = IModularItem.getImprovementName(key, 0);
+		String improvementName = IModularItem.getImprovementName(key, 0);
 
-        tooltip = ImmutableList.of(I18n.get("tetra.holo.craft.materials.stat_modifier.tooltip", improvementName),
-                ChatFormatting.DARK_GRAY + IModularItem.getImprovementDescription(key));
+		tooltip = ImmutableList.of(I18n.get("tetra.holo.craft.materials.stat_modifier.tooltip", improvementName),
+			ChatFormatting.DARK_GRAY + IModularItem.getImprovementDescription(key));
 
-        backdrop = new GuiTexture(0, 0, 29, 29, 97, 0, GuiTextures.workbench);
-        backdrop.setColor(0x222222);
-        addChild(backdrop);
+		backdrop = new GuiTexture(0, 0, 29, 29, 97, 0, GuiTextures.workbench);
+		backdrop.setColor(0x222222);
+		addChild(backdrop);
 
-        value = new GuiStringOutline(0, 8, improvementName);
-        value.setAttachment(GuiAttachment.topCenter);
-        addChild(value);
-        
-        if (current != preview) {
-            value.setColor(preview ? GuiColors.add : GuiColors.remove);
-        }
+		value = new GuiStringOutline(0, 8, improvementName);
+		value.setAttachment(GuiAttachment.topCenter);
+		addChild(value);
 
-        label = new GuiStringOutline(0, -3, I18n.get("tetra.holo.craft.materials.stat_modifier"));
-        label.setColor(GuiColors.muted);
-        label.setAttachment(GuiAttachment.bottomCenter);
-        addChild(label);
-    }
+		if (current != preview) {
+			value.setColor(preview ? GuiColors.add : GuiColors.remove);
+		}
 
-    @Override
-    public List<String> getTooltipLines() {
-        return hasFocus() ? tooltip : null;
-    }
+		label = new GuiStringOutline(0, -3, I18n.get("tetra.holo.craft.materials.stat_modifier"));
+		label.setColor(GuiColors.muted);
+		label.setAttachment(GuiAttachment.bottomCenter);
+		addChild(label);
+	}
+
+	@Override
+	public List<String> getTooltipLines() {
+		return hasFocus() ? tooltip : null;
+	}
 }

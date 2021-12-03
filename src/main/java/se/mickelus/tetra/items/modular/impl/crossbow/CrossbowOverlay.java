@@ -8,24 +8,25 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import se.mickelus.tetra.items.modular.impl.bow.GuiRangedProgress;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class CrossbowOverlay {
-    public static CrossbowOverlay instance;
+	public static CrossbowOverlay instance;
 
-    private final Minecraft mc;
+	private final Minecraft mc;
 
-    private GuiRangedProgress gui;
+	private final GuiRangedProgress gui;
 
-    public CrossbowOverlay(Minecraft mc) {
-        this.mc = mc;
+	public CrossbowOverlay(Minecraft mc) {
+		this.mc = mc;
 
-        gui = new GuiRangedProgress(mc);
+		gui = new GuiRangedProgress(mc);
 
-        instance = this;
-    }
+		instance = this;
+	}
 
-    @SubscribeEvent(priority = EventPriority.NORMAL)
-    public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
+	@SubscribeEvent(priority = EventPriority.NORMAL)
+	public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
         /*
         if (event.getType() != RenderGameOverlayEvent.ElementType.CROSSHAIRS) {
             return;
@@ -33,15 +34,15 @@ public class CrossbowOverlay {
         FIXME: still needed? if so, search for ported way
          */
 
-        ItemStack activeStack = mc.player.getUseItem();
+		ItemStack activeStack = mc.player.getUseItem();
 
-        if (activeStack.getItem() instanceof ModularCrossbowItem) {
-            ModularCrossbowItem item = (ModularCrossbowItem) activeStack.getItem();
-            gui.setProgress(item.getProgress(activeStack, mc.player), 0);
-        } else {
-            gui.setProgress(0, 0);
-        }
+		if (activeStack.getItem() instanceof ModularCrossbowItem) {
+			ModularCrossbowItem item = (ModularCrossbowItem) activeStack.getItem();
+			gui.setProgress(item.getProgress(activeStack, mc.player), 0);
+		} else {
+			gui.setProgress(0, 0);
+		}
 
-        gui.draw();
-    }
+		gui.draw();
+	}
 }

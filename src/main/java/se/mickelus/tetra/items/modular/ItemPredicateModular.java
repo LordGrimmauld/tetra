@@ -11,183 +11,182 @@ import se.mickelus.tetra.util.CastOptional;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.*;
+
 @ParametersAreNonnullByDefault
 public class ItemPredicateModular extends ItemPredicate {
 
-    private String[][] modules = new String[0][0];
-    private Map<String, String> variants = new HashMap<>();
-    private Map<String, Integer> improvements = new HashMap<>();
+	private String[][] modules = new String[0][0];
+	private final Map<String, String> variants = new HashMap<>();
+	private final Map<String, Integer> improvements = new HashMap<>();
 
-    public ItemPredicateModular(String[][] modules) {
-        this.modules = modules;
-    }
+	public ItemPredicateModular(String[][] modules) {
+		this.modules = modules;
+	}
 
-    public ItemPredicateModular(JsonObject jsonObject) {
-        if (jsonObject.has("modules")) {
-            JsonArray outerModules = jsonObject.getAsJsonArray("modules");
-            modules = new String[outerModules.size()][];
-            for (int i = 0; i < outerModules.size(); i++) {
-                JsonArray innerModules = outerModules.get(i).getAsJsonArray();
-                modules[i] = new String[innerModules.size()];
+	public ItemPredicateModular(JsonObject jsonObject) {
+		if (jsonObject.has("modules")) {
+			JsonArray outerModules = jsonObject.getAsJsonArray("modules");
+			modules = new String[outerModules.size()][];
+			for (int i = 0; i < outerModules.size(); i++) {
+				JsonArray innerModules = outerModules.get(i).getAsJsonArray();
+				modules[i] = new String[innerModules.size()];
 
-                for (int j = 0; j < innerModules.size(); j++) {
-                    modules[i][j] = innerModules.get(j).getAsString();
-                }
-            }
-        }
-        if (jsonObject.has("variants")) {
-            jsonObject.getAsJsonObject("variants").entrySet().forEach(entry -> variants.put(entry.getKey(), entry.getValue().getAsString()));
-        }
+				for (int j = 0; j < innerModules.size(); j++) {
+					modules[i][j] = innerModules.get(j).getAsString();
+				}
+			}
+		}
+		if (jsonObject.has("variants")) {
+			jsonObject.getAsJsonObject("variants").entrySet().forEach(entry -> variants.put(entry.getKey(), entry.getValue().getAsString()));
+		}
 
-        if (jsonObject.has("improvements")) {
-            jsonObject.getAsJsonObject("improvements").entrySet().forEach(entry -> improvements.put(entry.getKey(), entry.getValue().getAsInt()));
-        }
-    }
+		if (jsonObject.has("improvements")) {
+			jsonObject.getAsJsonObject("improvements").entrySet().forEach(entry -> improvements.put(entry.getKey(), entry.getValue().getAsInt()));
+		}
+	}
 
-    public boolean test(ItemStack itemStack, String slot) {
-        if (!itemStack.isEmpty() && itemStack.getItem() instanceof IModularItem) {
-            if (modules.length > 0 && !hasAnyModule(itemStack, slot)) {
-                return false;
-            }
+	public boolean test(ItemStack itemStack, String slot) {
+		if (!itemStack.isEmpty() && itemStack.getItem() instanceof IModularItem) {
+			if (modules.length > 0 && !hasAnyModule(itemStack, slot)) {
+				return false;
+			}
 
-            if (!variants.isEmpty() && !hasAnyVariant(itemStack, slot)) {
-                return false;
-            }
+			if (!variants.isEmpty() && !hasAnyVariant(itemStack, slot)) {
+				return false;
+			}
 
-            if (!improvements.isEmpty() && !checkImprovements(itemStack, slot)) {
-                return false;
-            }
-        }
+			return improvements.isEmpty() || checkImprovements(itemStack, slot);
+		}
 
-        return true;
-    }
+		return true;
+	}
 
-    private boolean hasAnyModule(ItemStack itemStack, String slot) {
-        IModularItem item = (IModularItem) itemStack.getItem();
+	private boolean hasAnyModule(ItemStack itemStack, String slot) {
+		IModularItem item = (IModularItem) itemStack.getItem();
 
-        // if it's a slot specific check and there are single module requirement, assume the requirement is to be matched against the checked slot
-        if (slot != null) {
-            ItemModule module = item.getModuleFromSlot(itemStack, slot);
-            if (module != null) {
-                for (String[] outer : modules) {
-                    if (outer.length == 1 && outer[0].equals(module.getKey())) {
-                        return true;
-                    }
-                }
-            }
-        } else {
-            Collection<ItemModule> itemModules = item.getAllModules(itemStack);
-            for (String[] outer : modules) {
-                for (int j = 0; j < outer.length; j++) {
-                    int matchCount = 0;
+		// if it's a slot specific check and there are single module requirement, assume the requirement is to be matched against the checked slot
+		if (slot != null) {
+			ItemModule module = item.getModuleFromSlot(itemStack, slot);
+			if (module != null) {
+				for (String[] outer : modules) {
+					if (outer.length == 1 && outer[0].equals(module.getKey())) {
+						return true;
+					}
+				}
+			}
+		} else {
+			Collection<ItemModule> itemModules = item.getAllModules(itemStack);
+			for (String[] outer : modules) {
+				for (int j = 0; j < outer.length; j++) {
+					int matchCount = 0;
 
-                    for (ItemModule module : itemModules) {
-                        if (module.getKey().equals(outer[j])) {
-                            matchCount++;
-                            break;
-                        }
-                    }
+					for (ItemModule module : itemModules) {
+						if (module.getKey().equals(outer[j])) {
+							matchCount++;
+							break;
+						}
+					}
 
-                    if (matchCount == outer.length) {
-                        return true;
-                    }
-                }
-            }
-        }
+					if (matchCount == outer.length) {
+						return true;
+					}
+				}
+			}
+		}
 
-        return false;
-    }
+		return false;
+	}
 
-    private boolean hasAnyVariant(ItemStack itemStack, String slot) {
-        IModularItem item = (IModularItem) itemStack.getItem();
+	private boolean hasAnyVariant(ItemStack itemStack, String slot) {
+		IModularItem item = (IModularItem) itemStack.getItem();
 
-        for (Map.Entry<String, String> variant : variants.entrySet()) {
-            String currentSlot = variant.getValue();
-            if (slot != null && "#slot".equals(currentSlot)) {
-                currentSlot = slot;
-            }
+		for (Map.Entry<String, String> variant : variants.entrySet()) {
+			String currentSlot = variant.getValue();
+			if (slot != null && "#slot".equals(currentSlot)) {
+				currentSlot = slot;
+			}
 
-            ItemModule module = item.getModuleFromSlot(itemStack, currentSlot);
-            if (module != null && variant.getKey().equals(module.getVariantData(itemStack).key)) {
-                return true;
-            }
-        }
+			ItemModule module = item.getModuleFromSlot(itemStack, currentSlot);
+			if (module != null && variant.getKey().equals(module.getVariantData(itemStack).key)) {
+				return true;
+			}
+		}
 
-        return false;
-    }
+		return false;
+	}
 
 
-    private boolean checkImprovements(ItemStack itemStack, String slot) {
-        IModularItem item = (IModularItem) itemStack.getItem();
+	private boolean checkImprovements(ItemStack itemStack, String slot) {
+		IModularItem item = (IModularItem) itemStack.getItem();
 
-        if (slot != null) {
-            return CastOptional.cast(item.getModuleFromSlot(itemStack, slot), ItemModuleMajor.class)
-                    .map(module -> {
-                        if (hasDisallowedImprovements(module, itemStack)) {
-                            return false;
-                        }
+		if (slot != null) {
+			return CastOptional.cast(item.getModuleFromSlot(itemStack, slot), ItemModuleMajor.class)
+				.map(module -> {
+					if (hasDisallowedImprovements(module, itemStack)) {
+						return false;
+					}
 
-                        if (improvements.entrySet().stream().allMatch(entry -> entry.getKey().startsWith("!"))) {
-                            return true;
-                        }
+					if (improvements.entrySet().stream().allMatch(entry -> entry.getKey().startsWith("!"))) {
+						return true;
+					}
 
-                        return hasImprovements(module, itemStack);
-                    })
-                    .orElse(false);
-        } else {
-            boolean hasDisallowed = Arrays.stream(item.getMajorModules(itemStack))
-                    .filter(Objects::nonNull)
-                    .anyMatch(module -> hasDisallowedImprovements(module, itemStack));
+					return hasImprovements(module, itemStack);
+				})
+				.orElse(false);
+		} else {
+			boolean hasDisallowed = Arrays.stream(item.getMajorModules(itemStack))
+				.filter(Objects::nonNull)
+				.anyMatch(module -> hasDisallowedImprovements(module, itemStack));
 
-            if (hasDisallowed) {
-                return false;
-            }
+			if (hasDisallowed) {
+				return false;
+			}
 
-            // if the improvement predicate set only contains disallowed rules we can return true here
-            if (improvements.entrySet().stream().allMatch(entry -> entry.getKey().startsWith("!"))) {
-                return true;
-            }
+			// if the improvement predicate set only contains disallowed rules we can return true here
+			if (improvements.entrySet().stream().allMatch(entry -> entry.getKey().startsWith("!"))) {
+				return true;
+			}
 
-            return Arrays.stream(item.getMajorModules(itemStack))
-                    .filter(Objects::nonNull)
-                    .anyMatch(module -> hasImprovements(module, itemStack));
-        }
-    }
+			return Arrays.stream(item.getMajorModules(itemStack))
+				.filter(Objects::nonNull)
+				.anyMatch(module -> hasImprovements(module, itemStack));
+		}
+	}
 
-    private boolean hasDisallowedImprovements(ItemModuleMajor module, ItemStack itemStack) {
-        ImprovementData[] improvementData = module.getImprovements(itemStack);
+	private boolean hasDisallowedImprovements(ItemModuleMajor module, ItemStack itemStack) {
+		ImprovementData[] improvementData = module.getImprovements(itemStack);
 
-        return improvements.entrySet().stream()
-                .filter(entry -> entry.getKey().startsWith("!"))
-                .anyMatch(entry -> {
-                    for (ImprovementData data: improvementData) {
-                        if (entry.getKey().substring(1).equals(data.key) && (entry.getValue() == -1 || entry.getValue() == data.level)) {
-                            return true;
-                        }
-                    }
+		return improvements.entrySet().stream()
+			.filter(entry -> entry.getKey().startsWith("!"))
+			.anyMatch(entry -> {
+				for (ImprovementData data : improvementData) {
+					if (entry.getKey().substring(1).equals(data.key) && (entry.getValue() == -1 || entry.getValue() == data.level)) {
+						return true;
+					}
+				}
 
-                    return false;
-                });
-    }
+				return false;
+			});
+	}
 
-    private boolean hasImprovements(ItemModuleMajor module, ItemStack itemStack) {
-        ImprovementData[] improvementData = module.getImprovements(itemStack);
+	private boolean hasImprovements(ItemModuleMajor module, ItemStack itemStack) {
+		ImprovementData[] improvementData = module.getImprovements(itemStack);
 
-        return improvements.entrySet().stream()
-                .filter(entry -> !entry.getKey().startsWith("!"))
-                .anyMatch(entry -> {
-                    for (ImprovementData data: improvementData) {
-                        if (entry.getKey().equals(data.key) && (entry.getValue() == -1 || entry.getValue() == data.level)) {
-                            return true;
-                        }
-                    }
+		return improvements.entrySet().stream()
+			.filter(entry -> !entry.getKey().startsWith("!"))
+			.anyMatch(entry -> {
+				for (ImprovementData data : improvementData) {
+					if (entry.getKey().equals(data.key) && (entry.getValue() == -1 || entry.getValue() == data.level)) {
+						return true;
+					}
+				}
 
-                    return false;
-                });
-    }
+				return false;
+			});
+	}
 
-    @Override
-    public boolean matches(ItemStack itemStack) {
-       return test(itemStack, null);
-    }
+	@Override
+	public boolean matches(ItemStack itemStack) {
+		return test(itemStack, null);
+	}
 }

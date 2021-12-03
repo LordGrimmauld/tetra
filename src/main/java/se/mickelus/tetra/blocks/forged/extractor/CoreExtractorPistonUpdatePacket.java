@@ -7,33 +7,35 @@ import se.mickelus.tetra.network.BlockPosPacket;
 import se.mickelus.tetra.util.TileEntityOptional;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class CoreExtractorPistonUpdatePacket extends BlockPosPacket {
-    private long timestamp;
+	private long timestamp;
 
-    public CoreExtractorPistonUpdatePacket() {}
+	public CoreExtractorPistonUpdatePacket() {
+	}
 
-    public CoreExtractorPistonUpdatePacket(BlockPos pos, long timestamp) {
-        super(pos);
+	public CoreExtractorPistonUpdatePacket(BlockPos pos, long timestamp) {
+		super(pos);
 
-        this.timestamp = timestamp;
-    }
+		this.timestamp = timestamp;
+	}
 
-    @Override
-    public void toBytes(FriendlyByteBuf buffer) {
-        super.toBytes(buffer);
-        buffer.writeLong(timestamp);
-    }
+	@Override
+	public void toBytes(FriendlyByteBuf buffer) {
+		super.toBytes(buffer);
+		buffer.writeLong(timestamp);
+	}
 
-    @Override
-    public void fromBytes(FriendlyByteBuf buffer) {
-        super.fromBytes(buffer);
-        timestamp = buffer.readLong();
-    }
+	@Override
+	public void fromBytes(FriendlyByteBuf buffer) {
+		super.fromBytes(buffer);
+		timestamp = buffer.readLong();
+	}
 
-    @Override
-    public void handle(Player player) {
-        TileEntityOptional.from(player.level, pos, CoreExtractorPistonTile.class)
-                .ifPresent(tile -> tile.setEndTime(timestamp));
-    }
+	@Override
+	public void handle(Player player) {
+		TileEntityOptional.from(player.level, pos, CoreExtractorPistonTile.class)
+			.ifPresent(tile -> tile.setEndTime(timestamp));
+	}
 }

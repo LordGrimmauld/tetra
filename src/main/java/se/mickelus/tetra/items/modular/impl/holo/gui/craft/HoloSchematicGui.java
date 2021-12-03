@@ -13,167 +13,164 @@ import se.mickelus.tetra.module.schematic.UpgradeSchematic;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.function.Consumer;
+
 @ParametersAreNonnullByDefault
 public class HoloSchematicGui extends GuiElement {
-    private final GuiElement listGroup;
-    private final Consumer<OutcomePreview> onVariantOpen;
-    private final HoloDescription description;
-    private final HoloMaterialTranslation translation;
-    private final HoloSortButton sortbutton;
-    private final HoloFilterButton filterButton;
-    private final HoloVariantListGui list;
+	private final GuiElement listGroup;
+	private final Consumer<OutcomePreview> onVariantOpen;
+	private final HoloDescription description;
+	private final HoloMaterialTranslation translation;
+	private final HoloSortButton sortbutton;
+	private final HoloFilterButton filterButton;
+	private final HoloVariantListGui list;
+	String slot;
+	private final HoloVariantDetailGui detail;
+	private OutcomePreview openVariant;
+	private OutcomePreview selectedVariant;
+	private OutcomePreview hoveredVariant;
+	private final KeyframeAnimation showListAnimation;
+	private final KeyframeAnimation hideListAnimation;
 
-    private HoloVariantDetailGui detail;
+	public HoloSchematicGui(int x, int y, int width, int height, Consumer<OutcomePreview> onVariantOpen) {
+		super(x, y, width, height);
 
-    private OutcomePreview openVariant;
-    private OutcomePreview selectedVariant;
-    private OutcomePreview hoveredVariant;
+		this.onVariantOpen = onVariantOpen;
 
-    String slot;
+		listGroup = new GuiElement(0, 0, width, 64);
+		addChild(listGroup);
 
-    private KeyframeAnimation showListAnimation;
-    private KeyframeAnimation hideListAnimation;
+		list = new HoloVariantListGui(0, 14, width, this::onVariantHover, this::onVariantBlur, this::onVariantSelect);
+		listGroup.addChild(list);
 
-    public HoloSchematicGui(int x, int y, int width, int height, Consumer<OutcomePreview> onVariantOpen) {
-        super(x, y, width, height);
+		detail = new HoloVariantDetailGui(0, 68, width, onVariantOpen);
+		addChild(detail);
 
-        this.onVariantOpen = onVariantOpen;
+		GuiHorizontalLayoutGroup buttons = new GuiHorizontalLayoutGroup(0, 0, 11, 6);
+		listGroup.addChild(buttons);
 
-        listGroup = new GuiElement(0, 0, width, 64);
-        addChild(listGroup);
+		description = new HoloDescription(0, 0);
+		buttons.addChild(description);
 
-        list = new HoloVariantListGui(0, 14, width, this::onVariantHover, this::onVariantBlur, this::onVariantSelect);
-        listGroup.addChild(list);
+		translation = new HoloMaterialTranslation(0, 0);
+		buttons.addChild(translation);
 
-        detail = new HoloVariantDetailGui(0, 68, width, onVariantOpen);
-        addChild(detail);
+		sortbutton = new HoloSortButton(0, 0, this::onSortChange);
+		buttons.addChild(sortbutton);
 
-        GuiHorizontalLayoutGroup buttons = new GuiHorizontalLayoutGroup(0, 0, 11, 6);
-        listGroup.addChild(buttons);
+		filterButton = new HoloFilterButton(0, 0, this::onFilterChange);
+		buttons.addChild(filterButton);
 
-        description = new HoloDescription(0, 0);
-        buttons.addChild(description);
+		showListAnimation = new KeyframeAnimation(60, listGroup)
+			.applyTo(new Applier.Opacity(1), new Applier.TranslateY(0))
+			.withDelay(100);
 
-        translation = new HoloMaterialTranslation(0, 0);
-        buttons.addChild(translation);
+		hideListAnimation = new KeyframeAnimation(100, listGroup)
+			.applyTo(new Applier.Opacity(0), new Applier.TranslateY(-50))
+			.onStop(complete -> {
+				if (complete) {
+					list.setVisible(false);
+				}
+			});
+	}
 
-        sortbutton = new HoloSortButton(0, 0, this::onSortChange);
-        buttons.addChild(sortbutton);
+	public void update(IModularItem item, String slot, UpgradeSchematic schematic) {
+		OutcomePreview[] previews = schematic.getPreviews(new ItemStack(item.getItem()), slot);
+		list.update(previews);
 
-        filterButton = new HoloFilterButton(0, 0, this::onFilterChange);
-        buttons.addChild(filterButton);
+		this.slot = slot;
 
-        showListAnimation = new KeyframeAnimation(60, listGroup)
-                .applyTo(new Applier.Opacity(1), new Applier.TranslateY(0))
-        .withDelay(100);
+		selectedVariant = null;
+		hoveredVariant = null;
+		detail.updateVariant(null, null, slot);
 
-        hideListAnimation = new KeyframeAnimation(100, listGroup)
-                .applyTo(new Applier.Opacity(0), new Applier.TranslateY(-50))
-                .onStop(complete -> {
-                    if (complete) {
-                        list.setVisible(false);
-                    }
-                });;
-    }
+		filterButton.reset();
+		sortbutton.update(previews);
+		translation.update(schematic);
+		description.update(previews);
+	}
 
-    public void update(IModularItem item, String slot, UpgradeSchematic schematic) {
-        OutcomePreview[] previews = schematic.getPreviews(new ItemStack(item.getItem()), slot);
-        list.update(previews);
+	public void openVariant(OutcomePreview variant) {
+		openVariant = variant;
 
-        this.slot = slot;
+		if (variant != null) {
+			showListAnimation.stop();
+			hideListAnimation.start();
+			detail.showImprovements();
+		} else {
+			hideListAnimation.stop();
+			showListAnimation.start();
+			list.setVisible(true);
+			detail.hideImprovements();
+		}
+	}
 
-        selectedVariant = null;
-        hoveredVariant = null;
-        detail.updateVariant(null, null, slot);
+	@Override
+	public boolean onKeyPress(int keyCode, int scanCode, int modifiers) {
+		if (selectedVariant != null && openVariant == null && keyCode == GLFW.GLFW_KEY_SPACE) {
+			onVariantOpen.accept(selectedVariant);
+			return true;
+		}
+		return super.onKeyPress(keyCode, scanCode, modifiers);
+	}
 
-        filterButton.reset();
-        sortbutton.update(previews);
-        translation.update(schematic);
-        description.update(previews);
-    }
+	private void onVariantHover(OutcomePreview outcome) {
+		if (!sortbutton.isBlockingFocus() && openVariant == null) {
+			hoveredVariant = outcome;
 
-    public void openVariant(OutcomePreview variant) {
-        openVariant = variant;
+			detail.updateVariant(selectedVariant, hoveredVariant, slot);
+		}
+	}
 
-        if (variant != null) {
-            showListAnimation.stop();
-            hideListAnimation.start();
-            detail.showImprovements();
-        } else {
-            hideListAnimation.stop();
-            showListAnimation.start();
-            list.setVisible(true);
-            detail.hideImprovements();
-        }
-    }
+	private void onVariantBlur(OutcomePreview outcome) {
+		if (outcome.equals(hoveredVariant) && openVariant == null) {
+			detail.updateVariant(selectedVariant, null, slot);
+		}
+	}
 
-    @Override
-    public boolean onKeyPress(int keyCode, int scanCode, int modifiers) {
-        if (selectedVariant != null && openVariant == null && keyCode == GLFW.GLFW_KEY_SPACE) {
-            onVariantOpen.accept(selectedVariant);
-            return true;
-        }
-        return super.onKeyPress(keyCode, scanCode, modifiers);
-    }
+	private void onVariantSelect(OutcomePreview outcome) {
+		selectedVariant = outcome;
 
-    private void onVariantHover(OutcomePreview outcome) {
-        if (!sortbutton.isBlockingFocus() && openVariant == null) {
-            hoveredVariant = outcome;
+		list.updateSelection(outcome);
 
-            detail.updateVariant(selectedVariant, hoveredVariant, slot);
-        }
-    }
+		detail.updateVariant(selectedVariant, hoveredVariant, slot);
+	}
 
-    private void onVariantBlur(OutcomePreview outcome) {
-        if (outcome.equals(hoveredVariant) && openVariant == null) {
-            detail.updateVariant(selectedVariant, null, slot);
-        }
-    }
+	private void onFilterChange(String filter) {
+		if (hoveredVariant != null) {
+			detail.updateVariant(selectedVariant, null, slot);
+		}
 
-    private void onVariantSelect(OutcomePreview outcome) {
-        selectedVariant = outcome;
+		list.updateFilter(filter);
+	}
 
-        list.updateSelection(outcome);
+	private void onSortChange(IStatSorter sorter) {
+		if (hoveredVariant != null) {
+			detail.updateVariant(selectedVariant, null, slot);
+		}
 
-        detail.updateVariant(selectedVariant, hoveredVariant, slot);
-    }
+		list.changeSorting(sorter);
+	}
 
-    private void onFilterChange(String filter) {
-        if (hoveredVariant != null) {
-            detail.updateVariant(selectedVariant, null, slot);
-        }
+	public void animateOpen() {
+		list.onShow();
+		if (selectedVariant != null) {
+			detail.animateOpen();
+		}
+	}
 
-        list.updateFilter(filter);
-    }
+	@Override
+	protected void onShow() {
+		list.setVisible(true);
+	}
 
-    private void onSortChange(IStatSorter sorter) {
-        if (hoveredVariant != null) {
-            detail.updateVariant(selectedVariant, null, slot);
-        }
+	@Override
+	protected boolean onHide() {
+		list.setVisible(false);
+		detail.forceHide();
 
-        list.changeSorting(sorter);
-    }
+		listGroup.setY(0);
+		listGroup.setOpacity(1);
 
-    public void animateOpen() {
-        list.onShow();
-        if (selectedVariant != null) {
-            detail.animateOpen();
-        }
-    }
-
-    @Override
-    protected void onShow() {
-        list.setVisible(true);
-    }
-
-    @Override
-    protected boolean onHide() {
-        list.setVisible(false);
-        detail.forceHide();
-
-        listGroup.setY(0);
-        listGroup.setOpacity(1);
-
-        return true;
-    }
+		return true;
+	}
 }

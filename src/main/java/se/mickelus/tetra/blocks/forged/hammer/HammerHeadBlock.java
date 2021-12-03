@@ -24,8 +24,6 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.ToolAction;
 import net.minecraftforge.registries.ObjectHolder;
 import se.mickelus.tetra.TetraMod;
@@ -46,161 +44,159 @@ import java.util.List;
 import java.util.Random;
 
 import static se.mickelus.tetra.blocks.forged.ForgedBlockCommon.locationTooltip;
+
 @ParametersAreNonnullByDefault
 public class HammerHeadBlock extends TetraWaterloggedBlock implements IInteractiveBlock, EntityBlock {
-    static final BlockInteraction[] interactions = new BlockInteraction[] {
-            new TileBlockInteraction<>(TetraToolActions.hammer, 4, Direction.EAST, 1, 11, 7, 11,
-                    HammerHeadTile.class, HammerHeadTile::isJammed,
-                    (world, pos, blockState, player, hand, hitFace) -> unjam(world, pos, player))
-    };
+	public static final String unlocalizedName = "hammer_head";
+	public static final VoxelShape shape = box(2, 14, 2, 14, 16, 14);
+	public static final VoxelShape jamShape = box(2, 4, 2, 14, 16, 14);
+	static final BlockInteraction[] interactions = new BlockInteraction[]{
+		new TileBlockInteraction<>(TetraToolActions.hammer, 4, Direction.EAST, 1, 11, 7, 11,
+			HammerHeadTile.class, HammerHeadTile::isJammed,
+			(world, pos, blockState, player, hand, hitFace) -> unjam(world, pos, player))
+	};
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static HammerHeadBlock instance;
 
-    public static final String unlocalizedName = "hammer_head";
+	public HammerHeadBlock() {
+		super(ForgedBlockCommon.propertiesNotSolid);
 
-    public static final VoxelShape shape = box(2, 14, 2, 14, 16, 14);
-    public static final VoxelShape jamShape = box(2, 4, 2, 14, 16, 14);
+		setRegistryName(unlocalizedName);
 
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static HammerHeadBlock instance;
+		hasItem = false;
+	}
 
-    public HammerHeadBlock() {
-        super(ForgedBlockCommon.propertiesNotSolid);
+	private static boolean unjam(Level world, BlockPos pos, Player playerEntity) {
+		TileEntityOptional.from(world, pos, HammerHeadTile.class).ifPresent(tile -> tile.setJammed(false));
+		world.playSound(playerEntity, pos, SoundEvents.ZOMBIE_ATTACK_IRON_DOOR, SoundSource.PLAYERS, 1, 0.5f);
+		return true;
+	}
 
-        setRegistryName(unlocalizedName);
+	@Override
+	public void appendHoverText(final ItemStack stack, @Nullable final BlockGetter world, final List<Component> tooltip,
+								final TooltipFlag advanced) {
+		tooltip.add(locationTooltip);
+	}
 
-        hasItem = false;
-    }
+	private boolean isJammed(BlockGetter world, BlockPos pos) {
+		return TileEntityOptional.from(world, pos, HammerHeadTile.class).map(HammerHeadTile::isJammed).orElse(false);
+	}
 
-    @Override
-    public void appendHoverText(final ItemStack stack, @Nullable final BlockGetter world, final List<Component> tooltip,
-            final TooltipFlag advanced) {
-        tooltip.add(locationTooltip);
-    }
+	@Override
+	public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+		return BlockInteraction.attemptInteraction(world, state, pos, player, hand, hit);
+	}
 
-    private boolean isJammed(BlockGetter world, BlockPos pos) {
-        return TileEntityOptional.from(world, pos, HammerHeadTile.class).map(HammerHeadTile::isJammed).orElse(false);
-    }
+	private boolean isFunctional(Level world, BlockPos pos) {
+		BlockPos basePos = pos.above();
+		boolean functionalBase = CastOptional.cast(world.getBlockState(basePos).getBlock(), HammerBaseBlock.class)
+			.map(base -> base.isFunctional(world, basePos))
+			.orElse(false);
 
-    private static boolean unjam(Level world, BlockPos pos, Player playerEntity) {
-        TileEntityOptional.from(world, pos, HammerHeadTile.class).ifPresent(tile -> tile.setJammed(false));
-        world.playSound(playerEntity, pos, SoundEvents.ZOMBIE_ATTACK_IRON_DOOR, SoundSource.PLAYERS, 1, 0.5f);
-        return true;
-    }
+		return functionalBase && !isJammed(world, pos);
+	}
 
-    @Override
-    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-        return BlockInteraction.attemptInteraction(world, state, pos, player, hand, hit);
-    }
+	@Override
+	public boolean canProvideTools(Level world, BlockPos pos, BlockPos targetPos) {
+		return pos.equals(targetPos.above());
+	}
 
-    private boolean isFunctional(Level world, BlockPos pos) {
-        BlockPos basePos = pos.above();
-        boolean functionalBase = CastOptional.cast(world.getBlockState(basePos).getBlock(), HammerBaseBlock.class)
-                .map(base -> base.isFunctional(world, basePos))
-                .orElse(false);
+	@Override
+	public Collection<ToolAction> getTools(Level world, BlockPos pos, BlockState blockState) {
+		if (isFunctional(world, pos)) {
+			return Collections.singletonList(TetraToolActions.hammer);
+		}
+		return super.getTools(world, pos, blockState);
+	}
 
-        return functionalBase && !isJammed(world, pos);
-    }
+	@Override
+	public int getToolLevel(Level world, BlockPos pos, BlockState blockState, ToolAction toolAction) {
+		if (TetraToolActions.hammer.equals(toolAction) && isFunctional(world, pos)) {
+			BlockPos basePos = pos.above();
+			HammerBaseBlock baseBlock = (HammerBaseBlock) world.getBlockState(basePos).getBlock();
+			return baseBlock.getHammerLevel(world, basePos);
+		}
+		return super.getToolLevel(world, pos, blockState, toolAction);
+	}
 
-    @Override
-    public boolean canProvideTools(Level world, BlockPos pos, BlockPos targetPos) {
-        return pos.equals(targetPos.above());
-    }
+	@Override
+	public ItemStack onCraftConsumeTool(Level world, BlockPos pos, BlockState blockState, ItemStack targetStack, String slot, boolean isReplacing, Player player,
+										ToolAction requiredTool, int requiredLevel, boolean consumeResources) {
+		BlockPos basePos = pos.above();
+		BlockState baseState = world.getBlockState(basePos);
+		ItemStack upgradedStack = CastOptional.cast(baseState.getBlock(), HammerBaseBlock.class)
+			.map(base -> base.applyCraftEffects(world, basePos, baseState, targetStack, slot, isReplacing, player, requiredTool, requiredLevel, consumeResources))
+			.orElse(targetStack);
 
-    @Override
-    public Collection<ToolAction> getTools(Level world, BlockPos pos, BlockState blockState) {
-        if (isFunctional(world, pos)) {
-            return Collections.singletonList(TetraToolActions.hammer);
-        }
-        return super.getTools(world, pos, blockState);
-    }
+		if (consumeResources) {
+			TileEntityOptional.from(world, pos, HammerHeadTile.class).ifPresent(HammerHeadTile::activate);
+			world.playSound(player, pos, SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.2f, (float) (0.5 + Math.random() * 0.2));
+		}
 
-    @Override
-    public int getToolLevel(Level world, BlockPos pos, BlockState blockState, ToolAction toolAction) {
-        if (TetraToolActions.hammer.equals(toolAction) && isFunctional(world, pos)) {
-            BlockPos basePos = pos.above();
-            HammerBaseBlock baseBlock = (HammerBaseBlock) world.getBlockState(basePos).getBlock();
-            return baseBlock.getHammerLevel(world, basePos);
-        }
-        return super.getToolLevel(world, pos, blockState, toolAction);
-    }
+		return upgradedStack;
+	}
 
-    @Override
-    public ItemStack onCraftConsumeTool(Level world, BlockPos pos, BlockState blockState, ItemStack targetStack, String slot, boolean isReplacing, Player player,
-            ToolAction requiredTool, int requiredLevel, boolean consumeResources) {
-        BlockPos basePos = pos.above();
-        BlockState baseState = world.getBlockState(basePos);
-        ItemStack upgradedStack = CastOptional.cast(baseState.getBlock(), HammerBaseBlock.class)
-                .map(base -> base.applyCraftEffects(world, basePos, baseState, targetStack, slot, isReplacing, player, requiredTool, requiredLevel, consumeResources))
-                .orElse(targetStack);
+	@Override
+	public void animateTick(BlockState state, Level world, BlockPos pos, Random rand) {
+		if (isJammed(world, pos) && rand.nextBoolean()) {
+			boolean flipped = rand.nextBoolean();
+			float x = pos.getX() + (flipped ? rand.nextBoolean() ? 0.1f : 0.9f : rand.nextFloat());
+			float z = pos.getZ() + (!flipped ? rand.nextBoolean() ? 0.1f : 0.9f : rand.nextFloat());
+			world.addParticle(new BlockParticleOption(ParticleTypes.FALLING_DUST, state), x, pos.getY() + 1, z, 0.0D, 0.0D, 0.0D);
+		}
+	}
 
-        if (consumeResources) {
-            TileEntityOptional.from(world, pos, HammerHeadTile.class).ifPresent(HammerHeadTile::activate);
-            world.playSound(player, pos, SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.2f, (float) (0.5 + Math.random() * 0.2));
-        }
+	@Override
+	public ItemStack onActionConsumeTool(Level world, BlockPos pos, BlockState blockState, ItemStack targetStack, Player player,
+										 ToolAction requiredTool, int requiredLevel, boolean consumeResources) {
+		BlockPos basePos = pos.above();
+		BlockState baseState = world.getBlockState(basePos);
+		ItemStack upgradedStack = CastOptional.cast(baseState.getBlock(), HammerBaseBlock.class)
+			.map(base -> base.applyActionEffects(world, basePos, baseState, targetStack, player, requiredTool, requiredLevel, consumeResources))
+			.orElse(targetStack);
 
-        return upgradedStack;
-    }
+		if (consumeResources) {
+			TileEntityOptional.from(world, pos, HammerHeadTile.class).ifPresent(HammerHeadTile::activate);
+			world.playSound(player, pos, SoundEvents.ANVIL_LAND, SoundSource.BLOCKS, 0.2f, (float) (0.5 + Math.random() * 0.2));
+		}
+		return upgradedStack;
+	}
 
-    @Override
-    public void animateTick(BlockState state, Level world, BlockPos pos, Random rand) {
-        if (isJammed(world, pos) && rand.nextBoolean()) {
-            boolean flipped = rand.nextBoolean();
-            float x = pos.getX() + (flipped ? rand.nextBoolean() ? 0.1f : 0.9f : rand.nextFloat());
-            float z = pos.getZ() + (!flipped ? rand.nextBoolean() ? 0.1f : 0.9f : rand.nextFloat());
-            world.addParticle(new BlockParticleOption(ParticleTypes.FALLING_DUST, state), x, pos.getY() + 1, z, 0.0D, 0.0D, 0.0D);
-        }
-    }
+	@Override
+	public BlockState updateShape(BlockState state, Direction facing, BlockState facingState, LevelAccessor world, BlockPos currentPos, BlockPos facingPos) {
+		if (Direction.UP.equals(facing) && !HammerBaseBlock.instance.equals(facingState.getBlock())) {
+			return state.getValue(BlockStateProperties.WATERLOGGED) ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState();
+		}
 
-    @Override
-    public ItemStack onActionConsumeTool(Level world, BlockPos pos, BlockState blockState, ItemStack targetStack, Player player,
-            ToolAction requiredTool, int requiredLevel, boolean consumeResources) {
-        BlockPos basePos = pos.above();
-        BlockState baseState = world.getBlockState(basePos);
-        ItemStack upgradedStack = CastOptional.cast(baseState.getBlock(), HammerBaseBlock.class)
-                .map(base -> base.applyActionEffects(world, basePos, baseState, targetStack, player, requiredTool, requiredLevel, consumeResources))
-                .orElse(targetStack);
+		return super.updateShape(state, facing, facingState, world, currentPos, facingPos);
+	}
 
-        if (consumeResources) {
-            TileEntityOptional.from(world, pos, HammerHeadTile.class).ifPresent(HammerHeadTile::activate);
-            world.playSound(player, pos, SoundEvents.ANVIL_LAND, SoundSource.BLOCKS, 0.2f, (float) (0.5 + Math.random() * 0.2));
-        }
-        return upgradedStack;
-    }
+	@Override
+	public VoxelShape getShape(final BlockState blockState, final BlockGetter world, final BlockPos pos, final CollisionContext context) {
+		if (context == CollisionContext.empty()) {
+			return jamShape;
+		} else if (isJammed(world, pos)) {
+			return jamShape;
+		}
+		return shape;
+	}
 
-    @Override
-    public BlockState updateShape(BlockState state, Direction facing, BlockState facingState, LevelAccessor world, BlockPos currentPos, BlockPos facingPos) {
-        if (Direction.UP.equals(facing) && !HammerBaseBlock.instance.equals(facingState.getBlock())) {
-            return state.getValue(BlockStateProperties.WATERLOGGED) ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState();
-        }
+	@Override
+	public RenderShape getRenderShape(BlockState state) {
+		return RenderShape.ENTITYBLOCK_ANIMATED;
+	}
 
-        return super.updateShape(state, facing, facingState, world, currentPos, facingPos);
-    }
+	@Override
+	public BlockInteraction[] getPotentialInteractions(Level world, BlockPos pos, BlockState blockState, Direction face, Collection<ToolAction> tools) {
+		if (isJammed(world, pos) && face.getAxis().getPlane() == Direction.Plane.HORIZONTAL) {
+			return interactions;
+		}
+		return new BlockInteraction[0];
+	}
 
-    @Override
-    public VoxelShape getShape(final BlockState blockState, final BlockGetter world, final BlockPos pos, final CollisionContext context) {
-        if (context == CollisionContext.empty()) {
-            return jamShape;
-        } else if (isJammed(world, pos)) {
-            return jamShape;
-        }
-        return shape;
-    }
-
-    @Override
-    public RenderShape getRenderShape(BlockState state) {
-        return RenderShape.ENTITYBLOCK_ANIMATED;
-    }
-
-    @Override
-    public BlockInteraction[] getPotentialInteractions(Level world, BlockPos pos, BlockState blockState, Direction face, Collection<ToolAction> tools) {
-        if (isJammed(world, pos) && face.getAxis().getPlane() == Direction.Plane.HORIZONTAL) {
-            return interactions;
-        }
-        return new BlockInteraction[0];
-    }
-
-    @org.jetbrains.annotations.Nullable
-    @Override
-    public BlockEntity newBlockEntity(BlockPos p_153215_, BlockState p_153216_) {
-        return new HammerHeadTile(p_153215_, p_153216_);
-    }
+	@org.jetbrains.annotations.Nullable
+	@Override
+	public BlockEntity newBlockEntity(BlockPos p_153215_, BlockState p_153216_) {
+		return new HammerHeadTile(p_153215_, p_153216_);
+	}
 }

@@ -11,75 +11,76 @@ import se.mickelus.tetra.blocks.workbench.gui.GuiTool;
 import se.mickelus.tetra.properties.PropertyHelper;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class InteractiveToolGui extends GuiElement {
-    private GuiTool toolIcon;
+	private final GuiTool toolIcon;
 
-    private KeyframeAnimation show;
-    private KeyframeAnimation hide;
+	private KeyframeAnimation show;
+	private final KeyframeAnimation hide;
 
-    private ToolAction toolAction;
-    private int toolLevel;
+	private final ToolAction toolAction;
+	private final int toolLevel;
 
-    private Player player;
-    private int currentSlot;
+	private final Player player;
+	private int currentSlot;
 
-    public InteractiveToolGui(int x, int y, ToolAction toolAction, int toolLevel, Player player) {
-        super(x, y, 16, 16);
-        opacity = 0;
+	public InteractiveToolGui(int x, int y, ToolAction toolAction, int toolLevel, Player player) {
+		super(x, y, 16, 16);
+		opacity = 0;
 
-        this.toolAction = toolAction;
-        this.toolLevel = toolLevel;
-        this.player = player;
+		this.toolAction = toolAction;
+		this.toolLevel = toolLevel;
+		this.player = player;
 
-        toolIcon = new GuiTool(-1, 0, toolAction);
-        addChild(toolIcon);
+		toolIcon = new GuiTool(-1, 0, toolAction);
+		addChild(toolIcon);
 
-        show = new KeyframeAnimation(100, this)
-                .applyTo(new Applier.Opacity(0, 1))
-                .withDelay(650);
-        hide = new KeyframeAnimation(100, this)
-                .applyTo(new Applier.Opacity(1, 0));
+		show = new KeyframeAnimation(100, this)
+			.applyTo(new Applier.Opacity(0, 1))
+			.withDelay(650);
+		hide = new KeyframeAnimation(100, this)
+			.applyTo(new Applier.Opacity(1, 0));
 
-        updateTint();
-        currentSlot = player.getInventory().selected;
-    }
+		updateTint();
+		currentSlot = player.getInventory().selected;
+	}
 
-    public void updateFadeTime() {
-        show = show.withDelay(0);
-    }
+	public void updateFadeTime() {
+		show = show.withDelay(0);
+	}
 
-    private void updateTint() {
-        int mainHandLevel = PropertyHelper.getItemToolLevel(player.getMainHandItem(), toolAction);
-        int offHandLevel = PropertyHelper.getItemToolLevel(player.getOffhandItem(), toolAction);
+	private void updateTint() {
+		int mainHandLevel = PropertyHelper.getItemToolLevel(player.getMainHandItem(), toolAction);
+		int offHandLevel = PropertyHelper.getItemToolLevel(player.getOffhandItem(), toolAction);
 
-        if (mainHandLevel >= toolLevel || offHandLevel >= toolLevel) {
-            toolIcon.update(toolLevel, GuiColors.normal);
-        } else if (PropertyHelper.getPlayerToolLevel(player, toolAction) >= toolLevel) {
-            toolIcon.update(toolLevel, GuiColors.warning);
-        } else {
-            toolIcon.update(toolLevel, GuiColors.negative);
-        }
-    }
+		if (mainHandLevel >= toolLevel || offHandLevel >= toolLevel) {
+			toolIcon.update(toolLevel, GuiColors.normal);
+		} else if (PropertyHelper.getPlayerToolLevel(player, toolAction) >= toolLevel) {
+			toolIcon.update(toolLevel, GuiColors.warning);
+		} else {
+			toolIcon.update(toolLevel, GuiColors.negative);
+		}
+	}
 
-    public void show() {
-        updateTint();
-        hide.stop();
-        show.start();
-    }
+	public void show() {
+		updateTint();
+		hide.stop();
+		show.start();
+	}
 
-    public void hide() {
-        show.stop();
-        hide.start();
-    }
+	public void hide() {
+		show.stop();
+		hide.start();
+	}
 
-    @Override
-    public void draw(PoseStack matrixStack, int refX, int refY, int screenWidth, int screenHeight, int mouseX, int mouseY, float opacity) {
-        if (player.getInventory().selected != currentSlot) {
-            updateTint();
-            currentSlot = player.getInventory().selected;
-        }
+	@Override
+	public void draw(PoseStack matrixStack, int refX, int refY, int screenWidth, int screenHeight, int mouseX, int mouseY, float opacity) {
+		if (player.getInventory().selected != currentSlot) {
+			updateTint();
+			currentSlot = player.getInventory().selected;
+		}
 
-        super.draw(matrixStack, refX, refY, screenWidth, screenHeight, mouseX, mouseY, opacity);
-    }
+		super.draw(matrixStack, refX, refY, screenWidth, screenHeight, mouseX, mouseY, opacity);
+	}
 }

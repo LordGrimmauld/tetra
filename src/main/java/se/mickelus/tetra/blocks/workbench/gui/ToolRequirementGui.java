@@ -8,64 +8,64 @@ import se.mickelus.tetra.gui.GuiColors;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Collections;
 import java.util.List;
+
 @ParametersAreNonnullByDefault
 public class ToolRequirementGui extends GuiTool {
 
-    private int requiredLevel;
-    private int availableLevel;
+	String requirementTooltip;
+	private int requiredLevel;
+	private int availableLevel;
+	private boolean showTooltip = true;
+	private boolean showTooltipRequirement = true;
 
-    private boolean showTooltip = true;
-    private boolean showTooltipRequirement = true;
+	public ToolRequirementGui(int x, int y, ToolAction toolAction) {
+		this(x, y, toolAction, "tetra.tool." + toolAction.name() + ".requirement");
+	}
 
-    String requirementTooltip;
+	public ToolRequirementGui(int x, int y, ToolAction toolAction, String requirementTooltip) {
+		super(x, y, toolAction);
 
-    public ToolRequirementGui(int x, int y, ToolAction toolAction) {
-        this(x, y, toolAction, "tetra.tool." + toolAction.name() + ".requirement");
-    }
-    public ToolRequirementGui(int x, int y, ToolAction toolAction, String requirementTooltip) {
-        super(x, y, toolAction);
+		this.requirementTooltip = requirementTooltip;
+	}
 
-        this.requirementTooltip = requirementTooltip;
-    }
+	public ToolRequirementGui setTooltipVisibility(boolean shouldShow) {
+		showTooltip = shouldShow;
+		return this;
+	}
 
-    public ToolRequirementGui setTooltipVisibility(boolean shouldShow) {
-        showTooltip = shouldShow;
-        return this;
-    }
+	public ToolRequirementGui setTooltipRequirementVisibility(boolean shouldShow) {
+		showTooltipRequirement = shouldShow;
+		return this;
+	}
 
-    public ToolRequirementGui setTooltipRequirementVisibility(boolean shouldShow) {
-        showTooltipRequirement = shouldShow;
-        return this;
-    }
+	public ToolRequirementGui updateRequirement(int requiredLevel, int availableLevel) {
+		setVisible(requiredLevel != 0);
+		this.requiredLevel = requiredLevel;
+		this.availableLevel = availableLevel;
 
-    public ToolRequirementGui updateRequirement(int requiredLevel, int availableLevel) {
-        setVisible(requiredLevel != 0);
-        this.requiredLevel = requiredLevel;
-        this.availableLevel = availableLevel;
+		if (isVisible()) {
+			if (requiredLevel > availableLevel) {
+				update(requiredLevel, GuiColors.remove);
+			} else {
+				update(requiredLevel, GuiColors.add);
+			}
+		}
 
-        if (isVisible()) {
-            if (requiredLevel > availableLevel) {
-                update(requiredLevel, GuiColors.remove);
-            } else {
-                update(requiredLevel, GuiColors.add);
-            }
-        }
+		return this;
+	}
 
-        return this;
-    }
+	@Override
+	public List<String> getTooltipLines() {
+		if (hasFocus() && showTooltip) {
+			if (showTooltipRequirement) {
+				return Collections.singletonList(I18n.get(requirementTooltip, requiredLevel) + "\n \n"
+					+ (requiredLevel > availableLevel ? ChatFormatting.RED : ChatFormatting.GREEN)
+					+ I18n.get("tetra.tool.available", availableLevel));
 
-    @Override
-    public List<String> getTooltipLines() {
-        if (hasFocus() && showTooltip) {
-            if (showTooltipRequirement) {
-                return Collections.singletonList(I18n.get(requirementTooltip, requiredLevel) + "\n \n"
-                        + (requiredLevel > availableLevel ? ChatFormatting.RED : ChatFormatting.GREEN)
-                        + I18n.get( "tetra.tool.available", availableLevel));
+			}
 
-            }
-
-            return Collections.singletonList(I18n.get(requirementTooltip, requiredLevel));
-        }
-        return super.getTooltipLines();
-    }
+			return Collections.singletonList(I18n.get(requirementTooltip, requiredLevel));
+		}
+		return super.getTooltipLines();
+	}
 }

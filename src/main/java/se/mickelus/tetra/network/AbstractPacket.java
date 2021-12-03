@@ -8,53 +8,55 @@ import java.io.IOException;
 
 /**
  * AbstractPacket class. Should be the parent of all packets wishing to use the PacketHandler.
+ *
  * @author sirgingalot, mickelus
  */
 public abstract class AbstractPacket {
 
-    /**
-     * Encode the packet data into the ByteBuf stream. Complex data sets may need specific data handlers (See @link{cpw.mods.fml.common.network.ByteBuffUtils})
-     *
-     * @param buffer the buffer to encode into
-     */
-    public abstract void toBytes(FriendlyByteBuf buffer);
+	/**
+	 * Utility method that reads a string from a buffer object.
+	 *
+	 * @param buffer The buffer containing the string to be read.
+	 * @return A string read from the buffer
+	 * @throws IOException
+	 */
+	protected static String readString(FriendlyByteBuf buffer) throws IOException {
+		String string = "";
+		char c = buffer.readChar();
 
-    /**
-     * Decode the packet data from the ByteBuf stream. Complex data sets may need specific data handlers (See @link{cpw.mods.fml.common.network.ByteBuffUtils})
-     *
-     * @param buffer the buffer to decode from
-     */
-    public abstract void fromBytes(FriendlyByteBuf buffer);
+		while (c != '\0') {
+			string += c;
+			c = buffer.readChar();
+		}
 
-    /**
-     * Handle the reception of this packet.
-     *
-     * @param player A reference to the sending player when handled on the server side
-     */
-    public abstract void handle(Player player);
+		return string;
+	}
 
-    /**
-     * Utility method that reads a string from a buffer object.
-     * @param buffer The buffer containing the string to be read.
-     * @return A string read from the buffer
-     * @throws IOException
-     */
-    protected static String readString(FriendlyByteBuf buffer) throws IOException {
-        String string = "";
-        char c = buffer.readChar();
+	protected static void writeString(String string, FriendlyByteBuf buffer) throws IOException {
+		for (int i = 0; i < string.length(); i++) {
+			buffer.writeChar(string.charAt(i));
+		}
+		buffer.writeChar('\0');
+	}
 
-        while(c != '\0') {
-            string += c;
-            c = buffer.readChar();
-        }
+	/**
+	 * Encode the packet data into the ByteBuf stream. Complex data sets may need specific data handlers (See @link{cpw.mods.fml.common.network.ByteBuffUtils})
+	 *
+	 * @param buffer the buffer to encode into
+	 */
+	public abstract void toBytes(FriendlyByteBuf buffer);
 
-        return string;
-    }
+	/**
+	 * Decode the packet data from the ByteBuf stream. Complex data sets may need specific data handlers (See @link{cpw.mods.fml.common.network.ByteBuffUtils})
+	 *
+	 * @param buffer the buffer to decode from
+	 */
+	public abstract void fromBytes(FriendlyByteBuf buffer);
 
-    protected static void writeString(String string, FriendlyByteBuf buffer) throws IOException {
-        for (int i = 0; i < string.length(); i++) {
-            buffer.writeChar(string.charAt(i));
-        }
-        buffer.writeChar('\0');
-    }
+	/**
+	 * Handle the reception of this packet.
+	 *
+	 * @param player A reference to the sending player when handled on the server side
+	 */
+	public abstract void handle(Player player);
 }

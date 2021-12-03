@@ -23,144 +23,146 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+
 @ParametersAreNonnullByDefault
 public class ApplyBannerSchematic implements UpgradeSchematic {
-    private static final String localizationPrefix = TetraMod.MOD_ID + "/schematic/";
-    private static final String key = "shield/plate/banner";
+	private static final String localizationPrefix = TetraMod.MOD_ID + "/schematic/";
+	private static final String key = "shield/plate/banner";
 
-    private static final String nameSuffix = ".name";
-    private static final String descriptionSuffix = ".description";
-    private static final String slotSuffix = ".slot1";
+	private static final String nameSuffix = ".name";
+	private static final String descriptionSuffix = ".description";
+	private static final String slotSuffix = ".slot1";
 
-    private GlyphData glyph = new GlyphData(GuiTextures.glyphs, 96, 240);
+	private final GlyphData glyph = new GlyphData(GuiTextures.glyphs, 96, 240);
 
-    public ApplyBannerSchematic() {}
+	public ApplyBannerSchematic() {
+	}
 
-    @Override
-    public String getKey() {
-        return key;
-    }
+	@Override
+	public String getKey() {
+		return key;
+	}
 
-    @Override
-    public String getName() {
-        return I18n.get(localizationPrefix + key + nameSuffix);
-    }
+	@Override
+	public String getName() {
+		return I18n.get(localizationPrefix + key + nameSuffix);
+	}
 
-    @Override
-    public String getDescription(ItemStack itemStack) {
-        return I18n.get(localizationPrefix + key + descriptionSuffix);
-    }
+	@Override
+	public String getDescription(ItemStack itemStack) {
+		return I18n.get(localizationPrefix + key + descriptionSuffix);
+	}
 
-    @Override
-    public int getNumMaterialSlots() {
-        return 1;
-    }
+	@Override
+	public int getNumMaterialSlots() {
+		return 1;
+	}
 
-    @Override
-    public String getSlotName(final ItemStack itemStack, final int index) {
-        return I18n.get(localizationPrefix + key + slotSuffix);
-    }
+	@Override
+	public String getSlotName(final ItemStack itemStack, final int index) {
+		return I18n.get(localizationPrefix + key + slotSuffix);
+	}
 
-    @Override
-    public ItemStack[] getSlotPlaceholders(ItemStack itemStack, int index) {
-        return new ItemStack[] { Items.WHITE_BANNER.getDefaultInstance() };
-    }
+	@Override
+	public ItemStack[] getSlotPlaceholders(ItemStack itemStack, int index) {
+		return new ItemStack[]{Items.WHITE_BANNER.getDefaultInstance()};
+	}
 
-    @Override
-    public int getRequiredQuantity(ItemStack itemStack, int index, ItemStack materialStack) {
-        return 1;
-    }
+	@Override
+	public int getRequiredQuantity(ItemStack itemStack, int index, ItemStack materialStack) {
+		return 1;
+	}
 
-    @Override
-    public boolean acceptsMaterial(ItemStack itemStack, String itemSlot, int index, ItemStack materialStack) {
-        return materialStack.getItem() instanceof BannerItem;
-    }
+	@Override
+	public boolean acceptsMaterial(ItemStack itemStack, String itemSlot, int index, ItemStack materialStack) {
+		return materialStack.getItem() instanceof BannerItem;
+	}
 
-    @Override
-    public boolean isMaterialsValid(ItemStack itemStack, String itemSlot, ItemStack[] materials) {
-        return acceptsMaterial(itemStack, itemSlot, 0, materials[0]);
-    }
+	@Override
+	public boolean isMaterialsValid(ItemStack itemStack, String itemSlot, ItemStack[] materials) {
+		return acceptsMaterial(itemStack, itemSlot, 0, materials[0]);
+	}
 
-    @Override
-    public boolean isApplicableForItem(ItemStack itemStack) {
-        return itemStack.getItem() instanceof ModularShieldItem;
-    }
+	@Override
+	public boolean isApplicableForItem(ItemStack itemStack) {
+		return itemStack.getItem() instanceof ModularShieldItem;
+	}
 
-    @Override
-    public boolean isApplicableForSlot(String slot, ItemStack targetStack) {
-        return ModularShieldItem.plateKey.equals(slot);
-    }
+	@Override
+	public boolean isApplicableForSlot(String slot, ItemStack targetStack) {
+		return ModularShieldItem.plateKey.equals(slot);
+	}
 
-    @Override
-    public boolean canApplyUpgrade(Player player, ItemStack itemStack, ItemStack[] materials, String slot, Map<ToolAction, Integer> availableTools) {
-        return isMaterialsValid(itemStack, slot, materials);
-    }
+	@Override
+	public boolean canApplyUpgrade(Player player, ItemStack itemStack, ItemStack[] materials, String slot, Map<ToolAction, Integer> availableTools) {
+		return isMaterialsValid(itemStack, slot, materials);
+	}
 
-    @Override
-    public boolean isIntegrityViolation(Player player, ItemStack itemStack, ItemStack[] materials, String slot) {
-        return false;
-    }
+	@Override
+	public boolean isIntegrityViolation(Player player, ItemStack itemStack, ItemStack[] materials, String slot) {
+		return false;
+	}
 
-    @Override
-    public ItemStack applyUpgrade(ItemStack itemStack, ItemStack[] materials, boolean consumeMaterials, String slot, Player player) {
-        ItemStack upgradedStack = itemStack.copy();
+	@Override
+	public ItemStack applyUpgrade(ItemStack itemStack, ItemStack[] materials, boolean consumeMaterials, String slot, Player player) {
+		ItemStack upgradedStack = itemStack.copy();
 
-        ItemStack bannerStack = materials[0];
+		ItemStack bannerStack = materials[0];
 
-        if (isMaterialsValid(itemStack, slot, materials)) {
+		if (isMaterialsValid(itemStack, slot, materials)) {
 
-            CastOptional.cast(itemStack.getItem(), IModularItem.class)
-                    .map(item -> item.getModuleFromSlot(itemStack, slot))
-                    .flatMap(module -> CastOptional.cast(module, ItemModuleMajor.class))
-                    .ifPresent(module -> {
-                        if (module.acceptsImprovementLevel(ModularShieldItem.bannerImprovementKey, 0)) {
-                            module.addImprovement(upgradedStack, ModularShieldItem.bannerImprovementKey, 0);
+			CastOptional.cast(itemStack.getItem(), IModularItem.class)
+				.map(item -> item.getModuleFromSlot(itemStack, slot))
+				.flatMap(module -> CastOptional.cast(module, ItemModuleMajor.class))
+				.ifPresent(module -> {
+					if (module.acceptsImprovementLevel(ModularShieldItem.bannerImprovementKey, 0)) {
+						module.addImprovement(upgradedStack, ModularShieldItem.bannerImprovementKey, 0);
 
-                            CompoundTag bannerTag = Optional.ofNullable(bannerStack.getTagElement("BlockEntityTag"))
-                                    .map(CompoundTag::copy)
-                                    .orElse(new CompoundTag());
+						CompoundTag bannerTag = Optional.ofNullable(bannerStack.getTagElement("BlockEntityTag"))
+							.map(CompoundTag::copy)
+							.orElse(new CompoundTag());
 
-                            bannerTag.putInt("Base", ((BannerItem) bannerStack.getItem()).getColor().getId());
-                            upgradedStack.addTagElement("BlockEntityTag", bannerTag.copy());
+						bannerTag.putInt("Base", ((BannerItem) bannerStack.getItem()).getColor().getId());
+						upgradedStack.addTagElement("BlockEntityTag", bannerTag.copy());
 
-                            if (consumeMaterials) {
-                                materials[0].shrink(1);
-                            }
+						if (consumeMaterials) {
+							materials[0].shrink(1);
+						}
 
-                            if (consumeMaterials && player instanceof ServerPlayer) {
-                                ImprovementCraftCriterion.trigger((ServerPlayer) player, itemStack, upgradedStack, getKey(), slot,
-                                        ModularShieldItem.bannerImprovementKey, 0, null, -1);
-                            }
-                        }
-                    });
-        }
+						if (consumeMaterials && player instanceof ServerPlayer) {
+							ImprovementCraftCriterion.trigger((ServerPlayer) player, itemStack, upgradedStack, getKey(), slot,
+								ModularShieldItem.bannerImprovementKey, 0, null, -1);
+						}
+					}
+				});
+		}
 
 
-        return upgradedStack;
-    }
+		return upgradedStack;
+	}
 
-    @Override
-    public boolean checkTools(ItemStack targetStack, ItemStack[] materials, Map<ToolAction, Integer> availableTools) {
-        return true;
-    }
+	@Override
+	public boolean checkTools(ItemStack targetStack, ItemStack[] materials, Map<ToolAction, Integer> availableTools) {
+		return true;
+	}
 
-    @Override
-    public Map<ToolAction, Integer> getRequiredToolLevels(ItemStack targetStack, ItemStack[] materials) {
-        return Collections.emptyMap();
-    }
+	@Override
+	public Map<ToolAction, Integer> getRequiredToolLevels(ItemStack targetStack, ItemStack[] materials) {
+		return Collections.emptyMap();
+	}
 
-    @Override
-    public SchematicType getType() {
-        return SchematicType.improvement;
-    }
+	@Override
+	public SchematicType getType() {
+		return SchematicType.improvement;
+	}
 
-    @Override
-    public GlyphData getGlyph() {
-        return glyph;
-    }
+	@Override
+	public GlyphData getGlyph() {
+		return glyph;
+	}
 
-    @Override
-    public OutcomePreview[] getPreviews(ItemStack targetStack, String slot) {
-        return new OutcomePreview[0];
-    }
+	@Override
+	public OutcomePreview[] getPreviews(ItemStack targetStack, String slot) {
+		return new OutcomePreview[0];
+	}
 }

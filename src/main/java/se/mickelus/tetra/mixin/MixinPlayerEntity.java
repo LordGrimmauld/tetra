@@ -10,15 +10,15 @@ import se.mickelus.tetra.items.modular.ItemModularHandheld;
 
 @Mixin(Player.class)
 public abstract class MixinPlayerEntity {
-    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;resetActiveHand()V", ordinal = 0), method = "disableShield")
-    private void disableShield(boolean isGuaranteed, CallbackInfo callback) {
-        ItemStack itemStack = getInstance().getUseItem();
-        if (itemStack.getItem() instanceof ItemModularHandheld) {
-            ((ItemModularHandheld) itemStack.getItem()).onShieldDisabled(getInstance(), itemStack);
-        }
-    }
+	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;resetActiveHand()V", ordinal = 0), method = "disableShield")
+	private void disableShield(boolean isGuaranteed, CallbackInfo callback) {
+		ItemStack itemStack = getInstance().getUseItem();
+		if (itemStack.getItem() instanceof ItemModularHandheld) {
+			((ItemModularHandheld) itemStack.getItem()).onShieldDisabled(getInstance(), itemStack);
+		}
+	}
 
-    private Player getInstance() {
-        return ((Player) (Object) this);
-    }
+	private Player getInstance() {
+		return ((Player) (Object) this);
+	}
 }

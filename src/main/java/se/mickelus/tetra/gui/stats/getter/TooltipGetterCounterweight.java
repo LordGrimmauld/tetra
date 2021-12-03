@@ -8,17 +8,19 @@ import se.mickelus.tetra.items.modular.IModularItem;
 import se.mickelus.tetra.items.modular.ItemModularHandheld;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class TooltipGetterCounterweight implements ITooltipGetter {
-    private static final IStatGetter levelGetter = new StatGetterEffectLevel(ItemEffect.counterweight, 1);
+	private static final IStatGetter levelGetter = new StatGetterEffectLevel(ItemEffect.counterweight, 1);
 
-    public TooltipGetterCounterweight() { }
+	public TooltipGetterCounterweight() {
+	}
 
-    @Override
-    public String getTooltipBase(Player player, ItemStack itemStack) {
-        int level = (int) levelGetter.getValue(player, itemStack);
-        return I18n.get("tetra.stats.counterweight.indicator_tooltip",
-                String.format("%.2f", ItemModularHandheld.getCounterWeightBonus((int) levelGetter.getValue(player, itemStack),
-                        IModularItem.getIntegrityCost(itemStack))), level);
-    }
+	@Override
+	public String getTooltipBase(Player player, ItemStack itemStack) {
+		int level = (int) levelGetter.getValue(player, itemStack);
+		return I18n.get("tetra.stats.counterweight.indicator_tooltip",
+			String.format("%.2f", ItemModularHandheld.getCounterWeightBonus((int) levelGetter.getValue(player, itemStack),
+				IModularItem.getIntegrityCost(itemStack))), level);
+	}
 }

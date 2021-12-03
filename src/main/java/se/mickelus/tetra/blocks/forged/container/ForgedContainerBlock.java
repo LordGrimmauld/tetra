@@ -28,7 +28,6 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.ClientRegistry;
 import net.minecraftforge.common.ToolAction;
 import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.registries.ObjectHolder;
@@ -49,269 +48,267 @@ import java.util.Collection;
 import java.util.List;
 
 import static com.google.common.base.Predicates.equalTo;
+
 @ParametersAreNonnullByDefault
 public class ForgedContainerBlock extends TetraWaterloggedBlock implements IInteractiveBlock, EntityBlock {
-    public static final String unlocalizedName = "forged_container";
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static ForgedContainerBlock instance;
+	public static final String unlocalizedName = "forged_container";
+	public static final DirectionProperty facingProp = HorizontalDirectionalBlock.FACING;
+	public static final BooleanProperty flippedProp = BooleanProperty.create("flipped");
+	public static final BooleanProperty locked1Prop = BooleanProperty.create("locked1");
+	public static final BooleanProperty locked2Prop = BooleanProperty.create("locked2");
+	public static final BooleanProperty anyLockedProp = BooleanProperty.create("locked_any");
+	public static final BooleanProperty openProp = BooleanProperty.create("open");
+	public static final BlockInteraction[] interactions = new BlockInteraction[]{
+		new BlockInteraction(TetraToolActions.hammer, 3, Direction.SOUTH, 5, 7, 2, 5,
+			new PropertyMatcher().where(locked1Prop, equalTo(true)).where(flippedProp, equalTo(false)),
+			(world, pos, blockState, player, hand, hitFace) -> breakLock(world, pos, player, 0, hand)),
+		new BlockInteraction(TetraToolActions.hammer, 3, Direction.SOUTH, 11, 13, 2, 5,
+			new PropertyMatcher().where(locked2Prop, equalTo(true)).where(flippedProp, equalTo(false)),
+			(world, pos, blockState, player, hand, hitFace) -> breakLock(world, pos, player, 1, hand)),
+		new BlockInteraction(TetraToolActions.hammer, 3, Direction.SOUTH, 17, 19, 2, 5,
+			new PropertyMatcher().where(locked1Prop, equalTo(true)).where(flippedProp, equalTo(true)),
+			(world, pos, blockState, player, hand, hitFace) -> breakLock(world, pos, player, 2, hand)),
+		new BlockInteraction(TetraToolActions.hammer, 3, Direction.SOUTH, 23, 25, 2, 5,
+			new PropertyMatcher().where(locked2Prop, equalTo(true)).where(flippedProp, equalTo(true)),
+			(world, pos, blockState, player, hand, hitFace) -> breakLock(world, pos, player, 3, hand)),
+		new BlockInteraction(TetraToolActions.pry, 1, Direction.SOUTH, 1, 15, 3, 4,
+			new PropertyMatcher()
+				.where(anyLockedProp, equalTo(false))
+				.where(openProp, equalTo(false))
+				.where(flippedProp, equalTo(false)),
+			ForgedContainerBlock::open),
+		new BlockInteraction(TetraToolActions.pry, 1, Direction.SOUTH, 15, 28, 3, 4,
+			new PropertyMatcher()
+				.where(anyLockedProp, equalTo(false))
+				.where(openProp, equalTo(false))
+				.where(flippedProp, equalTo(true)),
+			ForgedContainerBlock::open)
+	};
+	private static final VoxelShape shapeZ1 = box(1, 0, -15, 15, 12, 15);
+	private static final VoxelShape shapeZ2 = box(1, 0, 1, 15, 12, 31);
+	private static final VoxelShape shapeX1 = box(-15, 0, 1, 15, 12, 15);
+	private static final VoxelShape shapeX2 = box(1, 0, 1, 31, 12, 15);
+	private static final VoxelShape shapeZ1Open = box(1, 0, -15, 15, 9, 15);
+	private static final VoxelShape shapeZ2Open = box(1, 0, 1, 15, 9, 31);
+	private static final VoxelShape shapeX1Open = box(-15, 0, 1, 15, 9, 15);
+	private static final VoxelShape shapeX2Open = box(1, 0, 1, 31, 9, 15);
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static ForgedContainerBlock instance;
 
-    public static final DirectionProperty facingProp = HorizontalDirectionalBlock.FACING;
-    public static final BooleanProperty flippedProp = BooleanProperty.create("flipped");
-    public static final BooleanProperty locked1Prop = BooleanProperty.create("locked1");
-    public static final BooleanProperty locked2Prop = BooleanProperty.create("locked2");
-    public static final BooleanProperty anyLockedProp = BooleanProperty.create("locked_any");
-    public static final BooleanProperty openProp = BooleanProperty.create("open");
+	public ForgedContainerBlock() {
+		super(ForgedBlockCommon.propertiesSolid);
 
-    public static final BlockInteraction[] interactions = new BlockInteraction[]{
-            new BlockInteraction(TetraToolActions.hammer, 3, Direction.SOUTH, 5, 7, 2, 5,
-                    new PropertyMatcher().where(locked1Prop, equalTo(true)).where(flippedProp, equalTo(false)),
-                    (world, pos, blockState, player, hand, hitFace) -> breakLock(world, pos, player, 0, hand)),
-            new BlockInteraction(TetraToolActions.hammer, 3, Direction.SOUTH, 11, 13, 2, 5,
-                    new PropertyMatcher().where(locked2Prop, equalTo(true)).where(flippedProp, equalTo(false)),
-                    (world, pos, blockState, player, hand, hitFace) -> breakLock(world, pos, player, 1, hand)),
-            new BlockInteraction(TetraToolActions.hammer, 3, Direction.SOUTH, 17, 19, 2, 5,
-                    new PropertyMatcher().where(locked1Prop, equalTo(true)).where(flippedProp, equalTo(true)),
-                    (world, pos, blockState, player, hand, hitFace) -> breakLock(world, pos, player, 2, hand)),
-            new BlockInteraction(TetraToolActions.hammer, 3, Direction.SOUTH, 23, 25, 2, 5,
-                    new PropertyMatcher().where(locked2Prop, equalTo(true)).where(flippedProp, equalTo(true)),
-                    (world, pos, blockState, player, hand, hitFace) -> breakLock(world, pos, player, 3, hand)),
-            new BlockInteraction(TetraToolActions.pry, 1, Direction.SOUTH, 1, 15, 3, 4,
-                    new PropertyMatcher()
-                            .where(anyLockedProp, equalTo(false))
-                            .where(openProp, equalTo(false))
-                            .where(flippedProp, equalTo(false)),
-                    ForgedContainerBlock::open),
-            new BlockInteraction(TetraToolActions.pry, 1, Direction.SOUTH, 15, 28, 3, 4,
-                    new PropertyMatcher()
-                            .where(anyLockedProp, equalTo(false))
-                            .where(openProp, equalTo(false))
-                            .where(flippedProp, equalTo(true)),
-                    ForgedContainerBlock::open)
-    };
+		setRegistryName(unlocalizedName);
 
-    private static final VoxelShape shapeZ1 =     box(1,   0, -15, 15, 12, 15);
-    private static final VoxelShape shapeZ2 =     box(1,   0, 1,   15, 12, 31);
-    private static final VoxelShape shapeX1 =     box(-15, 0, 1,   15, 12, 15);
-    private static final VoxelShape shapeX2 =     box(1,   0, 1,   31, 12, 15);
-    private static final VoxelShape shapeZ1Open = box(1,   0, -15, 15,  9, 15);
-    private static final VoxelShape shapeZ2Open = box(1,   0, 1,   15,  9, 31);
-    private static final VoxelShape shapeX1Open = box(-15, 0, 1,   15,  9, 15);
-    private static final VoxelShape shapeX2Open = box(1,   0, 1,   31,  9, 15);
+		hasItem = true;
 
-    public ForgedContainerBlock() {
-        super(ForgedBlockCommon.propertiesSolid);
+		registerDefaultState(defaultBlockState()
+			.setValue(facingProp, Direction.EAST)
+			.setValue(flippedProp, false)
+			.setValue(openProp, true)
+			.setValue(locked1Prop, false)
+			.setValue(locked2Prop, false)
+			.setValue(anyLockedProp, false));
+	}
 
-        setRegistryName(unlocalizedName);
+	private static boolean breakLock(Level world, BlockPos pos, @Nullable Player player, int index, @Nullable InteractionHand hand) {
+		ForgedContainerTile te = (ForgedContainerTile) world.getBlockEntity(pos);
+		if (te != null) {
+			te.getOrDelegate().breakLock(player, index, hand);
+		}
 
-        hasItem = true;
+		return true;
+	}
 
-        registerDefaultState(defaultBlockState()
-                .setValue(facingProp, Direction.EAST)
-                .setValue(flippedProp, false)
-                .setValue(openProp, true)
-                .setValue(locked1Prop, false)
-                .setValue(locked2Prop, false)
-                .setValue(anyLockedProp, false));
-    }
+	private static boolean open(Level world, BlockPos pos, BlockState blockState, Player player, InteractionHand hand, Direction facing) {
+		ForgedContainerTile te = (ForgedContainerTile) world.getBlockEntity(pos);
+		if (te != null) {
+			te.getOrDelegate().open(player);
+		}
 
-    @OnlyIn(Dist.CLIENT)
-    @Override
-    public void clientInit() {
-        MenuScreens.register(ForgedContainerContainer.type, ForgedContainerScreen::new);
-    }
+		return true;
+	}
 
-    @Override
-    public void init(PacketHandler packetHandler) {
-        packetHandler.registerPacket(ChangeCompartmentPacket.class, ChangeCompartmentPacket::new);
-    }
+	@OnlyIn(Dist.CLIENT)
+	@Override
+	public void clientInit() {
+		MenuScreens.register(ForgedContainerContainer.type, ForgedContainerScreen::new);
+	}
 
-    @Override
-    public void appendHoverText(ItemStack stack, @Nullable BlockGetter worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-        tooltip.add(ForgedBlockCommon.locationTooltip);
-    }
+	@Override
+	public void init(PacketHandler packetHandler) {
+		packetHandler.registerPacket(ChangeCompartmentPacket.class, ChangeCompartmentPacket::new);
+	}
 
-    private static boolean breakLock(Level world, BlockPos pos, @Nullable Player player, int index, @Nullable InteractionHand hand) {
-        ForgedContainerTile te = (ForgedContainerTile) world.getBlockEntity(pos);
-        if (te != null) {
-            te.getOrDelegate().breakLock(player, index, hand);
-        }
+	@Override
+	public void appendHoverText(ItemStack stack, @Nullable BlockGetter worldIn, List<Component> tooltip, TooltipFlag flagIn) {
+		tooltip.add(ForgedBlockCommon.locationTooltip);
+	}
 
-        return true;
-    }
+	@Override
+	public BlockInteraction[] getPotentialInteractions(Level world, BlockPos pos, BlockState state, Direction face, Collection<ToolAction> tools) {
+		return Arrays.stream(interactions)
+			.filter(interaction -> interaction.isPotentialInteraction(world, pos, state, state.getValue(facingProp), face, tools))
+			.toArray(BlockInteraction[]::new);
+	}
 
-    private static boolean open(Level world, BlockPos pos, BlockState blockState, Player player, InteractionHand hand, Direction facing) {
-        ForgedContainerTile te = (ForgedContainerTile) world.getBlockEntity(pos);
-        if (te != null) {
-            te.getOrDelegate().open(player);
-        }
+	@Override
+	public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+		InteractionResult didInteract = BlockInteraction.attemptInteraction(world, state, pos, player, hand, hit);
 
-        return true;
-    }
+		if (didInteract != InteractionResult.SUCCESS) {
+			if (!world.isClientSide) {
+				TileEntityOptional.from(world, pos, ForgedContainerTile.class)
+					.ifPresent(te -> {
+						ForgedContainerTile delegate = te.getOrDelegate();
+						if (delegate.isOpen()) {
+							NetworkHooks.openGui((ServerPlayer) player, delegate, delegate.getBlockPos());
+						}
+					});
+			}
+		} else {
+			world.sendBlockUpdated(pos, state, state, 3);
+		}
 
-    @Override
-    public BlockInteraction[] getPotentialInteractions(Level world, BlockPos pos, BlockState state, Direction face, Collection<ToolAction> tools) {
-        return Arrays.stream(interactions)
-                .filter(interaction -> interaction.isPotentialInteraction(world, pos, state, state.getValue(facingProp), face, tools))
-                .toArray(BlockInteraction[]::new);
-    }
+		return InteractionResult.SUCCESS;
+	}
 
-    @Override
-    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-        InteractionResult didInteract = BlockInteraction.attemptInteraction(world, state, pos, player, hand, hit);
+	@Override
+	public void onRemove(BlockState state, Level world, BlockPos pos, BlockState newState, boolean isMoving) {
+		if (!equals(newState.getBlock())) {
+			// only drop loot from open, primary/unflipped chests
+			if (state.getValue(openProp) && !state.getValue(flippedProp)) {
+				dropBlockInventory(this, world, pos, newState);
+			} else {
+				TileEntityOptional.from(world, pos, ForgedContainerTile.class).ifPresent(BlockEntity::setRemoved);
+			}
+		}
+	}
 
-        if (didInteract != InteractionResult.SUCCESS) {
-            if (!world.isClientSide) {
-                TileEntityOptional.from(world, pos, ForgedContainerTile.class)
-                        .ifPresent(te -> {
-                            ForgedContainerTile delegate = te.getOrDelegate();
-                            if (delegate.isOpen()) {
-                                NetworkHooks.openGui((ServerPlayer) player, delegate, delegate.getBlockPos());
-                            }
-                        });
-            }
-        } else {
-            world.sendBlockUpdated(pos, state, state, 3);
-        }
+	@Override
+	public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
+		Direction facing = state.getValue(facingProp);
+		boolean flipped = state.getValue(flippedProp);
 
-        return InteractionResult.SUCCESS;
-    }
+		if (state.getValue(openProp)) {
+			if (flipped) {
+				switch (facing) {
+					case NORTH:
+						return shapeX1Open;
+					case EAST:
+						return shapeZ1Open;
+					case SOUTH:
+						return shapeX2Open;
+					case WEST:
+						return shapeZ2Open;
+				}
+			} else {
+				switch (facing) {
+					case NORTH:
+						return shapeX2Open;
+					case EAST:
+						return shapeZ2Open;
+					case SOUTH:
+						return shapeX1Open;
+					case WEST:
+						return shapeZ1Open;
+				}
+			}
+		} else {
+			if (flipped) {
+				switch (facing) {
+					case NORTH:
+						return shapeX1;
+					case EAST:
+						return shapeZ1;
+					case SOUTH:
+						return shapeX2;
+					case WEST:
+						return shapeZ2;
+				}
+			} else {
+				switch (facing) {
+					case NORTH:
+						return shapeX2;
+					case EAST:
+						return shapeZ2;
+					case SOUTH:
+						return shapeX1;
+					case WEST:
+						return shapeZ1;
+				}
+			}
+		}
 
-    @Override
-    public void onRemove(BlockState state, Level world, BlockPos pos, BlockState newState, boolean isMoving) {
-        if (!equals(newState.getBlock())) {
-            // only drop loot from open, primary/unflipped chests
-            if (state.getValue(openProp) && !state.getValue(flippedProp)) {
-                dropBlockInventory(this, world, pos, newState);
-            } else {
-                TileEntityOptional.from(world, pos, ForgedContainerTile.class).ifPresent(BlockEntity::setRemoved);
-            }
-        }
-    }
+		return null;
+	}
 
-    @Override
-    public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
-        Direction facing = state.getValue(facingProp);
-        boolean flipped = state.getValue(flippedProp);
+	@Override
+	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+		super.createBlockStateDefinition(builder);
+		builder.add(facingProp, flippedProp, locked1Prop, locked2Prop, anyLockedProp, openProp);
+	}
 
-        if (state.getValue(openProp)) {
-            if (flipped) {
-                switch (facing) {
-                    case NORTH:
-                        return shapeX1Open;
-                    case EAST:
-                        return shapeZ1Open;
-                    case SOUTH:
-                        return shapeX2Open;
-                    case WEST:
-                        return shapeZ2Open;
-                }
-            } else {
-                switch (facing) {
-                    case NORTH:
-                        return shapeX2Open;
-                    case EAST:
-                        return shapeZ2Open;
-                    case SOUTH:
-                        return shapeX1Open;
-                    case WEST:
-                        return shapeZ1Open;
-                }
-            }
-        } else {
-            if (flipped) {
-                switch (facing) {
-                    case NORTH:
-                        return shapeX1;
-                    case EAST:
-                        return shapeZ1;
-                    case SOUTH:
-                        return shapeX2;
-                    case WEST:
-                        return shapeZ2;
-                }
-            } else {
-                switch (facing) {
-                    case NORTH:
-                        return shapeX2;
-                    case EAST:
-                        return shapeZ2;
-                    case SOUTH:
-                        return shapeX1;
-                    case WEST:
-                        return shapeZ1;
-                }
-            }
-        }
+	@Nullable
+	@Override
+	public BlockState getStateForPlacement(final BlockPlaceContext context) {
+		if (context.getLevel().getBlockState(context.getClickedPos().relative(context.getHorizontalDirection().getClockWise())).canBeReplaced(context)) {
+			return super.getStateForPlacement(context).setValue(facingProp, context.getHorizontalDirection());
+		}
 
-        return null;
-    }
+		// returning null here stops the block from being placed
+		return null;
+	}
 
-    @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        super.createBlockStateDefinition(builder);
-        builder.add(facingProp, flippedProp, locked1Prop, locked2Prop, anyLockedProp, openProp);
-    }
+	// based on same method implementation in BedBlock
+	public void setPlacedBy(Level world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+		Direction facing = state.getValue(facingProp);
+		world.setBlock(pos.relative(facing.getClockWise()), defaultBlockState().setValue(flippedProp, true).setValue(facingProp, facing), 3);
+	}
 
-    @Nullable
-    @Override
-    public BlockState getStateForPlacement(final BlockPlaceContext context) {
-        if (context.getLevel().getBlockState(context.getClickedPos().relative(context.getHorizontalDirection().getClockWise())).canBeReplaced(context)) {
-            return super.getStateForPlacement(context).setValue(facingProp, context.getHorizontalDirection());
-        }
+	@Override
+	public BlockState updateShape(BlockState state, Direction facing, BlockState facingState, LevelAccessor world, BlockPos currentPos,
+								  BlockPos facingPos) {
+		Direction pairedFacing = state.getValue(facingProp);
+		if (state.getValue(flippedProp)) {
+			pairedFacing = pairedFacing.getCounterClockWise();
+		} else {
+			pairedFacing = pairedFacing.getClockWise();
+		}
 
-        // returning null here stops the block from being placed
-        return null;
-    }
+		if (pairedFacing == facing && !equals(facingState.getBlock())) {
+			return state.getValue(BlockStateProperties.WATERLOGGED) ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState();
+		}
 
-    // based on same method implementation in BedBlock
-    public void setPlacedBy(Level world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
-        Direction facing = state.getValue(facingProp);
-        world.setBlock(pos.relative(facing.getClockWise()), defaultBlockState().setValue(flippedProp, true).setValue(facingProp, facing), 3);
-    }
+		return super.updateShape(state, facing, facingState, world, currentPos, facingPos);
+	}
 
-    @Override
-    public BlockState updateShape(BlockState state, Direction facing, BlockState facingState, LevelAccessor world, BlockPos currentPos,
-            BlockPos facingPos) {
-        Direction pairedFacing = state.getValue(facingProp);
-        if (state.getValue(flippedProp)) {
-            pairedFacing = pairedFacing.getCounterClockWise();
-        } else {
-            pairedFacing = pairedFacing.getClockWise();
-        }
+	@Override
+	public RenderShape getRenderShape(BlockState state) {
+		return RenderShape.ENTITYBLOCK_ANIMATED;
+	}
 
-        if (pairedFacing == facing && !equals(facingState.getBlock())) {
-            return state.getValue(BlockStateProperties.WATERLOGGED) ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState();
-        }
+	@Override
+	public BlockState rotate(BlockState state, Rotation rot) {
+		Direction facing = state.getValue(facingProp);
 
-        return super.updateShape(state, facing, facingState, world, currentPos, facingPos);
-    }
+		if (Rotation.CLOCKWISE_180.equals(rot)
+			|| Rotation.CLOCKWISE_90.equals(rot) && (Direction.NORTH.equals(facing) || Direction.SOUTH.equals(facing))
+			|| Rotation.COUNTERCLOCKWISE_90.equals(rot) && (Direction.EAST.equals(facing) || Direction.WEST.equals(facing))) {
+			state = state.setValue(flippedProp, state.getValue(flippedProp));
+		}
 
-    @Override
-    public RenderShape getRenderShape(BlockState state) {
-        return RenderShape.ENTITYBLOCK_ANIMATED;
-    }
+		return state.setValue(facingProp, rot.rotate(facing));
+	}
 
-    @Override
-    public BlockState rotate(BlockState state, Rotation rot) {
-        Direction facing = state.getValue(facingProp);
+	@Override
+	public BlockState mirror(BlockState state, Mirror mirror) {
+		return state.rotate(mirror.getRotation(state.getValue(facingProp)));
+	}
 
-        if (Rotation.CLOCKWISE_180.equals(rot)
-                || Rotation.CLOCKWISE_90.equals(rot) && ( Direction.NORTH.equals(facing) || Direction.SOUTH.equals(facing))
-                || Rotation.COUNTERCLOCKWISE_90.equals(rot) && ( Direction.EAST.equals(facing) || Direction.WEST.equals(facing))) {
-            state = state.setValue(flippedProp, state.getValue(flippedProp));
-        }
-
-        return state.setValue(facingProp, rot.rotate(facing));
-    }
-
-    @Override
-    public BlockState mirror(BlockState state, Mirror mirror) {
-        return state.rotate(mirror.getRotation(state.getValue(facingProp)));
-    }
-
-    @org.jetbrains.annotations.Nullable
-    @Override
-    public BlockEntity newBlockEntity(BlockPos p_153215_, BlockState p_153216_) {
-        return new ForgedContainerTile(p_153215_, p_153216_);
-    }
+	@org.jetbrains.annotations.Nullable
+	@Override
+	public BlockEntity newBlockEntity(BlockPos p_153215_, BlockState p_153216_) {
+		return new ForgedContainerTile(p_153215_, p_153216_);
+	}
 }

@@ -9,35 +9,36 @@ import se.mickelus.tetra.items.modular.ItemModularHandheld;
 import se.mickelus.tetra.util.CastOptional;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class BlockProgressOverlay {
-    public static BlockProgressOverlay instance;
+	public static BlockProgressOverlay instance;
 
-    private final Minecraft mc;
+	private final Minecraft mc;
 
-    private GuiBlockProgress gui;
+	private final GuiBlockProgress gui;
 
-    public BlockProgressOverlay(Minecraft mc) {
-        this.mc = mc;
+	public BlockProgressOverlay(Minecraft mc) {
+		this.mc = mc;
 
-        gui = new GuiBlockProgress(mc);
+		gui = new GuiBlockProgress(mc);
 
-        instance = this;
-    }
+		instance = this;
+	}
 
-    @SubscribeEvent(priority = EventPriority.NORMAL)
-    public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
-        if (event.getType() != RenderGameOverlayEvent.ElementType.CROSSHAIRS) {
-            return;
-        }
+	@SubscribeEvent(priority = EventPriority.NORMAL)
+	public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
+		if (event.getType() != RenderGameOverlayEvent.ElementType.CROSSHAIRS) {
+			return;
+		}
 
-        ItemStack activeStack = mc.player.getUseItem();
+		ItemStack activeStack = mc.player.getUseItem();
 
-        gui.setProgress(
-                CastOptional.cast(activeStack.getItem(), ItemModularHandheld.class)
-                        .map(item -> item.getBlockProgress(activeStack, mc.player))
-                        .orElse(0f));
+		gui.setProgress(
+			CastOptional.cast(activeStack.getItem(), ItemModularHandheld.class)
+				.map(item -> item.getBlockProgress(activeStack, mc.player))
+				.orElse(0f));
 
-        gui.draw(event.getMatrixStack());
-    }
+		gui.draw(event.getMatrixStack());
+	}
 }

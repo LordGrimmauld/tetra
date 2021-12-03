@@ -12,118 +12,119 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
 @ParametersAreNonnullByDefault
 public class GuiModuleList extends GuiElement {
-    private final Consumer<String> slotClickHandler;
-    private final BiConsumer<String, String> hoverHandler;
-    
-    private GuiModuleMajor[] majorModuleElements;
-    private GuiModule[] minorModuleElements;
+	private final Consumer<String> slotClickHandler;
+	private final BiConsumer<String, String> hoverHandler;
 
-    public GuiModuleList(int x, int y, Consumer<String> slotClickHandler, BiConsumer<String, String> hoverHandler) {
-        super(x, y, 0, 0);
+	private GuiModuleMajor[] majorModuleElements;
+	private GuiModule[] minorModuleElements;
 
-        majorModuleElements = new GuiModuleMajor[0];
-        minorModuleElements = new GuiModule[0];
+	public GuiModuleList(int x, int y, Consumer<String> slotClickHandler, BiConsumer<String, String> hoverHandler) {
+		super(x, y, 0, 0);
 
-        this.slotClickHandler = slotClickHandler;
-        this.hoverHandler = hoverHandler;
-    }
+		majorModuleElements = new GuiModuleMajor[0];
+		minorModuleElements = new GuiModule[0];
 
-    public void update(ItemStack itemStack, ItemStack previewStack, String focusSlot) {
-        clearChildren();
-        if (!itemStack.isEmpty() && itemStack.getItem() instanceof IModularItem) {
-            IModularItem item = (IModularItem) itemStack.getItem();
+		this.slotClickHandler = slotClickHandler;
+		this.hoverHandler = hoverHandler;
+	}
 
-            updateMajorModules(item, itemStack, previewStack);
-            updateMinorModules(item, itemStack, previewStack);
+	public void update(ItemStack itemStack, ItemStack previewStack, String focusSlot) {
+		clearChildren();
+		if (!itemStack.isEmpty() && itemStack.getItem() instanceof IModularItem) {
+			IModularItem item = (IModularItem) itemStack.getItem();
 
-            setFocus(focusSlot);
-        }
-    }
+			updateMajorModules(item, itemStack, previewStack);
+			updateMinorModules(item, itemStack, previewStack);
 
-    public void showAnimation() {
-        Random rand = new Random();
-        for (int i = 0; i < majorModuleElements.length; i++) {
-            majorModuleElements[i].showAnimation(rand.nextInt(minorModuleElements.length + majorModuleElements.length));
-        }
+			setFocus(focusSlot);
+		}
+	}
 
-        for (int i = 0; i < minorModuleElements.length; i++) {
-            minorModuleElements[i].showAnimation(rand.nextInt(minorModuleElements.length + majorModuleElements.length));
-        }
-    }
-    
-    public void setFocus(String slotKey) {
-        for (GuiModuleMajor element :
-                majorModuleElements) {
-            element.updateSelectedHighlight(slotKey);
-        }
+	public void showAnimation() {
+		Random rand = new Random();
+		for (int i = 0; i < majorModuleElements.length; i++) {
+			majorModuleElements[i].showAnimation(rand.nextInt(minorModuleElements.length + majorModuleElements.length));
+		}
 
-        for (GuiModule element :
-                minorModuleElements) {
-            element.updateSelectedHighlight(slotKey);
-        }
-    }
+		for (int i = 0; i < minorModuleElements.length; i++) {
+			minorModuleElements[i].showAnimation(rand.nextInt(minorModuleElements.length + majorModuleElements.length));
+		}
+	}
 
-    private void updateMajorModules(IModularItem item, ItemStack itemStack, ItemStack previewStack) {
-        String[] majorModuleNames = item.getMajorModuleNames();
-        String[] majorModuleKeys = item.getMajorModuleKeys();
-        ItemModuleMajor[] majorModules = item.getMajorModules(itemStack);
-        GuiModuleOffsets offsets = item.getMajorGuiOffsets();
-        
-        majorModuleElements = new GuiModuleMajor[majorModules.length];
+	public void setFocus(String slotKey) {
+		for (GuiModuleMajor element :
+			majorModuleElements) {
+			element.updateSelectedHighlight(slotKey);
+		}
 
-        if (!previewStack.isEmpty()) {
-            ItemModuleMajor[] majorModulesPreview = item.getMajorModules(previewStack);
-            for (int i = 0; i < majorModuleNames.length; i++) {
-                final int x = offsets.getX(i);
-                majorModuleElements[i] = new GuiModuleMajor(x, offsets.getY(i), x > 0 ? GuiAttachment.topLeft : GuiAttachment.topRight,
-                        itemStack, previewStack, majorModuleKeys[i], majorModuleNames[i],
-                        majorModules[i], majorModulesPreview[i], slotClickHandler, hoverHandler);
-                addChild(majorModuleElements[i]);
-            }
-        } else {
-            for (int i = 0; i < majorModuleNames.length; i++) {
-                final int x = offsets.getX(i);
-                majorModuleElements[i] = new GuiModuleMajor(x, offsets.getY(i), x > 0 ? GuiAttachment.topLeft : GuiAttachment.topRight,
-                        itemStack, itemStack, majorModuleKeys[i], majorModuleNames[i],
-                        majorModules[i], majorModules[i], slotClickHandler, hoverHandler);
-                addChild(majorModuleElements[i]);
-            }
-        }
-    }
+		for (GuiModule element :
+			minorModuleElements) {
+			element.updateSelectedHighlight(slotKey);
+		}
+	}
 
-    private void updateMinorModules(IModularItem item, ItemStack itemStack, ItemStack previewStack) {
-        String[] minorModuleNames = item.getMinorModuleNames();
-        String[] minorModuleKeys = item.getMinorModuleKeys();
-        ItemModule[] minorModules = item.getMinorModules(itemStack);
-        GuiModuleOffsets offsets = item.getMinorGuiOffsets();
+	private void updateMajorModules(IModularItem item, ItemStack itemStack, ItemStack previewStack) {
+		String[] majorModuleNames = item.getMajorModuleNames();
+		String[] majorModuleKeys = item.getMajorModuleKeys();
+		ItemModuleMajor[] majorModules = item.getMajorModules(itemStack);
+		GuiModuleOffsets offsets = item.getMajorGuiOffsets();
 
-        minorModuleElements = new GuiModule[minorModules.length];
+		majorModuleElements = new GuiModuleMajor[majorModules.length];
 
-        if (!previewStack.isEmpty()) {
-            ItemModule[] minorModulesPreview = item.getMinorModules(previewStack);
+		if (!previewStack.isEmpty()) {
+			ItemModuleMajor[] majorModulesPreview = item.getMajorModules(previewStack);
+			for (int i = 0; i < majorModuleNames.length; i++) {
+				final int x = offsets.getX(i);
+				majorModuleElements[i] = new GuiModuleMajor(x, offsets.getY(i), x > 0 ? GuiAttachment.topLeft : GuiAttachment.topRight,
+					itemStack, previewStack, majorModuleKeys[i], majorModuleNames[i],
+					majorModules[i], majorModulesPreview[i], slotClickHandler, hoverHandler);
+				addChild(majorModuleElements[i]);
+			}
+		} else {
+			for (int i = 0; i < majorModuleNames.length; i++) {
+				final int x = offsets.getX(i);
+				majorModuleElements[i] = new GuiModuleMajor(x, offsets.getY(i), x > 0 ? GuiAttachment.topLeft : GuiAttachment.topRight,
+					itemStack, itemStack, majorModuleKeys[i], majorModuleNames[i],
+					majorModules[i], majorModules[i], slotClickHandler, hoverHandler);
+				addChild(majorModuleElements[i]);
+			}
+		}
+	}
 
-            for (int i = 0; i < minorModuleNames.length; i++) {
-                minorModuleElements[i] = getMinorModule(i, offsets, itemStack, previewStack,
-                        minorModuleKeys[i], minorModuleNames[i], minorModules[i], minorModulesPreview[i]);
-                addChild(minorModuleElements[i]);
-            }
-        } else {
-            for (int i = 0; i < minorModuleNames.length; i++) {
-                minorModuleElements[i] = getMinorModule(i, offsets,
-                    itemStack, itemStack, minorModuleKeys[i], minorModuleNames[i],
-                    minorModules[i], minorModules[i]);
-                addChild(minorModuleElements[i]);
-            }
-        }
-    }
+	private void updateMinorModules(IModularItem item, ItemStack itemStack, ItemStack previewStack) {
+		String[] minorModuleNames = item.getMinorModuleNames();
+		String[] minorModuleKeys = item.getMinorModuleKeys();
+		ItemModule[] minorModules = item.getMinorModules(itemStack);
+		GuiModuleOffsets offsets = item.getMinorGuiOffsets();
 
-    private GuiModule getMinorModule(int index, GuiModuleOffsets offsets, ItemStack itemStack, ItemStack previewStack,
-                                     String slotKey, String slotName,
-                                     ItemModule module, ItemModule previewModule) {
-        final int x = offsets.getX(index);
-        return new GuiModule(x, offsets.getY(index), x > 0 ? GuiAttachment.topLeft : GuiAttachment.topRight,
-                itemStack, previewStack, slotKey, slotName, module, previewModule, slotClickHandler, hoverHandler);
-    }
+		minorModuleElements = new GuiModule[minorModules.length];
+
+		if (!previewStack.isEmpty()) {
+			ItemModule[] minorModulesPreview = item.getMinorModules(previewStack);
+
+			for (int i = 0; i < minorModuleNames.length; i++) {
+				minorModuleElements[i] = getMinorModule(i, offsets, itemStack, previewStack,
+					minorModuleKeys[i], minorModuleNames[i], minorModules[i], minorModulesPreview[i]);
+				addChild(minorModuleElements[i]);
+			}
+		} else {
+			for (int i = 0; i < minorModuleNames.length; i++) {
+				minorModuleElements[i] = getMinorModule(i, offsets,
+					itemStack, itemStack, minorModuleKeys[i], minorModuleNames[i],
+					minorModules[i], minorModules[i]);
+				addChild(minorModuleElements[i]);
+			}
+		}
+	}
+
+	private GuiModule getMinorModule(int index, GuiModuleOffsets offsets, ItemStack itemStack, ItemStack previewStack,
+									 String slotKey, String slotName,
+									 ItemModule module, ItemModule previewModule) {
+		final int x = offsets.getX(index);
+		return new GuiModule(x, offsets.getY(index), x > 0 ? GuiAttachment.topLeft : GuiAttachment.topRight,
+			itemStack, previewStack, slotKey, slotName, module, previewModule, slotClickHandler, hoverHandler);
+	}
 }

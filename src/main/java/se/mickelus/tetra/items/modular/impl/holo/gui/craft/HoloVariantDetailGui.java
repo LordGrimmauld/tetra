@@ -28,258 +28,251 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 @ParametersAreNonnullByDefault
 public class HoloVariantDetailGui extends GuiElement {
 
-    private final GuiHorizontalLayoutGroup header;
-    private GuiString variantLabel;
+	private final GuiHorizontalLayoutGroup header;
+	private final KeyframeAnimation foldAnimation;
+	private final KeyframeAnimation unfoldAnimation;
+	private final GuiString variantLabel;
+	private final GuiSynergyIndicator synergyIndicator;
+	private final GuiElement requiredTools;
+	private final GuiItemRolling material;
+	private final HoloStatsGui stats;
+	private final Map<ToolAction, Integer> availableToolLevels;
+	private Runnable populateImprovements;
+	private final HoloImprovementButton improvementButton;
+	private final HoloImprovementListGui improvements;
+	private final KeyframeAnimation openAnimation;
+	private final KeyframeAnimation showAnimation;
+	private final KeyframeAnimation hideAnimation;
+	private OutcomePreview variantOutcome;
+	private OutcomePreview currentOutcome;
+	private String slot;
+	private final List<OutcomeStack> selectedOutcomes;
+	private OutcomePreview hoveredImprovement;
 
-    private GuiSynergyIndicator synergyIndicator;
+	private final int originalY;
 
-    private GuiElement requiredTools;
-    private GuiItemRolling material;
+	public HoloVariantDetailGui(int x, int y, int width, Consumer<OutcomePreview> onVariantOpen) {
+		super(x, y, width, 100);
 
-    private HoloStatsGui stats;
+		originalY = y;
 
-    private Map<ToolAction, Integer> availableToolLevels;
+		selectedOutcomes = new LinkedList<>();
 
-    private Runnable populateImprovements;
-    private HoloImprovementButton improvementButton;
-    private HoloImprovementListGui improvements;
+		header = new GuiHorizontalLayoutGroup(0, 0, 20, 5);
+		addChild(header);
 
-    private KeyframeAnimation openAnimation;
-    private KeyframeAnimation showAnimation;
-    private KeyframeAnimation hideAnimation;
+		variantLabel = new GuiString(0, 0, "");
+		header.addChild(variantLabel);
 
-    private final KeyframeAnimation foldAnimation;
-    private final KeyframeAnimation unfoldAnimation;
+		synergyIndicator = new GuiSynergyIndicator(0, -1, true);
+		header.addChild(synergyIndicator);
 
-    private OutcomePreview variantOutcome;
-    private OutcomePreview currentOutcome;
-    private String slot;
-    private List<OutcomeStack> selectedOutcomes;
-    private OutcomePreview hoveredImprovement;
+		GuiElement materialWrapper = new MaterialWrapper(0, -4);
+		material = new GuiItemRolling(0, 0)
+			.setCountVisibility(GuiItem.CountMode.always);
+		materialWrapper.addChild(material);
+		header.addChild(materialWrapper);
 
-    private int originalY;
+		requiredTools = new GuiElement(0, -3, width, height);
+		header.addChild(requiredTools);
 
-    public HoloVariantDetailGui(int x, int y, int width, Consumer<OutcomePreview> onVariantOpen) {
-        super(x, y, width, 100);
+		Player player = Minecraft.getInstance().player;
+		availableToolLevels = Stream.of(PropertyHelper.getPlayerToolLevels(player), PropertyHelper.getToolbeltToolLevels(player))
+			.map(Map::entrySet)
+			.flatMap(Collection::stream)
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, Math::max));
 
-        originalY = y;
+		stats = new HoloStatsGui(-5, 24);
+		addChild(stats);
 
-        selectedOutcomes = new LinkedList<>();
+		improvementButton = new HoloImprovementButton(0, 64, () -> onVariantOpen.accept(variantOutcome));
+		improvementButton.setAttachment(GuiAttachment.topCenter);
+		addChild(improvementButton);
 
-        header = new GuiHorizontalLayoutGroup(0, 0, 20, 5);
-        addChild(header);
+		improvements = new HoloImprovementListGui(0, 78, width, 0, this::onImprovementHover, this::onImprovementBlur, this::onImprovementSelect);
+		addChild(improvements);
 
-        variantLabel = new GuiString(0, 0, "");
-        header.addChild(variantLabel);
+		// animations
+		openAnimation = new KeyframeAnimation(80, this)
+			.applyTo(new Applier.Opacity(0, 1), new Applier.TranslateY(y - 4, y))
+			.withDelay(120);
 
-        synergyIndicator = new GuiSynergyIndicator(0, -1, true);
-        header.addChild(synergyIndicator);
+		showAnimation = new KeyframeAnimation(60, this)
+			.applyTo(new Applier.Opacity(1), new Applier.TranslateY(y));
 
-        GuiElement materialWrapper = new MaterialWrapper(0, -4);
-        material = new GuiItemRolling(0, 0)
-                .setCountVisibility(GuiItem.CountMode.always);
-        materialWrapper.addChild(material);
-        header.addChild(materialWrapper);
+		hideAnimation = new KeyframeAnimation(60, this)
+			.applyTo(new Applier.Opacity(0), new Applier.TranslateY(y - 5))
+			.onStop(complete -> {
+				if (complete) {
+					this.isVisible = false;
+				}
+			});
 
-        requiredTools = new GuiElement(0, -3, width, height);
-        header.addChild(requiredTools);
+		foldAnimation = new KeyframeAnimation(60, this)
+			.applyTo(new Applier.TranslateY(0));
 
-        Player player = Minecraft.getInstance().player;
-        availableToolLevels = Stream.of(PropertyHelper.getPlayerToolLevels(player), PropertyHelper.getToolbeltToolLevels(player))
-                .map(Map::entrySet)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, Math::max));
+		unfoldAnimation = new KeyframeAnimation(100, this)
+			.applyTo(new Applier.TranslateY(y));
+	}
 
-        stats = new HoloStatsGui(-5, 24);
-        addChild(stats);
+	public void updateVariant(OutcomePreview selectedOutcome, OutcomePreview hoveredOutcome, String slot) {
+		variantOutcome = selectedOutcome;
+		currentOutcome = selectedOutcome;
+		this.slot = slot;
 
-        improvementButton = new HoloImprovementButton(0, 64, () -> onVariantOpen.accept(variantOutcome));
-        improvementButton.setAttachment(GuiAttachment.topCenter);
-        addChild(improvementButton);
+		if (selectedOutcome != null || hoveredOutcome != null) {
+			OutcomePreview baseOutcome = hoveredOutcome != null ? hoveredOutcome : selectedOutcome;
 
-        improvements = new HoloImprovementListGui(0, 78, width, 0, this::onImprovementHover, this::onImprovementBlur, this::onImprovementSelect);
-        addChild(improvements);
+			variantLabel.setString(I18n.get(ItemModule.getName(baseOutcome.moduleKey, baseOutcome.variantKey)));
 
-        // animations
-        openAnimation = new KeyframeAnimation(80, this)
-                .applyTo(new Applier.Opacity(0, 1), new Applier.TranslateY(y - 4, y))
-                .withDelay(120);
+			synergyIndicator.update(baseOutcome.itemStack, slot);
 
-        showAnimation = new KeyframeAnimation(60, this)
-                .applyTo(new Applier.Opacity(1), new Applier.TranslateY(y));
+			Player player = Minecraft.getInstance().player;
+			ItemStack improvementStack = baseOutcome.itemStack;
+			UpgradeSchematic[] improvementSchematics = Arrays.stream(SchematicRegistry.getSchematics(slot, improvementStack))
+				.filter(improvementSchematic -> SchematicType.improvement.equals(improvementSchematic.getType()))
+				.filter(improvementSchematic -> improvementSchematic.isApplicableForItem(improvementStack))
+				.filter(improvementSchematic -> improvementSchematic.isVisibleForPlayer(player, null, improvementStack))
+				.toArray(UpgradeSchematic[]::new);
 
-        hideAnimation = new KeyframeAnimation(60, this)
-                .applyTo(new Applier.Opacity(0), new Applier.TranslateY(y - 5))
-                .onStop(complete -> {
-                    if (complete) {
-                        this.isVisible = false;
-                    }
-                });
+			improvementButton.updateCount(improvementSchematics.length);
 
-        foldAnimation = new KeyframeAnimation(60, this)
-                .applyTo(new Applier.TranslateY(0));
+			populateImprovements = () -> {
+				improvements.updateSchematics(improvementStack, slot, improvementSchematics);
+				populateImprovements = null;
+			};
 
-        unfoldAnimation = new KeyframeAnimation(100, this)
-                .applyTo(new Applier.TranslateY(y));
-    }
+			requiredTools.clearChildren();
+			baseOutcome.tools.getLevelMap().forEach((tool, level) -> {
+				ToolRequirementGui requirement = new ToolRequirementGui(requiredTools.getNumChildren() * 20, 0, tool,
+					"tetra.tool." + tool.name() + ".craft_requirement");
+				requirement.updateRequirement(level, availableToolLevels.getOrDefault(tool, 0));
+				requiredTools.addChild(requirement);
+			});
 
-    public void updateVariant(OutcomePreview selectedOutcome, OutcomePreview hoveredOutcome, String slot) {
-        variantOutcome = selectedOutcome;
-        currentOutcome = selectedOutcome;
-        this.slot = slot;
+			material.setItems(baseOutcome.materials);
 
-        if (selectedOutcome != null || hoveredOutcome != null) {
-            OutcomePreview baseOutcome = hoveredOutcome != null ? hoveredOutcome : selectedOutcome;
+			updateStats(selectedOutcome, hoveredOutcome);
 
-            variantLabel.setString(I18n.get(ItemModule.getName(baseOutcome.moduleKey, baseOutcome.variantKey)));
+			header.forceLayout();
 
-            synergyIndicator.update(baseOutcome.itemStack, slot);
+			show();
+		} else {
+			hide();
+		}
+	}
 
-            Player player = Minecraft.getInstance().player;
-            ItemStack improvementStack = baseOutcome.itemStack;
-            UpgradeSchematic[] improvementSchematics = Arrays.stream(SchematicRegistry.getSchematics(slot, improvementStack))
-                    .filter(improvementSchematic -> SchematicType.improvement.equals(improvementSchematic.getType()))
-                    .filter(improvementSchematic -> improvementSchematic.isApplicableForItem(improvementStack))
-                    .filter(improvementSchematic -> improvementSchematic.isVisibleForPlayer(player, null, improvementStack))
-                    .toArray(UpgradeSchematic[]::new);
+	public void onImprovementSelect(OutcomeStack selectedStack) {
+		boolean wasRemoved = selectedOutcomes.removeIf(stack -> stack.equals(selectedStack));
 
-            improvementButton.updateCount(improvementSchematics.length);
+		if (!wasRemoved) {
+			selectedOutcomes.add(selectedStack);
+		}
 
-            populateImprovements = () -> {
-                improvements.updateSchematics(improvementStack, slot, improvementSchematics);
-                populateImprovements = null;
-            };
+		currentOutcome = variantOutcome.clone();
 
-            requiredTools.clearChildren();
-            baseOutcome.tools.getLevelMap().forEach((tool, level) -> {
-                ToolRequirementGui requirement = new ToolRequirementGui( requiredTools.getNumChildren() * 20, 0, tool,
-                        "tetra.tool." + tool.name() + ".craft_requirement");
-                requirement.updateRequirement(level, availableToolLevels.getOrDefault(tool, 0));
-                requiredTools.addChild(requirement);
-            });
+		for (OutcomeStack stack : selectedOutcomes) {
+			OutcomePreview[] tempPreviews = stack.schematic.getPreviews(currentOutcome.itemStack, slot);
+			for (OutcomePreview tempPreview : tempPreviews) {
+				if (tempPreview.equals(stack.preview)) {
+					currentOutcome = tempPreview;
+					break;
+				}
+			}
+		}
 
-            material.setItems(baseOutcome.materials);
+		selectedOutcomes.removeIf(stack -> !stack.preview.isApplied(currentOutcome.itemStack, slot));
 
-            updateStats(selectedOutcome, hoveredOutcome);
+		improvements.updateSelection(currentOutcome.itemStack, selectedOutcomes);
 
-            header.forceLayout();
+		updateStats(currentOutcome, currentOutcome);
+	}
 
-            show();
-        } else {
-            hide();
-        }
-    }
+	private void onImprovementHover(OutcomePreview improvement) {
+		updateStats(currentOutcome, improvement);
+		hoveredImprovement = improvement;
+	}
 
-    public void onImprovementSelect(OutcomeStack selectedStack) {
-        boolean wasRemoved = selectedOutcomes.removeIf(stack -> stack.equals(selectedStack));
+	private void onImprovementBlur(OutcomePreview improvement) {
+		if (improvement.equals(hoveredImprovement)) {
+			updateStats(currentOutcome, null);
+			hoveredImprovement = null;
+		}
+	}
 
-        if (!wasRemoved) {
-            selectedOutcomes.add(selectedStack);
-        }
+	public void updateStats(OutcomePreview selectedOutcome, OutcomePreview hoveredOutcome) {
+		ItemStack baseStack = hoveredOutcome != null ? hoveredOutcome.itemStack : selectedOutcome != null ? selectedOutcome.itemStack : ItemStack.EMPTY;
+		stats.update(selectedOutcome != null ? selectedOutcome.itemStack : baseStack, baseStack, null, null,
+			Minecraft.getInstance().player);
+	}
 
-        currentOutcome = variantOutcome.clone();
+	public void animateOpen() {
+		stats.realignBars();
+		openAnimation.start();
+	}
 
-        for (OutcomeStack stack : selectedOutcomes) {
-            OutcomePreview[] tempPreviews = stack.schematic.getPreviews(currentOutcome.itemStack, slot);
-            for (OutcomePreview tempPreview : tempPreviews) {
-                if (tempPreview.equals(stack.preview)) {
-                    currentOutcome = tempPreview;
-                    break;
-                }
-            }
-        }
+	public void show() {
+		hideAnimation.stop();
+		setVisible(true);
+		showAnimation.start();
+	}
 
-        selectedOutcomes.removeIf(stack -> !stack.preview.isApplied(currentOutcome.itemStack, slot));
+	public void hide() {
+		showAnimation.stop();
+		hideAnimation.start();
+	}
 
-        improvements.updateSelection(currentOutcome.itemStack, selectedOutcomes);
+	public void forceHide() {
+		setY(originalY);
+		setOpacity(0);
+		improvements.forceHide();
+		improvementButton.setVisible(false);
+	}
 
-        updateStats(currentOutcome, currentOutcome);
-    }
+	public void showImprovements() {
+		if (populateImprovements != null) {
+			populateImprovements.run();
+		}
 
-    private void onImprovementHover(OutcomePreview improvement) {
-        updateStats(currentOutcome, improvement);
-        hoveredImprovement = improvement;
-    }
+		unfoldAnimation.stop();
+		foldAnimation.start();
+		improvements.show();
+		improvementButton.hide();
+	}
 
-    private void onImprovementBlur(OutcomePreview improvement) {
-        if (improvement.equals(hoveredImprovement)) {
-            updateStats(currentOutcome, null);
-            hoveredImprovement = null;
-        }
-    }
+	public void hideImprovements() {
+		currentOutcome = variantOutcome;
+		selectedOutcomes.clear();
 
-    public void updateStats(OutcomePreview selectedOutcome, OutcomePreview hoveredOutcome) {
-        ItemStack baseStack = hoveredOutcome != null ? hoveredOutcome.itemStack : selectedOutcome != null ? selectedOutcome.itemStack : ItemStack.EMPTY;
-        stats.update(selectedOutcome != null ? selectedOutcome.itemStack : baseStack, baseStack,null, null,
-                Minecraft.getInstance().player);
-    }
+		if (currentOutcome != null) {
+			updateStats(currentOutcome, null);
+		}
 
-    public void animateOpen() {
-        stats.realignBars();
-        openAnimation.start();
-    }
+		foldAnimation.stop();
+		unfoldAnimation.start();
 
-    public void show() {
-        hideAnimation.stop();
-        setVisible(true);
-        showAnimation.start();
-    }
+		improvements.hide();
+		improvementButton.show();
+	}
 
-    public void hide() {
-        showAnimation.stop();
-        hideAnimation.start();
-    }
+	static class MaterialWrapper extends GuiElement {
+		public MaterialWrapper(int x, int y) {
+			super(x, y, 16, 16);
+		}
 
-    public void forceHide() {
-        setY(originalY);
-        setOpacity(0);
-        improvements.forceHide();
-        improvementButton.setVisible(false);
-    }
-
-    public void showImprovements() {
-        if (populateImprovements != null) {
-            populateImprovements.run();
-        }
-
-        unfoldAnimation.stop();
-        foldAnimation.start();
-        improvements.show();
-        improvementButton.hide();
-    }
-
-    public void hideImprovements() {
-        currentOutcome = variantOutcome;
-        selectedOutcomes.clear();
-
-        if (currentOutcome != null) {
-            updateStats(currentOutcome, null);
-        }
-
-        foldAnimation.stop();
-        unfoldAnimation.start();
-
-        improvements.hide();
-        improvementButton.show();
-    }
-
-    static class MaterialWrapper extends GuiElement {
-        public MaterialWrapper(int x, int y) {
-            super(x, y, 16, 16);
-        }
-
-        @Override
-        public List<String> getTooltipLines() {
-            if (hasFocus()) {
-                List<String> tooltip = super.getTooltipLines();
-                if (tooltip != null && tooltip.size() > 0) {
-                    return ImmutableList.of(I18n.get("tetra.holo.craft.material_requirement", tooltip.get(0)));
-                }
-            }
-            return null;
-        }
-    }
+		@Override
+		public List<String> getTooltipLines() {
+			if (hasFocus()) {
+				List<String> tooltip = super.getTooltipLines();
+				if (tooltip != null && tooltip.size() > 0) {
+					return ImmutableList.of(I18n.get("tetra.holo.craft.material_requirement", tooltip.get(0)));
+				}
+			}
+			return null;
+		}
+	}
 }

@@ -6,32 +6,34 @@ import net.minecraft.world.item.ItemStack;
 import se.mickelus.tetra.network.AbstractPacket;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class SettlePacket extends AbstractPacket {
-    ItemStack itemStack;
-    String slot;
+	ItemStack itemStack;
+	String slot;
 
-    public SettlePacket() {}
+	public SettlePacket() {
+	}
 
-    public SettlePacket(ItemStack itemStack, String slot) {
-        this.itemStack = itemStack;
-        this.slot = slot;
-    }
+	public SettlePacket(ItemStack itemStack, String slot) {
+		this.itemStack = itemStack;
+		this.slot = slot;
+	}
 
-    @Override
-    public void toBytes(FriendlyByteBuf buffer) {
-        buffer.writeItem(itemStack);
-        buffer.writeUtf(slot);
-    }
+	@Override
+	public void toBytes(FriendlyByteBuf buffer) {
+		buffer.writeItem(itemStack);
+		buffer.writeUtf(slot);
+	}
 
-    @Override
-    public void fromBytes(FriendlyByteBuf buffer) {
-        itemStack = buffer.readItem();
-        slot = buffer.readUtf();
-    }
+	@Override
+	public void fromBytes(FriendlyByteBuf buffer) {
+		itemStack = buffer.readItem();
+		slot = buffer.readUtf();
+	}
 
-    @Override
-    public void handle(Player player) {
-        ProgressionHelper.showSettleToastClient(itemStack, slot);
-    }
+	@Override
+	public void handle(Player player) {
+		ProgressionHelper.showSettleToastClient(itemStack, slot);
+	}
 }

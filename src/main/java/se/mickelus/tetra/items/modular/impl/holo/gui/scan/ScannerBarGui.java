@@ -9,202 +9,199 @@ import se.mickelus.tetra.gui.GuiColors;
 import se.mickelus.tetra.gui.GuiTextures;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class ScannerBarGui extends GuiElement {
-    private AnimationChain[] upAnimations;
-    private AnimationChain[] upHighlightAnimations;
-    private AnimationChain[] midAnimations;
-    private AnimationChain[] midHighlightAnimations;
-    private AnimationChain[] downAnimations;
-    private AnimationChain[] downHighlightAnimations;
+	private static final int unitWidth = 6;
+	int horizontalSpread;
+	private AnimationChain[] upAnimations;
+	private AnimationChain[] upHighlightAnimations;
+	private AnimationChain[] midAnimations;
+	private AnimationChain[] midHighlightAnimations;
+	private AnimationChain[] downAnimations;
+	private AnimationChain[] downHighlightAnimations;
+	private final KeyframeAnimation showAnimation;
+	private final KeyframeAnimation hideAnimation;
+	private boolean hasStatus;
+	private final GuiString statusLabel;
+	private final KeyframeAnimation statusInAnimation;
+	private final KeyframeAnimation statusOutAnimation;
 
-    private KeyframeAnimation showAnimation;
-    private KeyframeAnimation hideAnimation;
+	public ScannerBarGui(int x, int y, int horizontalSpread) {
+		super(x, y, horizontalSpread * unitWidth, 9);
 
-    int horizontalSpread;
+		this.horizontalSpread = horizontalSpread;
 
-    private static final int unitWidth = 6;
-
-    private boolean hasStatus;
-    private GuiString statusLabel;
-    private KeyframeAnimation statusInAnimation;
-    private KeyframeAnimation statusOutAnimation;
-
-    public ScannerBarGui(int x, int y, int horizontalSpread) {
-        super(x, y, horizontalSpread * unitWidth, 9);
-
-        this.horizontalSpread = horizontalSpread;
-
-        statusLabel = new GuiStringOutline(-2, 0, "");
-        statusLabel.setAttachment(GuiAttachment.middleCenter);
-        statusLabel.setOpacity(0);
-        addChild(statusLabel);
-        statusInAnimation = new KeyframeAnimation(200, statusLabel)
-                .applyTo(new Applier.Opacity(1), new Applier.TranslateX(-2, 0));
-        statusOutAnimation = new KeyframeAnimation(300, statusLabel)
-                .applyTo(new Applier.Opacity(0), new Applier.TranslateX(0, 2));
+		statusLabel = new GuiStringOutline(-2, 0, "");
+		statusLabel.setAttachment(GuiAttachment.middleCenter);
+		statusLabel.setOpacity(0);
+		addChild(statusLabel);
+		statusInAnimation = new KeyframeAnimation(200, statusLabel)
+			.applyTo(new Applier.Opacity(1), new Applier.TranslateX(-2, 0));
+		statusOutAnimation = new KeyframeAnimation(300, statusLabel)
+			.applyTo(new Applier.Opacity(0), new Applier.TranslateX(0, 2));
 
 
-        showAnimation = new KeyframeAnimation(300, this)
-                .applyTo(new Applier.Opacity(1), new Applier.TranslateY(y, y - 4));
-        hideAnimation = new KeyframeAnimation(300, this)
-                .applyTo(new Applier.Opacity(0), new Applier.TranslateY(y - 4, y))
-                .withDelay(200)
-                .onStop(complete -> this.isVisible = false);
+		showAnimation = new KeyframeAnimation(300, this)
+			.applyTo(new Applier.Opacity(1), new Applier.TranslateY(y, y - 4));
+		hideAnimation = new KeyframeAnimation(300, this)
+			.applyTo(new Applier.Opacity(0), new Applier.TranslateY(y - 4, y))
+			.withDelay(200)
+			.onStop(complete -> this.isVisible = false);
 
-        setup();
-    }
+		setup();
+	}
 
-    private void setup() {
-        setWidth(horizontalSpread * unitWidth);
+	public static double getDegreesPerUnit() {
+		return Minecraft.getInstance().options.fov * unitWidth / Minecraft.getInstance().getWindow().getGuiScaledWidth();
+	}
 
-        upAnimations = new AnimationChain[horizontalSpread];
-        midAnimations = new AnimationChain[horizontalSpread];
-        downAnimations = new AnimationChain[horizontalSpread];
-        upHighlightAnimations = new AnimationChain[horizontalSpread];
-        midHighlightAnimations = new AnimationChain[horizontalSpread];
-        downHighlightAnimations = new AnimationChain[horizontalSpread];
+	private void setup() {
+		setWidth(horizontalSpread * unitWidth);
 
-        // backdrop
-        addChild(new GuiRect(-3, -2, getWidth() + 3, getHeight() + 2, 0).setOpacity(0.5f));
+		upAnimations = new AnimationChain[horizontalSpread];
+		midAnimations = new AnimationChain[horizontalSpread];
+		downAnimations = new AnimationChain[horizontalSpread];
+		upHighlightAnimations = new AnimationChain[horizontalSpread];
+		midHighlightAnimations = new AnimationChain[horizontalSpread];
+		downHighlightAnimations = new AnimationChain[horizontalSpread];
 
-        // left caps
-        addChild(new GuiTexture(-2, -1, 2, 2, 1, 1, GuiTextures.hud).setOpacity(0.8f).setAttachment(GuiAttachment.topLeft));
-        addChild(new GuiTexture(-2, -1, 2, 2, 1, 0, GuiTextures.hud).setOpacity(0.8f).setAttachment(GuiAttachment.bottomLeft));
+		// backdrop
+		addChild(new GuiRect(-3, -2, getWidth() + 3, getHeight() + 2, 0).setOpacity(0.5f));
 
-        // right caps
-        addChild(new GuiTexture(-1, -1, 2, 2, 0, 1, GuiTextures.hud).setOpacity(0.8f).setAttachment(GuiAttachment.topRight));
-        addChild(new GuiTexture(-1, -1, 2, 2, 0, 0, GuiTextures.hud).setOpacity(0.8f).setAttachment(GuiAttachment.bottomRight));
+		// left caps
+		addChild(new GuiTexture(-2, -1, 2, 2, 1, 1, GuiTextures.hud).setOpacity(0.8f).setAttachment(GuiAttachment.topLeft));
+		addChild(new GuiTexture(-2, -1, 2, 2, 1, 0, GuiTextures.hud).setOpacity(0.8f).setAttachment(GuiAttachment.bottomLeft));
 
-        // center "caps"
-        addChild(new GuiTexture(-2, -1, 3, 2, 0, 1, GuiTextures.hud).setOpacity(0.8f).setAttachment(GuiAttachment.topCenter));
-        addChild(new GuiTexture(-2, -1, 3, 2, 0, 0, GuiTextures.hud).setOpacity(0.8f).setAttachment(GuiAttachment.bottomCenter));
+		// right caps
+		addChild(new GuiTexture(-1, -1, 2, 2, 0, 1, GuiTextures.hud).setOpacity(0.8f).setAttachment(GuiAttachment.topRight));
+		addChild(new GuiTexture(-1, -1, 2, 2, 0, 0, GuiTextures.hud).setOpacity(0.8f).setAttachment(GuiAttachment.bottomRight));
 
-        for (int i = 0; i < horizontalSpread; i++) {
-            GuiElement up = new GuiTexture(i * 6, 0, 3, 3, GuiTextures.hud).setOpacity(0.3f);
-            addChild(up);
-            upAnimations[i] = new AnimationChain(
-                    new KeyframeAnimation(100, up).applyTo(new Applier.Opacity(0.7f)),
-                    new KeyframeAnimation(600, up).applyTo(new Applier.Opacity(0.3f)));
+		// center "caps"
+		addChild(new GuiTexture(-2, -1, 3, 2, 0, 1, GuiTextures.hud).setOpacity(0.8f).setAttachment(GuiAttachment.topCenter));
+		addChild(new GuiTexture(-2, -1, 3, 2, 0, 0, GuiTextures.hud).setOpacity(0.8f).setAttachment(GuiAttachment.bottomCenter));
 
-
-            GuiElement upHighlight = new GuiTexture(i * 6, 0, 3, 3, GuiTextures.hud)
-                    .setColor(GuiColors.scanner)
-                    .setOpacity(0);
-            addChild(upHighlight);
-            upHighlightAnimations[i] = new AnimationChain(
-                    new KeyframeAnimation(100, upHighlight).applyTo(new Applier.Opacity(0.9f)),
-                    new KeyframeAnimation(1000, upHighlight).applyTo(new Applier.Opacity(0)));
-
-            GuiElement down = new GuiTexture(i * 6, 4, 3, 3, GuiTextures.hud).setOpacity(0.3f);
-            addChild(down);
-            downAnimations[i] = new AnimationChain(
-                    new KeyframeAnimation(100, down).applyTo(new Applier.Opacity(0.7f)),
-                    new KeyframeAnimation(600, down).applyTo(new Applier.Opacity(0.3f)));
+		for (int i = 0; i < horizontalSpread; i++) {
+			GuiElement up = new GuiTexture(i * 6, 0, 3, 3, GuiTextures.hud).setOpacity(0.3f);
+			addChild(up);
+			upAnimations[i] = new AnimationChain(
+				new KeyframeAnimation(100, up).applyTo(new Applier.Opacity(0.7f)),
+				new KeyframeAnimation(600, up).applyTo(new Applier.Opacity(0.3f)));
 
 
-            GuiElement downHighlight = new GuiTexture(i * 6, 4, 3, 3, GuiTextures.hud)
-                    .setColor(GuiColors.scanner)
-                    .setOpacity(0);
-            addChild(downHighlight);
-            downHighlightAnimations[i] = new AnimationChain(
-                    new KeyframeAnimation(100, downHighlight).applyTo(new Applier.Opacity(0.9f)),
-                    new KeyframeAnimation(1000, downHighlight).applyTo(new Applier.Opacity(0)));
-        }
+			GuiElement upHighlight = new GuiTexture(i * 6, 0, 3, 3, GuiTextures.hud)
+				.setColor(GuiColors.scanner)
+				.setOpacity(0);
+			addChild(upHighlight);
+			upHighlightAnimations[i] = new AnimationChain(
+				new KeyframeAnimation(100, upHighlight).applyTo(new Applier.Opacity(0.9f)),
+				new KeyframeAnimation(1000, upHighlight).applyTo(new Applier.Opacity(0)));
 
-        for (int i = 0; i < horizontalSpread - 1; i++) {
-            GuiElement center = new GuiTexture(i * 6 + 3, 2, 3, 3, GuiTextures.hud).setOpacity(0.3f);
-            addChild(center);
-            midAnimations[i] = new AnimationChain(
-                    new KeyframeAnimation(100, center).applyTo(new Applier.Opacity(0.7f)),
-                    new KeyframeAnimation(600, center).applyTo(new Applier.Opacity(0.3f)));
+			GuiElement down = new GuiTexture(i * 6, 4, 3, 3, GuiTextures.hud).setOpacity(0.3f);
+			addChild(down);
+			downAnimations[i] = new AnimationChain(
+				new KeyframeAnimation(100, down).applyTo(new Applier.Opacity(0.7f)),
+				new KeyframeAnimation(600, down).applyTo(new Applier.Opacity(0.3f)));
 
-            GuiElement centerHighlight = new GuiTexture(i * 6 + 3, 2, 3, 3, GuiTextures.hud)
-                    .setColor(GuiColors.scanner)
-                    .setOpacity(0);
-            addChild(centerHighlight);
-            midHighlightAnimations[i] = new AnimationChain(
-                    new KeyframeAnimation(100, centerHighlight).applyTo(new Applier.Opacity(0.9f)),
-                    new KeyframeAnimation(1000, centerHighlight).applyTo(new Applier.Opacity(0)));
-        }
 
-        addChild(statusLabel);
-    }
+			GuiElement downHighlight = new GuiTexture(i * 6, 4, 3, 3, GuiTextures.hud)
+				.setColor(GuiColors.scanner)
+				.setOpacity(0);
+			addChild(downHighlight);
+			downHighlightAnimations[i] = new AnimationChain(
+				new KeyframeAnimation(100, downHighlight).applyTo(new Applier.Opacity(0.9f)),
+				new KeyframeAnimation(1000, downHighlight).applyTo(new Applier.Opacity(0)));
+		}
 
-    public static double getDegreesPerUnit() {
-        return Minecraft.getInstance().options.fov * unitWidth / Minecraft.getInstance().getWindow().getGuiScaledWidth();
-    }
+		for (int i = 0; i < horizontalSpread - 1; i++) {
+			GuiElement center = new GuiTexture(i * 6 + 3, 2, 3, 3, GuiTextures.hud).setOpacity(0.3f);
+			addChild(center);
+			midAnimations[i] = new AnimationChain(
+				new KeyframeAnimation(100, center).applyTo(new Applier.Opacity(0.7f)),
+				new KeyframeAnimation(600, center).applyTo(new Applier.Opacity(0.3f)));
 
-    public void setHorizontalSpread(int horizontalSpread) {
-        if (horizontalSpread != 0 && this.horizontalSpread != horizontalSpread) {
-            this.horizontalSpread = horizontalSpread;
+			GuiElement centerHighlight = new GuiTexture(i * 6 + 3, 2, 3, 3, GuiTextures.hud)
+				.setColor(GuiColors.scanner)
+				.setOpacity(0);
+			addChild(centerHighlight);
+			midHighlightAnimations[i] = new AnimationChain(
+				new KeyframeAnimation(100, centerHighlight).applyTo(new Applier.Opacity(0.9f)),
+				new KeyframeAnimation(1000, centerHighlight).applyTo(new Applier.Opacity(0)));
+		}
 
-            clearChildren();
-            setup();
-        }
-    }
+		addChild(statusLabel);
+	}
 
-    public void setStatus(String status) {
-        if ((status != null) != hasStatus) {
-            hasStatus = status != null;
+	public void setHorizontalSpread(int horizontalSpread) {
+		if (horizontalSpread != 0 && this.horizontalSpread != horizontalSpread) {
+			this.horizontalSpread = horizontalSpread;
 
-            if (hasStatus) {
-                statusOutAnimation.stop();
-                statusInAnimation.start();
-            } else {
-                statusInAnimation.stop();
-                statusOutAnimation.start();
-            }
-        }
+			clearChildren();
+			setup();
+		}
+	}
 
-        statusLabel.setString(status);
-    }
+	public void setStatus(String status) {
+		if ((status != null) != hasStatus) {
+			hasStatus = status != null;
 
-    protected void show() {
-        isVisible = true;
-        if (opacity < 1 && !showAnimation.isActive()) {
-            isVisible = true;
-            hideAnimation.stop();
-            showAnimation.start();
-        }
-    }
+			if (hasStatus) {
+				statusOutAnimation.stop();
+				statusInAnimation.start();
+			} else {
+				statusInAnimation.stop();
+				statusOutAnimation.start();
+			}
+		}
 
-    protected boolean hide() {
-        if (opacity > 0 && !hideAnimation.isActive()) {
-            showAnimation.stop();
-            hideAnimation.start();
-        }
+		statusLabel.setString(status);
+	}
 
-        return false;
-    }
+	protected void show() {
+		isVisible = true;
+		if (opacity < 1 && !showAnimation.isActive()) {
+			isVisible = true;
+			hideAnimation.stop();
+			showAnimation.start();
+		}
+	}
 
-    public void highlightUp(int index, boolean wasHit) {
-        if (opacity == 1) {
-            if (wasHit) {
-                upHighlightAnimations[index].start();
-            } else {
-                upAnimations[index].start();
-            }
-        }
-    }
+	protected boolean hide() {
+		if (opacity > 0 && !hideAnimation.isActive()) {
+			showAnimation.stop();
+			hideAnimation.start();
+		}
 
-    public void highlightMid(int index, boolean wasHit) {
-        if (opacity == 1) {
-            if (wasHit) {
-                midHighlightAnimations[index].start();
-            } else {
-                midAnimations[index].start();
-            }
-        }
-    }
+		return false;
+	}
 
-    public void highlightDown(int index, boolean wasHit) {
-        if (opacity == 1) {
-            if (wasHit) {
-                downHighlightAnimations[index].start();
-            } else {
-                downAnimations[index].start();
-            }
-        }
-    }
+	public void highlightUp(int index, boolean wasHit) {
+		if (opacity == 1) {
+			if (wasHit) {
+				upHighlightAnimations[index].start();
+			} else {
+				upAnimations[index].start();
+			}
+		}
+	}
+
+	public void highlightMid(int index, boolean wasHit) {
+		if (opacity == 1) {
+			if (wasHit) {
+				midHighlightAnimations[index].start();
+			} else {
+				midAnimations[index].start();
+			}
+		}
+	}
+
+	public void highlightDown(int index, boolean wasHit) {
+		if (opacity == 1) {
+			if (wasHit) {
+				downHighlightAnimations[index].start();
+			} else {
+				downAnimations[index].start();
+			}
+		}
+	}
 }

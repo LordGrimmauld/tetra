@@ -6,34 +6,35 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.ToolAction;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class TooltipGetterTool implements ITooltipGetter {
 
-    private final IStatGetter levelGetter;
-    private final IStatGetter efficiencyGetter;
-    private final String localizationKey;
+	private final IStatGetter levelGetter;
+	private final IStatGetter efficiencyGetter;
+	private final String localizationKey;
 
 
-    public TooltipGetterTool(ToolAction tool) {
-        localizationKey = "tetra.stats." + tool.name() + ".tooltip";
+	public TooltipGetterTool(ToolAction tool) {
+		localizationKey = "tetra.stats." + tool.name() + ".tooltip";
 
-        levelGetter = new StatGetterToolLevel(tool);
-        efficiencyGetter = new StatGetterToolEfficiency(tool);
-    }
+		levelGetter = new StatGetterToolLevel(tool);
+		efficiencyGetter = new StatGetterToolEfficiency(tool);
+	}
 
 
-    @Override
-    public String getTooltipBase(Player player, ItemStack itemStack) {
-        return I18n.get(localizationKey,
-                (int) levelGetter.getValue(player, itemStack),
-                String.format("%.2f", efficiencyGetter.getValue(player, itemStack)));
-    }
+	@Override
+	public String getTooltipBase(Player player, ItemStack itemStack) {
+		return I18n.get(localizationKey,
+			(int) levelGetter.getValue(player, itemStack),
+			String.format("%.2f", efficiencyGetter.getValue(player, itemStack)));
+	}
 
-    public boolean hasExtendedTooltip(Player player, ItemStack itemStack) {
-        return true;
-    }
+	public boolean hasExtendedTooltip(Player player, ItemStack itemStack) {
+		return true;
+	}
 
-    public String getTooltipExtension(Player player, ItemStack itemStack) {
-        return I18n.get("tetra.stats.tool.tooltip_extended");
-    }
+	public String getTooltipExtension(Player player, ItemStack itemStack) {
+		return I18n.get("tetra.stats.tool.tooltip_extended");
+	}
 }

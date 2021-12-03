@@ -42,202 +42,199 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static com.google.common.base.Predicates.equalTo;
+
 @ParametersAreNonnullByDefault
 public class ForgedVentBlock extends TetraWaterloggedBlock implements IInteractiveBlock {
-    static final String unlocalizedName = "forged_vent";
+	public static final IntegerProperty propRotation = IntegerProperty.create("rotation", 0, 3);
+	public static final BooleanProperty propX = BooleanProperty.create("x");
+	public static final BooleanProperty propBroken = BooleanProperty.create("broken");
+	static final String unlocalizedName = "forged_vent";
+	private static final ResourceLocation boltLootTable = new ResourceLocation(TetraMod.MOD_ID, "forged/bolt_break");
+	private static final ResourceLocation ventLootTable = new ResourceLocation(TetraMod.MOD_ID, "forged/vent_break");
+	public static final BlockInteraction[] interactions = new BlockInteraction[]{
+		new BlockInteraction(TetraToolActions.hammer, 3, Direction.EAST, 1, 4, 12, 15,
+			new PropertyMatcher().where(propBroken, equalTo(false)).where(propRotation, equalTo(0)),
+			ForgedVentBlock::breakBolt),
+		new BlockInteraction(TetraToolActions.hammer, 3, Direction.EAST, 1, 4, 1, 4,
+			new PropertyMatcher().where(propBroken, equalTo(false)).where(propRotation, equalTo(1)),
+			ForgedVentBlock::breakBolt),
+		new BlockInteraction(TetraToolActions.hammer, 3, Direction.EAST, 12, 15, 12, 15,
+			new PropertyMatcher().where(propBroken, equalTo(false)).where(propRotation, equalTo(2)),
+			ForgedVentBlock::breakBolt),
+		new BlockInteraction(TetraToolActions.hammer, 3, Direction.EAST, 12, 15, 1, 4,
+			new PropertyMatcher().where(propBroken, equalTo(false)).where(propRotation, equalTo(3)),
+			ForgedVentBlock::breakBolt),
 
-    @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
-    public static ForgedVentBlock instance;
+		new BlockInteraction(TetraToolActions.hammer, 3, Direction.WEST, 12, 15, 12, 15,
+			new PropertyMatcher().where(propBroken, equalTo(false)).where(propRotation, equalTo(0)),
+			ForgedVentBlock::breakBolt),
+		new BlockInteraction(TetraToolActions.hammer, 3, Direction.WEST, 12, 15, 1, 4,
+			new PropertyMatcher().where(propBroken, equalTo(false)).where(propRotation, equalTo(1)),
+			ForgedVentBlock::breakBolt),
+		new BlockInteraction(TetraToolActions.hammer, 3, Direction.WEST, 1, 4, 12, 15,
+			new PropertyMatcher().where(propBroken, equalTo(false)).where(propRotation, equalTo(2)),
+			ForgedVentBlock::breakBolt),
+		new BlockInteraction(TetraToolActions.hammer, 3, Direction.WEST, 1, 4, 1, 4,
+			new PropertyMatcher().where(propBroken, equalTo(false)).where(propRotation, equalTo(3)),
+			ForgedVentBlock::breakBolt),
 
-    public static final IntegerProperty propRotation = IntegerProperty.create("rotation", 0, 3);
-    public static final BooleanProperty propX = BooleanProperty.create("x");
-    public static final BooleanProperty propBroken = BooleanProperty.create("broken");
+		new BlockInteraction(TetraToolActions.pry, 1, Direction.EAST, 7, 11, 8, 12,
+			new PropertyMatcher().where(propBroken, equalTo(true)),
+			ForgedVentBlock::breakBeam),
+		new BlockInteraction(TetraToolActions.pry, 1, Direction.WEST, 7, 11, 8, 12,
+			new PropertyMatcher().where(propBroken, equalTo(true)),
+			ForgedVentBlock::breakBeam),
+	};
+	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
+	public static ForgedVentBlock instance;
 
-    public static final BlockInteraction[] interactions = new BlockInteraction[] {
-            new BlockInteraction(TetraToolActions.hammer, 3, Direction.EAST, 1, 4, 12, 15,
-                    new PropertyMatcher().where(propBroken, equalTo(false)).where(propRotation, equalTo(0)),
-                    ForgedVentBlock::breakBolt),
-            new BlockInteraction(TetraToolActions.hammer, 3, Direction.EAST, 1, 4, 1, 4,
-                    new PropertyMatcher().where(propBroken, equalTo(false)).where(propRotation, equalTo(1)),
-                    ForgedVentBlock::breakBolt),
-            new BlockInteraction(TetraToolActions.hammer, 3, Direction.EAST, 12, 15, 12, 15,
-                    new PropertyMatcher().where(propBroken, equalTo(false)).where(propRotation, equalTo(2)),
-                    ForgedVentBlock::breakBolt),
-            new BlockInteraction(TetraToolActions.hammer, 3, Direction.EAST, 12, 15, 1, 4,
-                    new PropertyMatcher().where(propBroken, equalTo(false)).where(propRotation, equalTo(3)),
-                    ForgedVentBlock::breakBolt),
+	public ForgedVentBlock() {
+		super(ForgedBlockCommon.propertiesNotSolid);
 
-            new BlockInteraction(TetraToolActions.hammer, 3, Direction.WEST, 12, 15, 12, 15,
-                    new PropertyMatcher().where(propBroken, equalTo(false)).where(propRotation, equalTo(0)),
-                    ForgedVentBlock::breakBolt),
-            new BlockInteraction(TetraToolActions.hammer, 3, Direction.WEST, 12, 15, 1, 4,
-                    new PropertyMatcher().where(propBroken, equalTo(false)).where(propRotation, equalTo(1)),
-                    ForgedVentBlock::breakBolt),
-            new BlockInteraction(TetraToolActions.hammer, 3, Direction.WEST, 1, 4, 12, 15,
-                    new PropertyMatcher().where(propBroken, equalTo(false)).where(propRotation, equalTo(2)),
-                    ForgedVentBlock::breakBolt),
-            new BlockInteraction(TetraToolActions.hammer, 3, Direction.WEST, 1, 4, 1, 4,
-                    new PropertyMatcher().where(propBroken, equalTo(false)).where(propRotation, equalTo(3)),
-                    ForgedVentBlock::breakBolt),
+		hasItem = true;
 
-            new BlockInteraction(TetraToolActions.pry, 1, Direction.EAST, 7, 11, 8, 12,
-                    new PropertyMatcher().where(propBroken, equalTo(true)),
-                    ForgedVentBlock::breakBeam),
-            new BlockInteraction(TetraToolActions.pry, 1, Direction.WEST, 7, 11, 8, 12,
-                    new PropertyMatcher().where(propBroken, equalTo(true)),
-                    ForgedVentBlock::breakBeam),
-    };
+		setRegistryName(unlocalizedName);
+	}
 
-    private static final ResourceLocation boltLootTable = new ResourceLocation(TetraMod.MOD_ID, "forged/bolt_break");
-    private static final ResourceLocation ventLootTable = new ResourceLocation(TetraMod.MOD_ID, "forged/vent_break");
+	private static boolean breakBolt(Level world, BlockPos pos, BlockState blockState, Player player, InteractionHand hand, Direction hitFace) {
+		world.setBlock(pos, world.getBlockState(pos).setValue(propBroken, true), 2);
 
-    public ForgedVentBlock() {
-        super(ForgedBlockCommon.propertiesNotSolid);
+		if (!world.isClientSide) {
+			ServerLevel serverWorld = (ServerLevel) world;
+			if (player != null) {
+				BlockInteraction.dropLoot(ventLootTable, player, hand, serverWorld, blockState);
+			} else {
+				BlockInteraction.dropLoot(ventLootTable, serverWorld, pos, blockState);
+			}
 
-        hasItem = true;
+			serverWorld.playSound(null, pos, SoundEvents.ZOMBIE_ATTACK_IRON_DOOR, SoundSource.PLAYERS, 0.4f, 0.5f);
+		}
 
-        setRegistryName(unlocalizedName);
-    }
+		return true;
+	}
 
-    @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        super.createBlockStateDefinition(builder);
-        builder.add(propRotation, propX, propBroken);
-    }
+	private static boolean breakBeam(Level world, BlockPos pos, BlockState blockState, @Nullable Player player, @Nullable InteractionHand hand, Direction hitFace) {
+		List<BlockPos> connectedVents = getConnectedBlocks(world, pos, new LinkedList<>(), blockState.getValue(propX));
 
-    private static boolean breakBolt(Level world, BlockPos pos, BlockState blockState, Player player, InteractionHand hand, Direction hitFace) {
-        world.setBlock(pos, world.getBlockState(pos).setValue(propBroken, true), 2);
+		if (connectedVents.stream().anyMatch(blockPos -> !world.getBlockState(blockPos).getValue(propBroken))) {
+			if (!world.isClientSide) {
+				world.playSound(null, pos, SoundEvents.IRON_TRAPDOOR_CLOSE, SoundSource.PLAYERS, 0.4f, 2);
+			}
+			return false;
+		}
 
-        if (!world.isClientSide) {
-            ServerLevel serverWorld = (ServerLevel) world;
-            if (player != null) {
-                BlockInteraction.dropLoot(ventLootTable, player, hand, serverWorld, blockState);
-            } else {
-                BlockInteraction.dropLoot(ventLootTable, serverWorld, pos, blockState);
-            }
+		connectedVents.forEach(blockPos -> {
+			world.levelEvent(null, 2001, blockPos, Block.getId(world.getBlockState(blockPos)));
+			world.setBlock(blockPos, Blocks.AIR.defaultBlockState(), 2);
+		});
 
-            serverWorld.playSound(null, pos, SoundEvents.ZOMBIE_ATTACK_IRON_DOOR, SoundSource.PLAYERS, 0.4f, 0.5f);
-        }
+		if (!world.isClientSide) {
+			ServerLevel serverWorld = (ServerLevel) world;
+			if (player != null) {
+				BlockInteraction.dropLoot(ventLootTable, player, hand, serverWorld, blockState);
+			} else {
+				BlockInteraction.dropLoot(ventLootTable, serverWorld, pos, blockState);
+			}
+		}
 
-        return true;
-    }
+		return true;
+	}
 
-    private static boolean breakBeam(Level world, BlockPos pos, BlockState blockState, @Nullable Player player, @Nullable InteractionHand hand, Direction hitFace) {
-        List<BlockPos> connectedVents = getConnectedBlocks(world, pos, new LinkedList<>(), blockState.getValue(propX));
+	private static List<BlockPos> getConnectedBlocks(Level world, BlockPos pos, List<BlockPos> visited, boolean isXAxis) {
+		if (!visited.contains(pos) && world.getBlockState(pos).getBlock() instanceof ForgedVentBlock) {
+			visited.add(pos);
 
-        if (connectedVents.stream().anyMatch(blockPos -> !world.getBlockState(blockPos).getValue(propBroken))) {
-            if (!world.isClientSide) {
-                world.playSound(null, pos, SoundEvents.IRON_TRAPDOOR_CLOSE, SoundSource.PLAYERS, 0.4f, 2);
-            }
-            return false;
-        }
+			getConnectedBlocks(world, pos.above(), visited, isXAxis);
+			getConnectedBlocks(world, pos.below(), visited, isXAxis);
 
-        connectedVents.forEach(blockPos -> {
-            world.levelEvent(null, 2001, blockPos, Block.getId(world.getBlockState(blockPos)));
-            world.setBlock(blockPos, Blocks.AIR.defaultBlockState(), 2);
-        });
+			if (isXAxis) {
+				getConnectedBlocks(world, pos.east(), visited, isXAxis);
+				getConnectedBlocks(world, pos.west(), visited, isXAxis);
+			} else {
+				getConnectedBlocks(world, pos.north(), visited, isXAxis);
+				getConnectedBlocks(world, pos.south(), visited, isXAxis);
+			}
+		}
 
-        if (!world.isClientSide) {
-            ServerLevel serverWorld = (ServerLevel) world;
-            if (player != null) {
-                BlockInteraction.dropLoot(ventLootTable, player, hand, serverWorld, blockState);
-            } else {
-                BlockInteraction.dropLoot(ventLootTable, serverWorld, pos, blockState);
-            }
-        }
+		return visited;
+	}
 
-        return true;
-    }
+	@Override
+	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+		super.createBlockStateDefinition(builder);
+		builder.add(propRotation, propX, propBroken);
+	}
 
-    private static List<BlockPos> getConnectedBlocks(Level world, BlockPos pos, List<BlockPos> visited, boolean isXAxis) {
-        if (!visited.contains(pos) && world.getBlockState(pos).getBlock() instanceof ForgedVentBlock) {
-            visited.add(pos);
+	@Override
+	public BlockInteraction[] getPotentialInteractions(Level world, BlockPos pos, BlockState state, Direction face, Collection<ToolAction> tools) {
+		return Arrays.stream(interactions)
+			.filter(interaction -> interaction.isPotentialInteraction(world, pos, state, state.getValue(propX) ? Direction.EAST : Direction.SOUTH, face, tools))
+			.toArray(BlockInteraction[]::new);
+	}
 
-            getConnectedBlocks(world, pos.above(), visited, isXAxis);
-            getConnectedBlocks(world, pos.below(), visited, isXAxis);
+	@Override
+	public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult rayTrace) {
+		return BlockInteraction.attemptInteraction(world, state, pos, player, hand, rayTrace);
+	}
 
-            if (isXAxis) {
-                getConnectedBlocks(world, pos.east(), visited, isXAxis);
-                getConnectedBlocks(world, pos.west(), visited, isXAxis);
-            } else {
-                getConnectedBlocks(world, pos.north(), visited, isXAxis);
-                getConnectedBlocks(world, pos.south(), visited, isXAxis);
-            }
-        }
+	@Override
+	public void appendHoverText(ItemStack itemStack, @Nullable BlockGetter world, List<Component> tooltip, TooltipFlag advanced) {
+		tooltip.add(ForgedBlockCommon.locationTooltip);
+	}
 
-        return visited;
-    }
+	@Nullable
+	@Override
+	public BlockState getStateForPlacement(BlockPlaceContext context) {
+		BlockState blockState = super.getStateForPlacement(context);
 
-    @Override
-    public BlockInteraction[] getPotentialInteractions(Level world, BlockPos pos, BlockState state, Direction face, Collection<ToolAction> tools) {
-        return Arrays.stream(interactions)
-                .filter(interaction -> interaction.isPotentialInteraction(world, pos, state, state.getValue(propX) ? Direction.EAST : Direction.SOUTH, face, tools))
-                .toArray(BlockInteraction[]::new);
-    }
+		Direction playerFacing = context.getPlayer() != null ? context.getPlayer().getDirection() : Direction.NORTH;
 
-    @Override
-    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult rayTrace) {
-        return BlockInteraction.attemptInteraction(world, state, pos, player, hand, rayTrace);
-    }
+		blockState = blockState != null ? blockState : defaultBlockState();
+		blockState = blockState.setValue(propX, Direction.Axis.X.equals(playerFacing.getAxis()));
 
-    @Override
-    public void appendHoverText(ItemStack itemStack, @Nullable BlockGetter world, List<Component> tooltip, TooltipFlag advanced) {
-        tooltip.add(ForgedBlockCommon.locationTooltip);
-    }
+		int rotation = 0;
 
-    @Nullable
-    @Override
-    public BlockState getStateForPlacement(BlockPlaceContext context) {
-        BlockState blockState = super.getStateForPlacement(context);
+		if (Direction.EAST.equals(playerFacing) || Direction.SOUTH.equals(playerFacing)) {
+			rotation = 2;
+		}
 
-        Direction playerFacing = context.getPlayer() != null ? context.getPlayer().getDirection() : Direction.NORTH;
+		if (context.getClickedFace() != Direction.UP
+			&& (context.getClickedFace() == Direction.DOWN || context.getClickLocation().y - context.getClickedPos().getY() > 0.5)) {
+			rotation++;
+		}
 
-        blockState = blockState != null ? blockState : defaultBlockState();
-        blockState = blockState.setValue(propX, Direction.Axis.X.equals(playerFacing.getAxis()));
+		blockState = blockState
+			.setValue(propRotation, rotation)
+			.setValue(propBroken, false);
 
-        int rotation = 0;
+		return blockState;
+	}
 
-        if (Direction.EAST.equals(playerFacing) || Direction.SOUTH.equals(playerFacing)) {
-            rotation = 2;
-        }
+	@Override
+	public BlockState rotate(BlockState state, Rotation rot) {
+		boolean isXAxis = state.getValue(propX);
+		if (rot.equals(Rotation.CLOCKWISE_90) || rot.equals(Rotation.COUNTERCLOCKWISE_90)) {
+			state = state.setValue(propX, !isXAxis);
+		}
+		if (rot.equals(Rotation.CLOCKWISE_180)
+			|| (!isXAxis && rot.equals(Rotation.CLOCKWISE_90))
+			|| (isXAxis && rot.equals(Rotation.COUNTERCLOCKWISE_90))) {
+			return state.setValue(propRotation, state.getValue(propRotation) ^ 2);
+		}
 
-        if (context.getClickedFace() != Direction.UP
-                && (context.getClickedFace() == Direction.DOWN || context.getClickLocation().y - context.getClickedPos().getY() > 0.5)) {
-            rotation++;
-        }
+		return state.setValue(propRotation, state.getValue(propRotation));
+	}
 
-        blockState = blockState
-                .setValue(propRotation, rotation)
-                .setValue(propBroken, false);
+	@Override
+	public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext contex) {
+		if (state.getValue(propX)) {
+			return box(0, 0, 7, 16, 16, 9);
+		}
+		return box(7, 0, 0, 9, 16, 16);
+	}
 
-        return  blockState;
-    }
-
-    @Override
-    public BlockState rotate(BlockState state, Rotation rot) {
-        boolean isXAxis = state.getValue(propX);
-        if (rot.equals(Rotation.CLOCKWISE_90) || rot.equals(Rotation.COUNTERCLOCKWISE_90)) {
-            state = state.setValue(propX, !isXAxis);
-        }
-        if (rot.equals(Rotation.CLOCKWISE_180)
-                || (!isXAxis && rot.equals(Rotation.CLOCKWISE_90))
-                || (isXAxis && rot.equals(Rotation.COUNTERCLOCKWISE_90))) {
-            return state.setValue(propRotation, state.getValue(propRotation) ^ 2);
-        }
-
-        return state.setValue(propRotation, state.getValue(propRotation));
-    }
-
-    @Override
-    public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext contex) {
-        if (state.getValue(propX)) {
-            return box(0, 0, 7, 16, 16, 9);
-        }
-        return box(7, 0, 0, 9, 16, 16);
-    }
-
-    @Override
-    public int getLightBlock(BlockState state, BlockGetter world, BlockPos pos) {
-        return 0;
-    }
+	@Override
+	public int getLightBlock(BlockState state, BlockGetter world, BlockPos pos) {
+		return 0;
+	}
 }

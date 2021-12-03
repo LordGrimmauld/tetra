@@ -12,67 +12,68 @@ import se.mickelus.tetra.util.Filter;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.*;
+
 @ParametersAreNonnullByDefault
 public class MultiSlotMajorModule extends ItemModuleMajor {
 
-    protected String slotSuffix;
+	protected String slotSuffix;
 
-    protected String unlocalizedName;
+	protected String unlocalizedName;
 
-    public MultiSlotMajorModule(ResourceLocation identifier, ModuleData data) {
-        super(data.slots[0], identifier.getPath());
+	public MultiSlotMajorModule(ResourceLocation identifier, ModuleData data) {
+		super(data.slots[0], identifier.getPath());
 
-        slotSuffix = data.slotSuffixes[0];
+		slotSuffix = data.slotSuffixes[0];
 
-        // strip the suffix from the unlocalized name
-        unlocalizedName = identifier.getPath().substring(0, identifier.getPath().length() - data.slotSuffixes[0].length());
+		// strip the suffix from the unlocalized name
+		unlocalizedName = identifier.getPath().substring(0, identifier.getPath().length() - data.slotSuffixes[0].length());
 
-        renderLayer = data.renderLayer;
+		renderLayer = data.renderLayer;
 
-        variantData = data.variants;
+		variantData = data.variants;
 
-        if (data.improvements.length > 0) {
-            improvements = Arrays.stream(data.improvements)
-                    .map(rl -> rl.getPath().endsWith("/")
-                            ? DataManager.improvementData.getDataIn(rl)
-                            : Optional.ofNullable(DataManager.improvementData.getData(rl)).map(Collections::singletonList).orElseGet(Collections::emptyList))
-                    .flatMap(Collection::stream)
-                    .filter(Objects::nonNull)
-                    .flatMap(Arrays::stream)
-                    .filter(Filter.distinct(improvement -> improvement.key + ":" + improvement.level))
-                    .toArray(ImprovementData[]::new);
+		if (data.improvements.length > 0) {
+			improvements = Arrays.stream(data.improvements)
+				.map(rl -> rl.getPath().endsWith("/")
+					? DataManager.improvementData.getDataIn(rl)
+					: Optional.ofNullable(DataManager.improvementData.getData(rl)).map(Collections::singletonList).orElseGet(Collections::emptyList))
+				.flatMap(Collection::stream)
+				.filter(Objects::nonNull)
+				.flatMap(Arrays::stream)
+				.filter(Filter.distinct(improvement -> improvement.key + ":" + improvement.level))
+				.toArray(ImprovementData[]::new);
 
-            settleMax = Arrays.stream(improvements)
-                    .filter(improvement -> improvement.key.equals(settleImprovement))
-                    .mapToInt(ImprovementData::getLevel)
-                    .max()
-                    .orElse(0);
-        }
+			settleMax = Arrays.stream(improvements)
+				.filter(improvement -> improvement.key.equals(settleImprovement))
+				.mapToInt(ImprovementData::getLevel)
+				.max()
+				.orElse(0);
+		}
 
-        if (data.tweakKey != null) {
-            TweakData[] tweaks = DataManager.tweakData.getData(data.tweakKey);
-            if (tweaks != null) {
-                this.tweaks = tweaks;
-            } else {
-                this.tweaks = new TweakData[0];
-            }
-        }
-    }
+		if (data.tweakKey != null) {
+			TweakData[] tweaks = DataManager.tweakData.getData(data.tweakKey);
+			if (tweaks != null) {
+				this.tweaks = tweaks;
+			} else {
+				this.tweaks = new TweakData[0];
+			}
+		}
+	}
 
-    @Override
-    public String getUnlocalizedName() {
-        return unlocalizedName;
-    }
+	@Override
+	public String getUnlocalizedName() {
+		return unlocalizedName;
+	}
 
-    @Override
-    protected ModuleModel[] getImprovementModels(ItemStack itemStack, int tint) {
-        return super.getImprovementModels(itemStack, tint);
-    }
+	@Override
+	protected ModuleModel[] getImprovementModels(ItemStack itemStack, int tint) {
+		return super.getImprovementModels(itemStack, tint);
+	}
 
-    @Override
-    public ModuleModel[] getModels(ItemStack itemStack) {
-        return Arrays.stream(super.getModels(itemStack))
-                .map(model -> new ModuleModel(model.type, new ResourceLocation(TetraMod.MOD_ID, model.location.getPath() + slotSuffix), model.tint))
-                .toArray(ModuleModel[]::new);
-    }
+	@Override
+	public ModuleModel[] getModels(ItemStack itemStack) {
+		return Arrays.stream(super.getModels(itemStack))
+			.map(model -> new ModuleModel(model.type, new ResourceLocation(TetraMod.MOD_ID, model.location.getPath() + slotSuffix), model.tint))
+			.toArray(ModuleModel[]::new);
+	}
 }

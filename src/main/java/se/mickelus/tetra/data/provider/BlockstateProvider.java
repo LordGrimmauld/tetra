@@ -15,73 +15,74 @@ import se.mickelus.tetra.blocks.forged.ForgedVentBlock;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import static se.mickelus.tetra.TetraMod.MOD_ID;
+
 @ParametersAreNonnullByDefault
 public class BlockstateProvider extends BlockStateProvider {
-    public BlockstateProvider(DataGenerator gen, String modid, ExistingFileHelper exFileHelper) {
-        super(gen, modid, exFileHelper);
-    }
+	public BlockstateProvider(DataGenerator gen, String modid, ExistingFileHelper exFileHelper) {
+		super(gen, modid, exFileHelper);
+	}
 
-    @Override
-    protected void registerStatesAndModels() {
+	@Override
+	protected void registerStatesAndModels() {
 //        slabBlock(BlockForgedPlatformSlab.instance,
 //                new ResourceLocation(MOD_ID, "block/forged_platform"),
 //                new ResourceLocation(MOD_ID, "blocks/forged_platform_side"),
 //                new ResourceLocation(MOD_ID, "blocks/forged_platform_bottom"),
 //                new ResourceLocation(MOD_ID, "blocks/forged_platform_alternate"));
 
-        setupVent();
-    }
+		setupVent();
+	}
 
-    private ConfiguredModel[] directionalBlock(BlockState state, ModelFile model) {
-        Direction dir = state.getValue(BlockStateProperties.FACING);
-        return ConfiguredModel.builder()
-                .modelFile(model)
-                .rotationX(dir == Direction.DOWN ? 180 : dir.getAxis().isHorizontal() ? 90 : 0)
-                .rotationY(dir.getAxis().isVertical() ? 0 : (int) dir.toYRot() % 360)
-                .build();
-    }
+	private ConfiguredModel[] directionalBlock(BlockState state, ModelFile model) {
+		Direction dir = state.getValue(BlockStateProperties.FACING);
+		return ConfiguredModel.builder()
+			.modelFile(model)
+			.rotationX(dir == Direction.DOWN ? 180 : dir.getAxis().isHorizontal() ? 90 : 0)
+			.rotationY(dir.getAxis().isVertical() ? 0 : (int) dir.toYRot() % 360)
+			.build();
+	}
 
-    private void setupVent() {
-        VariantBlockStateBuilder builder = getVariantBuilder(ForgedVentBlock.instance);
+	private void setupVent() {
+		VariantBlockStateBuilder builder = getVariantBuilder(ForgedVentBlock.instance);
 
-        builder.partialState()
-                .with(ForgedVentBlock.propRotation, 0)
-                .with(ForgedVentBlock.propBroken, false)
-                .addModels(new ConfiguredModel(models().getExistingFile(new ResourceLocation(MOD_ID, "block/forged_vent0"))));
+		builder.partialState()
+			.with(ForgedVentBlock.propRotation, 0)
+			.with(ForgedVentBlock.propBroken, false)
+			.addModels(new ConfiguredModel(models().getExistingFile(new ResourceLocation(MOD_ID, "block/forged_vent0"))));
 
-        builder.partialState()
-                .with(ForgedVentBlock.propRotation, 1)
-                .with(ForgedVentBlock.propBroken, false)
-                .addModels(new ConfiguredModel(models().getExistingFile(new ResourceLocation(MOD_ID, "block/forged_vent1"))));
+		builder.partialState()
+			.with(ForgedVentBlock.propRotation, 1)
+			.with(ForgedVentBlock.propBroken, false)
+			.addModels(new ConfiguredModel(models().getExistingFile(new ResourceLocation(MOD_ID, "block/forged_vent1"))));
 
-        builder.partialState()
-                .with(ForgedVentBlock.propRotation, 2)
-                .with(ForgedVentBlock.propBroken, false)
-                .addModels(new ConfiguredModel(models().getExistingFile(new ResourceLocation(MOD_ID, "block/forged_vent2"))));
+		builder.partialState()
+			.with(ForgedVentBlock.propRotation, 2)
+			.with(ForgedVentBlock.propBroken, false)
+			.addModels(new ConfiguredModel(models().getExistingFile(new ResourceLocation(MOD_ID, "block/forged_vent2"))));
 
-        builder.partialState()
-                .with(ForgedVentBlock.propRotation, 3)
-                .with(ForgedVentBlock.propBroken, false)
-                .addModels(new ConfiguredModel(models().getExistingFile(new ResourceLocation(MOD_ID, "block/forged_vent3"))));
+		builder.partialState()
+			.with(ForgedVentBlock.propRotation, 3)
+			.with(ForgedVentBlock.propBroken, false)
+			.addModels(new ConfiguredModel(models().getExistingFile(new ResourceLocation(MOD_ID, "block/forged_vent3"))));
 
-        builder.partialState()
-                .with(ForgedVentBlock.propRotation, 0)
-                .with(ForgedVentBlock.propBroken, true)
-                .addModels(new ConfiguredModel(models().getExistingFile(new ResourceLocation(MOD_ID, "block/forged_vent0_broken"))));
+		builder.partialState()
+			.with(ForgedVentBlock.propRotation, 0)
+			.with(ForgedVentBlock.propBroken, true)
+			.addModels(new ConfiguredModel(models().getExistingFile(new ResourceLocation(MOD_ID, "block/forged_vent0_broken"))));
 
-        builder.partialState()
-                .with(ForgedVentBlock.propRotation, 1)
-                .with(ForgedVentBlock.propBroken, true)
-                .addModels(new ConfiguredModel(models().getExistingFile(new ResourceLocation(MOD_ID, "block/forged_vent1_broken"))));
+		builder.partialState()
+			.with(ForgedVentBlock.propRotation, 1)
+			.with(ForgedVentBlock.propBroken, true)
+			.addModels(new ConfiguredModel(models().getExistingFile(new ResourceLocation(MOD_ID, "block/forged_vent1_broken"))));
 
-        builder.partialState()
-                .with(ForgedVentBlock.propRotation, 2)
-                .with(ForgedVentBlock.propBroken, true)
-                .addModels(new ConfiguredModel(models().getExistingFile(new ResourceLocation(MOD_ID, "block/forged_vent2_broken"))));
+		builder.partialState()
+			.with(ForgedVentBlock.propRotation, 2)
+			.with(ForgedVentBlock.propBroken, true)
+			.addModels(new ConfiguredModel(models().getExistingFile(new ResourceLocation(MOD_ID, "block/forged_vent2_broken"))));
 
-        builder.partialState()
-                .with(ForgedVentBlock.propRotation, 3)
-                .with(ForgedVentBlock.propBroken, true)
-                .addModels(new ConfiguredModel(models().getExistingFile(new ResourceLocation(MOD_ID, "block/forged_vent3_broken"))));
-    }
+		builder.partialState()
+			.with(ForgedVentBlock.propRotation, 3)
+			.with(ForgedVentBlock.propBroken, true)
+			.addModels(new ConfiguredModel(models().getExistingFile(new ResourceLocation(MOD_ID, "block/forged_vent3_broken"))));
+	}
 }

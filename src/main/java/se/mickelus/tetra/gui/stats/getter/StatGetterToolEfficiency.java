@@ -9,38 +9,39 @@ import se.mickelus.tetra.properties.IToolProvider;
 import se.mickelus.tetra.util.CastOptional;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class StatGetterToolEfficiency implements IStatGetter {
 
-    private ToolAction tool;
+	private final ToolAction tool;
 
-    public StatGetterToolEfficiency(ToolAction tool) {
-        this.tool = tool;
-    }
+	public StatGetterToolEfficiency(ToolAction tool) {
+		this.tool = tool;
+	}
 
-    @Override
-    public double getValue(Player player, ItemStack itemStack) {
-        return CastOptional.cast(itemStack.getItem(), IToolProvider.class)
-                .map(item -> item.getToolData(itemStack))
-                .map(data -> data.getEfficiency(tool))
-                .orElse(0f);
-    }
+	@Override
+	public double getValue(Player player, ItemStack itemStack) {
+		return CastOptional.cast(itemStack.getItem(), IToolProvider.class)
+			.map(item -> item.getToolData(itemStack))
+			.map(data -> data.getEfficiency(tool))
+			.orElse(0f);
+	}
 
-    @Override
-    public double getValue(Player player, ItemStack itemStack, String slot) {
-        return CastOptional.cast(itemStack.getItem(), IModularItem.class)
-                .map(item -> item.getModuleFromSlot(itemStack, slot))
-                .map(module -> module.getToolEfficiency(itemStack, tool))
-                .orElse(0f);
-    }
+	@Override
+	public double getValue(Player player, ItemStack itemStack, String slot) {
+		return CastOptional.cast(itemStack.getItem(), IModularItem.class)
+			.map(item -> item.getModuleFromSlot(itemStack, slot))
+			.map(module -> module.getToolEfficiency(itemStack, tool))
+			.orElse(0f);
+	}
 
-    @Override
-    public double getValue(Player player, ItemStack itemStack, String slot, String improvement) {
-        return CastOptional.cast(itemStack.getItem(), IModularItem.class)
-                .flatMap(item -> CastOptional.cast(item.getModuleFromSlot(itemStack, slot), ItemModuleMajor.class))
-                .map(module -> module.getImprovement(itemStack, improvement))
-                .map(improvementData -> improvementData.tools)
-                .map(data -> data.getEfficiency(tool))
-                .orElse(0f);
-    }
+	@Override
+	public double getValue(Player player, ItemStack itemStack, String slot, String improvement) {
+		return CastOptional.cast(itemStack.getItem(), IModularItem.class)
+			.flatMap(item -> CastOptional.cast(item.getModuleFromSlot(itemStack, slot), ItemModuleMajor.class))
+			.map(module -> module.getImprovement(itemStack, improvement))
+			.map(improvementData -> improvementData.tools)
+			.map(data -> data.getEfficiency(tool))
+			.orElse(0f);
+	}
 }

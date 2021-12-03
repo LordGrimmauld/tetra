@@ -6,22 +6,26 @@ import net.minecraft.world.item.ItemStack;
 import se.mickelus.tetra.network.AbstractPacket;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+
 @ParametersAreNonnullByDefault
 public class TruesweepPacket extends AbstractPacket {
-    public TruesweepPacket() { }
+	public TruesweepPacket() {
+	}
 
-    @Override
-    public void toBytes(FriendlyByteBuf buffer) {}
+	@Override
+	public void toBytes(FriendlyByteBuf buffer) {
+	}
 
-    @Override
-    public void fromBytes(FriendlyByteBuf buffer) {}
+	@Override
+	public void fromBytes(FriendlyByteBuf buffer) {
+	}
 
-    @Override
-    public void handle(Player player) {
-        ItemStack itemStack = player.getMainHandItem();
-        if (player.getAttackStrengthScale(0.5f) > 0.9f && EffectHelper.getEffectLevel(itemStack, ItemEffect.truesweep) > 0
-                && player.isOnGround() && !player.isSprinting()) {
-            SweepingEffect.truesweep(itemStack, player);
-        }
-    }
+	@Override
+	public void handle(Player player) {
+		ItemStack itemStack = player.getMainHandItem();
+		if (player.getAttackStrengthScale(0.5f) > 0.9f && EffectHelper.getEffectLevel(itemStack, ItemEffect.truesweep) > 0
+			&& player.isOnGround() && !player.isSprinting()) {
+			SweepingEffect.truesweep(itemStack, player);
+		}
+	}
 }

@@ -10,18 +10,19 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.lang.reflect.Type;
+
 @ParametersAreNonnullByDefault
 public class ItemDeserializer implements JsonDeserializer<Item> {
-    @Override
-    public Item deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-        String string = json.getAsString();
-        if (string != null) {
-            ResourceLocation resourceLocation = new ResourceLocation(string);
-            if (ForgeRegistries.ITEMS.containsKey(resourceLocation)) {
-                return ForgeRegistries.ITEMS.getValue(resourceLocation);
-            }
-        }
+	@Override
+	public Item deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+		String string = json.getAsString();
+		if (string != null) {
+			ResourceLocation resourceLocation = new ResourceLocation(string);
+			if (ForgeRegistries.ITEMS.containsKey(resourceLocation)) {
+				return ForgeRegistries.ITEMS.getValue(resourceLocation);
+			}
+		}
 
-        return null;
-    }
+		return null;
+	}
 }
