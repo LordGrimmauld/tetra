@@ -5,19 +5,24 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Material;
 import net.minecraftforge.registries.ObjectHolder;
 import se.mickelus.tetra.TetraMod;
 import se.mickelus.tetra.blocks.TetraBlock;
+import se.mickelus.tetra.blocks.forged.extractor.CoreExtractorBaseTile;
 import se.mickelus.tetra.blocks.forged.extractor.SeepingBedrockBlock;
+import se.mickelus.tetra.util.TickProvider;
 import se.mickelus.tetra.util.TileEntityOptional;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
 public class FracturedBedrockBlock extends TetraBlock implements EntityBlock {
+	public static final TickProvider<FracturedBedrockTile> TILE_TICK_PROVIDER = new TickProvider<>(FracturedBedrockTile.type, FracturedBedrockTile::new);
 	public static final String unlocalizedName = "fractured_bedrock";
 
 	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
@@ -54,7 +59,13 @@ public class FracturedBedrockBlock extends TetraBlock implements EntityBlock {
 
 	@org.jetbrains.annotations.Nullable
 	@Override
-	public BlockEntity newBlockEntity(BlockPos p_153215_, BlockState p_153216_) {
-		return new FracturedBedrockTile(p_153215_, p_153216_);
+	public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+		return TILE_TICK_PROVIDER.create(pos, state);
+	}
+
+	@org.jetbrains.annotations.Nullable
+	@Override
+	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> entityType) {
+		return TILE_TICK_PROVIDER.forTileType(entityType).orElseGet(() -> EntityBlock.super.getTicker(level, state, entityType));
 	}
 }

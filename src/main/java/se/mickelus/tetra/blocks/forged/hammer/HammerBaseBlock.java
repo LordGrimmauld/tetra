@@ -24,6 +24,8 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
@@ -37,12 +39,14 @@ import se.mickelus.tetra.TetraToolActions;
 import se.mickelus.tetra.advancements.BlockUseCriterion;
 import se.mickelus.tetra.blocks.TetraBlock;
 import se.mickelus.tetra.blocks.forged.ForgedBlockCommon;
+import se.mickelus.tetra.blocks.forged.extractor.CoreExtractorBaseTile;
 import se.mickelus.tetra.blocks.salvage.BlockInteraction;
 import se.mickelus.tetra.blocks.salvage.IInteractiveBlock;
 import se.mickelus.tetra.blocks.salvage.InteractiveBlockOverlay;
 import se.mickelus.tetra.blocks.salvage.TileBlockInteraction;
 import se.mickelus.tetra.items.cell.ItemCellMagmatic;
 import se.mickelus.tetra.module.ItemModuleMajor;
+import se.mickelus.tetra.util.TickProvider;
 import se.mickelus.tetra.util.TileEntityOptional;
 
 import javax.annotation.Nullable;
@@ -56,6 +60,7 @@ import static se.mickelus.tetra.blocks.forged.ForgedBlockCommon.locationTooltip;
 
 @ParametersAreNonnullByDefault
 public class HammerBaseBlock extends TetraBlock implements IInteractiveBlock, EntityBlock {
+	public static final TickProvider<HammerBaseTile> TILE_TICK_PROVIDER = new TickProvider<>(HammerBaseTile.type, HammerBaseTile::new);
 	public static final DirectionProperty facingProp = HorizontalDirectionalBlock.FACING;
 
 	public static final String qualityImprovementKey = "quality";
@@ -325,7 +330,13 @@ public class HammerBaseBlock extends TetraBlock implements IInteractiveBlock, En
 
 	@org.jetbrains.annotations.Nullable
 	@Override
-	public BlockEntity newBlockEntity(BlockPos p_153215_, BlockState p_153216_) {
-		return new HammerBaseTile(p_153215_, p_153216_);
+	public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+		return TILE_TICK_PROVIDER.create(pos, state);
+	}
+
+	@org.jetbrains.annotations.Nullable
+	@Override
+	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> entityType) {
+		return TILE_TICK_PROVIDER.forTileType(entityType).orElseGet(() -> EntityBlock.super.getTicker(level, state, entityType));
 	}
 }

@@ -26,7 +26,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Optional;
 
 @ParametersAreNonnullByDefault
-public class TransferUnitTile extends BlockEntity implements BlockEntityTicker<TransferUnitTile>, IHeatTransfer {
+public class TransferUnitTile extends BlockEntity implements IHeatTransfer {
 	private static final int baseAmount = 8;
 	@ObjectHolder(TetraMod.MOD_ID + ":" + TransferUnitBlock.unlocalizedName)
 	public static BlockEntityType<TransferUnitTile> type;
@@ -170,12 +170,14 @@ public class TransferUnitTile extends BlockEntity implements BlockEntityTicker<T
 			.orElse(0);
 	}
 
-	@Override
-	public void tick(Level p_155253_, BlockPos p_155254_, BlockState p_155255_, TransferUnitTile p_155256_) {
-		if (!level.isClientSide
-			&& level.getGameTime() % 5 == 0
-			&& TransferUnitBlock.isSending(getBlockState())) {
-			transfer();
+	public static class TickProvider implements BlockEntityTicker<TransferUnitTile> {
+		@Override
+		public void tick(Level level, BlockPos pos, BlockState blockState, TransferUnitTile tile) {
+			if (!tile.level.isClientSide
+				&& tile.level.getGameTime() % 5 == 0
+				&& TransferUnitBlock.isSending(tile.getBlockState())) {
+				tile.transfer();
+			}
 		}
 	}
 

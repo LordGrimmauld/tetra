@@ -11,6 +11,8 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -22,6 +24,7 @@ import se.mickelus.tetra.TetraMod;
 import se.mickelus.tetra.blocks.TetraWaterloggedBlock;
 import se.mickelus.tetra.blocks.forged.ForgedBlockCommon;
 import se.mickelus.tetra.network.PacketHandler;
+import se.mickelus.tetra.util.TickProvider;
 import se.mickelus.tetra.util.TileEntityOptional;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -29,6 +32,7 @@ import java.util.Random;
 
 @ParametersAreNonnullByDefault
 public class CoreExtractorPistonBlock extends TetraWaterloggedBlock implements EntityBlock {
+	public static final TickProvider<CoreExtractorPistonTile> TILE_TICK_PROVIDER = new TickProvider<>(CoreExtractorPistonTile.type, CoreExtractorPistonTile::new);
 	public static final String unlocalizedName = "extractor_piston";
 	public static final net.minecraft.world.level.block.state.properties.BooleanProperty hackProp = BooleanProperty.create("hack");
 	public static final VoxelShape boundingBox = box(5, 0, 5, 11, 16, 11);
@@ -93,7 +97,13 @@ public class CoreExtractorPistonBlock extends TetraWaterloggedBlock implements E
 
 	@org.jetbrains.annotations.Nullable
 	@Override
-	public BlockEntity newBlockEntity(BlockPos p_153215_, BlockState p_153216_) {
-		return new CoreExtractorPistonTile(p_153215_, p_153216_);
+	public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+		return TILE_TICK_PROVIDER.create(pos, state);
+	}
+
+	@org.jetbrains.annotations.Nullable
+	@Override
+	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> entityType) {
+		return TILE_TICK_PROVIDER.forTileType(entityType).orElseGet(() -> EntityBlock.super.getTicker(level, state, entityType));
 	}
 }
