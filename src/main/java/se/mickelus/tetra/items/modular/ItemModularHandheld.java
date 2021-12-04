@@ -60,6 +60,7 @@ import se.mickelus.tetra.items.modular.impl.shield.ModularShieldItem;
 import se.mickelus.tetra.module.data.ToolData;
 import se.mickelus.tetra.properties.AttributeHelper;
 import se.mickelus.tetra.util.CastOptional;
+import se.mickelus.tetra.util.ToolActionHelper;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -72,6 +73,21 @@ public class ItemModularHandheld extends ModularItem {
 	public static final ResourceLocation nailedTag = new ResourceLocation("tetra:nailed");
 	// if the blocking level exceeds this value the item has an infinite blocking duration
 	public static final int blockingDurationLimit = 16;
+	/**
+	 * Below are lists of blocks, materials and tags that describe what different tools can harvest and efficiently destroy. Note that these
+	 * are copies of what the vanilla tool counterparts explicitly state that they can destroy and harvest, some blocks (and required tiers)
+	 * are not listed here as that's part of that block's implementation.
+	 */
+
+	// FIXME add 1.18 materials
+	public static final Set<Material> hoeBonusMaterials = Sets.newHashSet(Material.PLANT, Material.REPLACEABLE_PLANT);
+	public static final Set<Material> axeMaterials = Sets.newHashSet(Material.WOOD, Material.NETHER_WOOD, Material.PLANT, Material.REPLACEABLE_PLANT, Material.BAMBOO, Material.VEGETABLE);
+	public static final Set<Material> pickaxeMaterials = Sets.newHashSet(Material.METAL, Material.HEAVY_METAL, Material.STONE);
+	// copy of hardcoded values in SwordItem, materials & tag that it explicitly state it can efficiently DESTROY
+	public static final Set<Material> cuttingDestroyMaterials = Sets.newHashSet(Material.PLANT, Material.REPLACEABLE_PLANT, Material.VEGETABLE, Material.WEB, Material.BAMBOO);
+	public static final Set<Tag.Named<Block>> cuttingDestroyTags = Sets.newHashSet(BlockTags.LEAVES);
+	// copy of hardcoded values in SwordItem, blocks that the sword explicitly state it can efficiently HARVEST
+	public static final Set<Block> cuttingHarvestBlocks = Sets.newHashSet(Blocks.COBWEB);
 	static final ChargedAbilityEffect[] abilities = new ChargedAbilityEffect[]{
 		ExecuteEffect.instance,
 		LungeEffect.instance,
@@ -81,20 +97,6 @@ public class ItemModularHandheld extends ModularItem {
 		ReapEffect.instance,
 		PryChargedEffect.instance
 	};
-	/**
-	 * Below are lists of blocks, materials and tags that describe what different tools can harvest and efficiently destroy. Note that these
-	 * are copies of what the vanilla tool counterparts explicitly state that they can destroy and harvest, some blocks (and required tiers)
-	 * are not listed here as that's part of that block's implementation.
-	 */
-
-	private static final Set<Material> hoeBonusMaterials = Sets.newHashSet(Material.PLANT, Material.REPLACEABLE_PLANT, Material.CORAL);
-	private static final Set<Material> axeMaterials = Sets.newHashSet(Material.WOOD, Material.NETHER_WOOD, Material.PLANT, Material.REPLACEABLE_PLANT, Material.BAMBOO, Material.VEGETABLE);
-	private static final Set<Material> pickaxeMaterials = Sets.newHashSet(Material.METAL, Material.HEAVY_METAL, Material.STONE);
-	// copy of hardcoded values in SwordItem, materials & tag that it explicitly state it can efficiently DESTROY
-	private static final Set<Material> cuttingDestroyMaterials = Sets.newHashSet(Material.PLANT, Material.REPLACEABLE_PLANT, Material.CORAL, Material.VEGETABLE, Material.WEB, Material.BAMBOO);
-	private static final Set<Tag.Named<Block>> cuttingDestroyTags = Sets.newHashSet(BlockTags.LEAVES);
-	// copy of hardcoded values in SwordItem, blocks that the sword explicitly state it can efficiently HARVEST
-	private static final Set<Block> cuttingHarvestBlocks = Sets.newHashSet(Blocks.COBWEB);
 	// the base amount of damage the item should take after destroying a block
 	protected int blockDestroyDamage = 1;
 	// the base amount of damage the item should take after hitting an entity
@@ -124,19 +126,15 @@ public class ItemModularHandheld extends ModularItem {
 		}
 	}
 
-	public static void handleSecondaryAbility(Player player, InteractionHand hand, LivingEntity target) {
+	public static void handleSecondaryAbility(Player player, InteractionHand hand, @Nullable LivingEntity target) {
 		ItemStack activeStack = player.getItemInHand(hand);
 
-		if (!activeStack.isEmpty() && activeStack.getItem() instanceof ItemModularHandheld) {
-			ItemModularHandheld item = (ItemModularHandheld) activeStack.getItem();
+		if (!activeStack.isEmpty() && activeStack.getItem() instanceof ItemModularHandheld item && target != null) {
+			item.itemInteractionForEntitySecondary(activeStack, player, target, hand);
 
-			if (target != null) {
-				item.itemInteractionForEntitySecondary(activeStack, player, target, hand);
-
-				player.stopUsingItem();
-				player.getCooldowns().addCooldown(item, (int) Math.round(item.getCooldownBase(activeStack) * 20 * 1.5));
-				player.swing(hand);
-			}
+			player.stopUsingItem();
+			player.getCooldowns().addCooldown(item, (int) Math.round(item.getCooldownBase(activeStack) * 20 * 1.5));
+			player.swing(hand);
 		}
 	}
 
@@ -145,50 +143,11 @@ public class ItemModularHandheld extends ModularItem {
 	}
 
 	public static boolean isToolEffective(ToolAction toolAction, BlockState blockState) {
-		if (TetraToolActions.cut.equals(toolAction)
-			&& (cuttingHarvestBlocks.contains(blockState.getBlock())
-			|| cuttingDestroyMaterials.contains(blockState.getMaterial())
-			|| cuttingDestroyTags.stream().anyMatch(tag -> blockState.getBlock().is(tag)))) {
-			return true;
-		}
-
-		if (ToolActions.HOE_DIG.equals(toolAction) && hoeBonusMaterials.contains(blockState.getMaterial())) {
-			return true;
-		}
-
-		if (ToolActions.AXE_DIG.equals(toolAction) && axeMaterials.contains(blockState.getMaterial())) {
-			return true;
-		}
-
-		if (ToolActions.PICKAXE_DIG.equals(toolAction) && pickaxeMaterials.contains(blockState.getMaterial())) {
-			return true;
-		}
-
-		return toolAction.equals(blockState.getHarvestTool());
+		return ToolActionHelper.isEffectiveOn(toolAction, blockState);
 	}
 
 	public static ToolAction getEffectiveTool(BlockState blockState) {
-		ToolAction tool = blockState.getHarvestTool();
-
-		if (tool != null) {
-			return tool;
-		}
-
-		if (cuttingHarvestBlocks.contains(blockState.getBlock())
-			|| cuttingDestroyMaterials.contains(blockState.getMaterial())
-			|| cuttingDestroyTags.stream().anyMatch(tag -> blockState.getBlock().is(tag))) {
-			return TetraToolActions.cut;
-		}
-
-		if (axeMaterials.contains(blockState.getMaterial())) {
-			return ToolActions.AXE_DIG;
-		}
-
-		if (pickaxeMaterials.contains(blockState.getMaterial())) {
-			return ToolActions.PICKAXE_DIG;
-		}
-
-		return null;
+		return ToolActionHelper.getAppropriateTool(blockState);
 	}
 
 	public int getBlockDestroyDamage() {
@@ -296,7 +255,7 @@ public class ItemModularHandheld extends ModularItem {
 			ToolData toolData = getToolData(itemStack);
 			Collection<ToolAction> tools = toolData.getValues().stream()
 				.filter(tool -> toolData.getLevel(tool) > 0)
-				.sorted(player.isCrouching() ? Comparator.comparing(ToolAction::getName).reversed() : Comparator.comparing(ToolAction::getName))
+				.sorted(player.isCrouching() ? Comparator.comparing(ToolAction::name).reversed() : Comparator.comparing(ToolAction::name))
 				.collect(Collectors.toList());
 
 			for (ToolAction tool : tools) {
@@ -625,8 +584,7 @@ public class ItemModularHandheld extends ModularItem {
 			.orElse(false);
 	}
 
-	@Override
-	public boolean isShield(ItemStack itemStack, @Nullable LivingEntity entity) {
+	public boolean isShield(ItemStack itemStack) {
 		return getEffectLevel(itemStack, ItemEffect.blocking) > 0;
 	}
 
@@ -764,7 +722,7 @@ public class ItemModularHandheld extends ModularItem {
 
 	@OnlyIn(Dist.CLIENT)
 	public void onPlayerStoppedUsingSecondary(ItemStack itemStack, Level world, LivingEntity entity, int timeLeft) {
-		if (entity instanceof Player) {
+		if (entity instanceof Player player) {
 			LivingEntity target = Optional.ofNullable(Minecraft.getInstance().hitResult)
 				.filter(rayTraceResult -> rayTraceResult.getType() == HitResult.Type.ENTITY)
 				.map(rayTraceResult -> ((EntityHitResult) rayTraceResult).getEntity())
@@ -775,7 +733,7 @@ public class ItemModularHandheld extends ModularItem {
 
 			TetraMod.packetHandler.sendToServer(new SecondaryAbilityPacket(target, activeHand));
 
-			handleSecondaryAbility((Player) entity, activeHand, target);
+			handleSecondaryAbility(player, activeHand, target);
 		}
 	}
 
@@ -843,12 +801,20 @@ public class ItemModularHandheld extends ModularItem {
 		return 1 / Math.max(0.1, getAttributeValue(itemStack, Attributes.ATTACK_SPEED, 4) + getCounterWeightBonus(itemStack));
 	}
 
-	@Override
 	public Set<ToolAction> getToolActions(ItemStack stack) {
 		if (!isBroken(stack)) {
 			return getTools(stack);
 		}
 		return Collections.emptySet();
+	}
+
+	@Override
+	public boolean canPerformAction(ItemStack stack, ToolAction toolAction) {
+		if (getToolActions(stack).contains(toolAction))
+			return true;
+		if (ToolActions.DEFAULT_SHIELD_ACTIONS.contains(toolAction) && isShield(stack))
+			return true;
+		return super.canPerformAction(stack, toolAction);
 	}
 
 	@Override
@@ -886,7 +852,7 @@ public class ItemModularHandheld extends ModularItem {
 				speed *= getToolEfficiency(itemStack, tool);
 			} else {
 				speed *= getToolActions(itemStack).stream()
-					.filter(blockState::isToolEffective)
+					.filter(toolAction -> ToolActionHelper.isEffectiveOn(toolAction, blockState))
 					.map(toolAction -> getToolEfficiency(itemStack, toolAction))
 					.max(Comparator.naturalOrder())
 					.orElse(0f);

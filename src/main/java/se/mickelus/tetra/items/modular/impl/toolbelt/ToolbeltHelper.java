@@ -202,11 +202,7 @@ public class ToolbeltHelper {
 			for (int i = 0; i < inventory.getContainerSize(); i++) {
 				ItemStack itemStack = inventory.getItem(i);
 				if (effects.get(i).contains(ItemEffect.quickAccess) && !itemStack.isEmpty()) {
-					ToolAction requiredTool = blockState.getHarvestTool();
-					ToolAction effectiveTool = ItemModularHandheld.getEffectiveTool(blockState);
-					if (requiredTool != null
-						&& itemStack.getItem().getHarvestLevel(itemStack, requiredTool, player, blockState) >= blockState.getHarvestLevel()
-						|| effectiveTool != null && itemStack.getItem().getToolActions(itemStack).contains(effectiveTool)) {
+					if (itemStack.isCorrectToolForDrops(blockState)) {
 						return i;
 					}
 

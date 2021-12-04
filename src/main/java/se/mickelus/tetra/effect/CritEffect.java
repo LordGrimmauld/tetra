@@ -12,11 +12,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.ToolAction;
 import net.minecraftforge.event.entity.player.CriticalHitEvent;
 import net.minecraftforge.eventbus.api.Event;
 import se.mickelus.tetra.items.modular.IModularItem;
 import se.mickelus.tetra.util.CastOptional;
+import se.mickelus.tetra.util.ToolActionHelper;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Random;
@@ -43,10 +43,7 @@ public class CritEffect {
 			&& blockState.getDestroySpeed(world, pos) > -1
 			&& itemStack.getItem().getDestroySpeed(itemStack, blockState) > 2 * blockState.getDestroySpeed(world, pos)) {
 
-			ToolAction tool = blockState.getHarvestTool();
-			int toolLevel = itemStack.getItem().getHarvestLevel(itemStack, tool, breakingPlayer, blockState);
-
-			if ((toolLevel >= 0 && toolLevel >= blockState.getBlock().getHarvestLevel(blockState)) || itemStack.isCorrectToolForDrops(blockState)) {
+			if (ToolActionHelper.playerCanDestroyBlock(breakingPlayer, blockState, pos, itemStack)) {
 				EffectHelper.breakBlock(world, breakingPlayer, itemStack, pos, blockState, true);
 				itemStack.getItem().mineBlock(itemStack, world, blockState, pos, breakingPlayer);
 

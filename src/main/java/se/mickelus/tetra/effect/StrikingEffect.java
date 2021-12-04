@@ -19,6 +19,7 @@ import se.mickelus.tetra.TetraToolActions;
 import se.mickelus.tetra.items.modular.ItemModularHandheld;
 import se.mickelus.tetra.util.CastOptional;
 import se.mickelus.tetra.util.RotationHelper;
+import se.mickelus.tetra.util.ToolActionHelper;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Arrays;
@@ -132,9 +133,7 @@ public class StrikingEffect {
 				if (sweepingLevel > 0) {
 					breakBlocksAround(world, breakingPlayer, itemStack, pos, tool, sweepingLevel);
 				} else {
-					int toolLevel = itemStack.getItem().getHarvestLevel(itemStack, tool, breakingPlayer, blockState);
-					if ((toolLevel >= 0 && toolLevel >= blockState.getBlock().getHarvestLevel(blockState))
-						|| itemStack.isCorrectToolForDrops(blockState)) {
+					if (ToolActionHelper.playerCanDestroyBlock(breakingPlayer, blockState, pos, itemStack)) {
 						EffectHelper.breakBlock(world, breakingPlayer, itemStack, pos, blockState, true);
 					}
 				}
@@ -222,17 +221,16 @@ public class StrikingEffect {
 			float blockHardness = blockState.getDestroySpeed(world, pos);
 
 			// make sure that only blocks which require the same tool are broken
-			if (ItemModularHandheld.isToolEffective(tool, blockState) && blockHardness != -1) {
+			if (ItemModularHandheld.isToolEffective(tool, blockState) && blockHardness > 0) {
 
 				// check that the tool level is high enough and break the block
-				int toolLevel = toolStack.getItem().getHarvestLevel(toolStack, tool, breakingPlayer, blockState);
-				if ((toolLevel >= 0 && toolLevel >= blockState.getBlock().getHarvestLevel(blockState))
-					|| toolStack.isCorrectToolForDrops(blockState)) {
+
+				if (ToolActionHelper.playerCanDestroyBlock(breakingPlayer, blockState, pos, toolStack, tool)) {
 
 					// adds a fixed amount to make blocks like grass still "consume" some efficiency
 					efficiency -= blockHardness + 0.5;
 
-					enqueueBlockBreak(world, breakingPlayer, toolStack, pos, blockState, tool, toolLevel, delays[i]);
+					enqueueBlockBreak(world, breakingPlayer, toolStack, pos, blockState, delays[i]);
 				} else {
 					break;
 				}
@@ -246,15 +244,11 @@ public class StrikingEffect {
 		}
 	}
 
-	private static void enqueueBlockBreak(Level world, Player player, ItemStack itemStack, BlockPos pos, BlockState blockState, ToolAction tool,
-										  int toolLevel, int delay) {
+	private static void enqueueBlockBreak(Level world, Player player, ItemStack itemStack, BlockPos pos, BlockState blockState,
+										  int delay) {
 		ServerScheduler.schedule(delay, () -> {
-			if (((toolLevel >= 0 && toolLevel >= blockState.getBlock().getHarvestLevel(blockState))
-				|| itemStack.isCorrectToolForDrops(blockState))
-				&& ItemModularHandheld.isToolEffective(tool, blockState)) {
-				if (EffectHelper.breakBlock(world, player, itemStack, pos, blockState, true)) {
-					EffectHelper.sendEventToPlayer((ServerPlayer) player, 2001, pos, Block.getId(blockState));
-				}
+			if (EffectHelper.breakBlock(world, player, itemStack, pos, blockState, true)) {
+				EffectHelper.sendEventToPlayer((ServerPlayer) player, 2001, pos, Block.getId(blockState));
 			}
 		});
 	}

@@ -44,6 +44,7 @@ import se.mickelus.tetra.effect.ItemEffectHandler;
 import se.mickelus.tetra.items.modular.impl.ModularSingleHeadedItem;
 import se.mickelus.tetra.items.modular.impl.shield.ModularShieldItem;
 import se.mickelus.tetra.util.CastOptional;
+import se.mickelus.tetra.util.ToolActionHelper;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -193,17 +194,15 @@ public class ThrownModularItemEntity extends AbstractArrow implements IEntityAdd
 			BlockState blockState = level.getBlockState(pos);
 
 			ItemModularHandheld item = CastOptional.cast(thrownStack.getItem(), ItemModularHandheld.class).orElse(null);
-			if (ForgeHooks.isToolEffective(level, pos, thrownStack)
-				&& shooter instanceof Player
-				&& item != null) {
+			if (ToolActionHelper.isEffectiveOn(thrownStack, blockState)	&& shooter instanceof Player player && item != null) {
 				double destroySpeed = item.getDestroySpeed(thrownStack, blockState) * item.getEffectEfficiency(thrownStack, ItemEffect.throwable);
 
 				if (destroySpeed > blockState.getDestroySpeed(level, pos)) {
-					if (shooter instanceof ServerPlayer) {
-						EffectHelper.sendEventToPlayer((ServerPlayer) shooter, 2001, pos, Block.getId(blockState));
+					if (shooter instanceof ServerPlayer serverPlayer) {
+						EffectHelper.sendEventToPlayer(serverPlayer, 2001, pos, Block.getId(blockState));
 					}
 
-					item.applyBreakEffects(thrownStack, level, blockState, pos, (Player) shooter);
+					item.applyBreakEffects(thrownStack, level, blockState, pos, player);
 
 					hitBlocks++;
 					boolean canPierce = getEffectLevel(ItemEffect.piercingHarvest) > 0 && hitBlocks < getPierceLevel();
@@ -214,7 +213,7 @@ public class ThrownModularItemEntity extends AbstractArrow implements IEntityAdd
 						super.onHit(rayTraceResult);
 					}
 
-					breakBlock((Player) shooter, pos, blockState);
+					breakBlock(player, pos, blockState);
 
 					if (canPierce) {
 						hitAdditional();
