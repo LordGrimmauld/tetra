@@ -23,7 +23,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @ParametersAreNonnullByDefault
 public class FracturedBedrockBlock extends TetraBlock implements EntityBlock {
     public static final String unlocalizedName = "fractured_bedrock";
-    public static final TickProvider<FracturedBedrockTile> TILE_TICK_PROVIDER = new TickProvider<>(FracturedBedrockTile.type, FracturedBedrockTile::new);
+    public static final TickProvider<FracturedBedrockTile> TILE_TICK_PROVIDER = new TickProvider<>(() -> FracturedBedrockTile.type, FracturedBedrockTile::new);
 
     @ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
     public static FracturedBedrockBlock instance;

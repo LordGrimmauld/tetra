@@ -10,13 +10,14 @@ import net.minecraft.world.level.block.state.BlockState;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 @ParametersAreNonnullByDefault
 public class TickProvider<T extends BlockEntity & ITetraTicker> implements BlockEntityTicker<T> {
-    private final BlockEntityType<T> entityType;
+    private final Supplier<BlockEntityType<T>> entityType;
     private final BiFunction<BlockPos, BlockState, T> create;
 
-    public TickProvider(BlockEntityType<T> entityType, BiFunction<BlockPos, BlockState, T> create) {
+    public TickProvider(Supplier<BlockEntityType<T>> entityType, BiFunction<BlockPos, BlockState, T> create) {
         this.entityType = entityType;
         this.create = create;
     }
@@ -31,7 +32,7 @@ public class TickProvider<T extends BlockEntity & ITetraTicker> implements Block
     }
 
     public <V extends BlockEntity> Optional<BlockEntityTicker<V>> forTileType(BlockEntityType<V> type) {
-        if (type.equals(entityType))
+        if (type.equals(entityType.get()))
             return Optional.of((BlockEntityTicker<V>) this);
         return Optional.empty();
     }

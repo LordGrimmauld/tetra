@@ -33,7 +33,7 @@ import java.util.Random;
 @ParametersAreNonnullByDefault
 public class CoreExtractorPistonBlock extends TetraWaterloggedBlock implements EntityBlock {
 	public static final String unlocalizedName = "extractor_piston";
-	public static final TickProvider<CoreExtractorPistonTile> TILE_TICK_PROVIDER = new TickProvider<>(CoreExtractorPistonTile.type, CoreExtractorPistonTile::new);
+	public static final TickProvider<CoreExtractorPistonTile> TILE_TICK_PROVIDER = new TickProvider<>(() -> CoreExtractorPistonTile.type, CoreExtractorPistonTile::new);
 
 	@ObjectHolder(TetraMod.MOD_ID + ":" + unlocalizedName)
 	public static CoreExtractorPistonBlock instance;

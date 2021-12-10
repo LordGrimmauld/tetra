@@ -56,7 +56,7 @@ import java.util.List;
 import static com.google.common.base.Predicates.equalTo;
 @ParametersAreNonnullByDefault
 public class TransferUnitBlock extends TetraWaterloggedBlock implements IInteractiveBlock, EntityBlock {
-    public static final TickProvider<TransferUnitTile> TILE_TICK_PROVIDER = new TickProvider<>(TransferUnitTile.type, TransferUnitTile::new);
+    public static final TickProvider<TransferUnitTile> TILE_TICK_PROVIDER = new TickProvider<>(() -> TransferUnitTile.type, TransferUnitTile::new);
     public static final DirectionProperty facingProp = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty plateProp = BooleanProperty.create("plate");
     public static final IntegerProperty cellProp = IntegerProperty.create("cell", 0, 2);

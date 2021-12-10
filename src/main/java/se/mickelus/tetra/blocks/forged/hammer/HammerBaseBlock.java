@@ -58,7 +58,7 @@ import static net.minecraft.world.level.material.Fluids.WATER;
 import static se.mickelus.tetra.blocks.forged.ForgedBlockCommon.locationTooltip;
 @ParametersAreNonnullByDefault
 public class HammerBaseBlock extends TetraBlock implements IInteractiveBlock, EntityBlock {
-	public static final TickProvider<HammerBaseTile> TILE_TICK_PROVIDER = new TickProvider<>(HammerBaseTile.type, HammerBaseTile::new);
+	public static final TickProvider<HammerBaseTile> TILE_TICK_PROVIDER = new TickProvider<>(() -> HammerBaseTile.type, HammerBaseTile::new);
     public static final DirectionProperty facingProp = HorizontalDirectionalBlock.FACING;
 
     public static final String qualityImprovementKey = "quality";
